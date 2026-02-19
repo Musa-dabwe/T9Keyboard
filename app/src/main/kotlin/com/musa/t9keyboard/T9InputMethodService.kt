@@ -31,7 +31,7 @@ class T9InputMethodService : InputMethodService() {
         super.onStartInputView(info, restarting)
         keyboardView.setMultiTapTimeout(preferences.multiTapTimeout)
         keyboardView.setKeyFontSize(preferences.keyFontSize.toFloat())
-        keyboardView.binding.suggestionBar.setFontSize(preferences.suggestionFontSize.toFloat())
+        keyboardView.setFontSize(preferences.suggestionFontSize.toFloat())
     }
 
     override fun onCreateInputView(): View {
@@ -58,7 +58,7 @@ class T9InputMethodService : InputMethodService() {
             handleAction(action)
         }
 
-        keyboardView.binding.suggestionBar.onSuggestionClickListener = { suggestion ->
+        keyboardView.setOnSuggestionClickListener { suggestion ->
             commitSuggestion(suggestion)
         }
 
@@ -197,17 +197,17 @@ class T9InputMethodService : InputMethodService() {
 
     private fun updateSuggestions() {
         if (composingText.isEmpty()) {
-            keyboardView.binding.suggestionBar.setSuggestions(emptyList())
+            keyboardView.setSuggestions(emptyList())
             return
         }
         val suggestions = dictionary.getSuggestions(currentWordConstraints)
-        keyboardView.binding.suggestionBar.setSuggestions(suggestions)
+        keyboardView.setSuggestions(suggestions)
     }
 
     private fun updateNextWordSuggestions() {
         val word = lastCommittedWord ?: return
         val suggestions = dictionary.getNextWordSuggestions(word)
-        keyboardView.binding.suggestionBar.setSuggestions(suggestions)
+        keyboardView.setSuggestions(suggestions)
     }
 
     private fun showView(view: View) {

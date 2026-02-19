@@ -243,6 +243,18 @@ class KeyboardView @JvmOverloads constructor(
         this.multiTapTimeout = timeout
     }
 
+    fun setFontSize(size: Float) {
+        binding.suggestionBar.setFontSize(size)
+    }
+
+    fun setSuggestions(suggestions: List<String>) {
+        binding.suggestionBar.setSuggestions(suggestions)
+    }
+
+    fun setOnSuggestionClickListener(listener: (String) -> Unit) {
+        binding.suggestionBar.onSuggestionClickListener = listener
+    }
+
     fun setKeyFontSize(sizeSp: Float) {
         val buttons = listOf(
             binding.keyAbc, binding.keyDef, binding.keyGhi, binding.keyJkl,
