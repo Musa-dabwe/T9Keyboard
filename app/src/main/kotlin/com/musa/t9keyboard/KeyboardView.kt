@@ -17,7 +17,7 @@ class KeyboardView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
-    private val binding: KeyboardViewBinding = KeyboardViewBinding.inflate(LayoutInflater.from(context), this, true)
+    val binding: KeyboardViewBinding = KeyboardViewBinding.inflate(LayoutInflater.from(context), this, true)
 
     var onKeyClickListener: ((String) -> Unit)? = null
     var onActionClickListener: ((KeyboardAction) -> Unit)? = null

@@ -4,6 +4,9 @@ enum class ShiftState {
     OFF, ON, CAPS_LOCK
 }
 
+/**
+ * Manages the state of the Shift key, including OFF, ON (one-shot), and CAPS_LOCK.
+ */
 class ShiftStateManager {
     var currentState: ShiftState = ShiftState.OFF
         private set
