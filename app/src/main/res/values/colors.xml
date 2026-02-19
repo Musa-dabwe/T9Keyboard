@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <color name="keyboard_background">#2B2B2B</color>
+    <color name="key_background">#000000</color>
+    <color name="key_text_color">#FFFFFF</color>
+    <color name="shift_active">#00BFA5</color>
+    <color name="suggestion_background">#3A3A3A</color>
+    <color name="suggestion_text_color">#FFFFFF</color>
 </resources>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="304dp"
+    android:orientation="vertical"
+    android:background="@color/keyboard_background">
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+        <LinearLayout
+            android:id="@+id/symbol_categories"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <GridLayout
+            android:id="@+id/symbol_grid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="5"
+            android:padding="8dp" />
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btn_back_to_abc"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="ABC"
+        android:background="@color/key_background"
+        android:textColor="@color/key_text_color" />
+</LinearLayout>

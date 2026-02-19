@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="T9 Keyboard Settings"
+            android:textSize="24sp"
+            android:layout_marginBottom="24dp" />
+
+        <CheckBox
+            android:id="@+id/check_haptic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Haptic feedback" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Haptic intensity (ms)" />
+        <SeekBar
+            android:id="@+id/seek_haptic_duration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="10"
+            android:max="100" />
+
+        <View android:layout_width="match_parent" android:layout_height="16dp" />
+
+        <CheckBox
+            android:id="@+id/check_sound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Key press sound" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sound volume (%)" />
+        <SeekBar
+            android:id="@+id/seek_sound_volume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100" />
+
+        <View android:layout_width="match_parent" android:layout_height="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Multi-tap timeout (ms)" />
+        <SeekBar
+            android:id="@+id/seek_timeout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="400"
+            android:max="1200" />
+
+        <View android:layout_width="match_parent" android:layout_height="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Key label font size (sp)" />
+        <SeekBar
+            android:id="@+id/seek_key_font"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="24"
+            android:max="48" />
+
+        <View android:layout_width="match_parent" android:layout_height="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Suggestion font size (sp)" />
+        <SeekBar
+            android:id="@+id/seek_suggestion_font"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="18"
+            android:max="36" />
+
+        <View android:layout_width="match_parent" android:layout_height="24dp" />
+
+        <Button
+            android:id="@+id/btn_clear_dict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Clear learned dictionary" />
+
+    </LinearLayout>
+</ScrollView>

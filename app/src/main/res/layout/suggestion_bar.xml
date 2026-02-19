@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:background="@color/suggestion_background"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+
+    <TextView
+        android:id="@+id/suggestion1"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textColor="@color/suggestion_text_color"
+        android:textSize="27sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="#555555" />
+
+    <TextView
+        android:id="@+id/suggestion2"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textColor="@color/suggestion_text_color"
+        android:textSize="27sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="#555555" />
+
+    <TextView
+        android:id="@+id/suggestion3"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textColor="@color/suggestion_text_color"
+        android:textSize="27sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+</LinearLayout>
