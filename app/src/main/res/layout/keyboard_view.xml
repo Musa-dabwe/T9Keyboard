@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/keyboard_background"
+    android:padding="0dp">
+
+    <include
+        android:id="@+id/suggestionBar"
+        layout="@layout/suggestion_bar" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button android:id="@+id/key_sym" style="@style/KeyboardKey" android:text="SYM" />
+        <Button android:id="@+id/key_123" style="@style/KeyboardKey" android:text="123" />
+        <Button android:id="@+id/key_abc" style="@style/KeyboardKey" android:text="abc" />
+        <Button android:id="@+id/key_def" style="@style/KeyboardKey" android:text="def" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button android:id="@+id/key_emoji" style="@style/KeyboardKey" android:text="◉⁠‿⁠◉" />
+        <Button android:id="@+id/key_ghi" style="@style/KeyboardKey" android:text="ghi" />
+        <Button android:id="@+id/key_jkl" style="@style/KeyboardKey" android:text="jkl" />
+        <Button android:id="@+id/key_mno" style="@style/KeyboardKey" android:text="mno" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button android:id="@+id/key_shift" style="@style/KeyboardKey" android:text="SHIFT" />
+        <Button android:id="@+id/key_pqrs" style="@style/KeyboardKey" android:text="pqrs" />
+        <Button android:id="@+id/key_tuv" style="@style/KeyboardKey" android:text="tuv" />
+        <Button android:id="@+id/key_wxyz" style="@style/KeyboardKey" android:text="wxyz" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button android:id="@+id/key_punct" style="@style/KeyboardKey" android:text=".,?" />
+        <Button android:id="@+id/key_enter" style="@style/KeyboardKey" android:text="↩" />
+        <Button android:id="@+id/key_space" style="@style/KeyboardKey" android:text="SPACE" />
+        <Button android:id="@+id/key_del" style="@style/KeyboardKey" android:text="DEL" />
+    </LinearLayout>
+
+</LinearLayout>
