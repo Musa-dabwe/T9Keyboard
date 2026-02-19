@@ -36,7 +36,7 @@
             </intent-filter>
             <meta-data
                 android:name="android.view.im"
-                android:resource="@xml/method.xml" />
+                android:resource="@xml/method" />
         </service>
 
     </application>

@@ -1,0 +1,20 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AppProjects/T9Keyboard/app/src/main/res/xml/method.xml",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 183,
+          "line": 3
+        },
+        "start": {
+          "column": 0,
+          "index": 183,
+          "line": 3
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AppProjects/T9Keyboard/app/src/main/res/xml/method.xml"
+}
