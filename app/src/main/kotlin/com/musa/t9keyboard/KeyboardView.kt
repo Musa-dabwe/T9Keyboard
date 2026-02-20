@@ -28,6 +28,11 @@ class KeyboardView @JvmOverloads constructor(
     private var multiTapTimeout: Long = 800L
     private var lastShiftTapTime: Long = 0
     private var isNumMode = false
+    var isXt9Mode = false
+        set(value) {
+            field = value
+            binding.suggestionBar.setXt9Mode(value)
+        }
 
     private val keyMap = mapOf(
         binding.keyAbc.id to "abc",
@@ -45,7 +50,7 @@ class KeyboardView @JvmOverloads constructor(
      * Enum defining standard keyboard actions.
      */
     enum class KeyboardAction {
-        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI
+        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI, SETTINGS
     }
 
     init {
@@ -61,6 +66,11 @@ class KeyboardView @JvmOverloads constructor(
 
         letterKeys.forEach { button ->
             button.setOnClickListener { handleLetterKey(button) }
+        }
+
+        binding.keyPunct.setOnLongClickListener {
+            onActionClickListener?.invoke(KeyboardAction.SETTINGS)
+            true
         }
 
         binding.keyShift.setOnClickListener {
@@ -105,7 +115,14 @@ class KeyboardView @JvmOverloads constructor(
             }
             return
         }
+
         val chars = keyMap[button.id] ?: return
+
+        if (isXt9Mode) {
+            commitCurrentTap()
+            onMultiTapListener?.invoke(chars[0], 0, true)
+            return
+        }
 
         if (currentKeyId == button.id) {
             handler.removeCallbacksAndMessages(null)
@@ -142,8 +159,12 @@ class KeyboardView @JvmOverloads constructor(
         binding.suggestionBar.setFontSize(size)
     }
 
-    fun setSuggestions(suggestions: List<String>) {
-        binding.suggestionBar.setSuggestions(suggestions)
+    fun setSuggestions(suggestions: List<String>, rawSequence: String? = null) {
+        binding.suggestionBar.setSuggestions(suggestions, rawSequence)
+    }
+
+    fun setAccentColor(color: Int) {
+        binding.suggestionBar.setAccentColor(color)
     }
 
     fun setOnSuggestionClickListener(listener: (String) -> Unit) {

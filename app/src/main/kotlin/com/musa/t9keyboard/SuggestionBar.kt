@@ -7,13 +7,18 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.musa.t9keyboard.databinding.SuggestionBarBinding
 
+import android.graphics.Color
+import android.view.View
+import android.widget.FrameLayout
+
 class SuggestionBar @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : LinearLayout(context, attrs, defStyleAttr) {
+) : FrameLayout(context, attrs, defStyleAttr) {
 
     private val binding: SuggestionBarBinding = SuggestionBarBinding.inflate(LayoutInflater.from(context), this, true)
 
     var onSuggestionClickListener: ((String) -> Unit)? = null
+    private var accentColor: Int = Color.parseColor("#BB86FC") // Default purple
 
     init {
         binding.suggestion1.setOnClickListener { onSuggestionClickListener?.invoke(binding.suggestion1.text.toString()) }
@@ -21,10 +26,35 @@ class SuggestionBar @JvmOverloads constructor(
         binding.suggestion3.setOnClickListener { onSuggestionClickListener?.invoke(binding.suggestion3.text.toString()) }
     }
 
-    fun setSuggestions(suggestions: List<String>) {
+    fun setSuggestions(suggestions: List<String>, rawSequence: String? = null) {
+        if (rawSequence != null) {
+            binding.suggestionRaw.visibility = View.VISIBLE
+            binding.dividerRaw.visibility = View.VISIBLE
+            binding.suggestionRaw.text = rawSequence
+        } else {
+            binding.suggestionRaw.visibility = View.GONE
+            binding.dividerRaw.visibility = View.GONE
+        }
+
         binding.suggestion1.text = suggestions.getOrNull(0) ?: ""
         binding.suggestion2.text = suggestions.getOrNull(1) ?: ""
         binding.suggestion3.text = suggestions.getOrNull(2) ?: ""
+
+        // Highlight the first suggestion if it's not empty and we are in XT9 mode (implied by rawSequence)
+        if (rawSequence != null && (suggestions.getOrNull(0) ?: "").isNotEmpty()) {
+            binding.suggestion1.setTextColor(accentColor)
+        } else {
+            binding.suggestion1.setTextColor(Color.WHITE)
+        }
+    }
+
+    fun setXt9Mode(enabled: Boolean) {
+        binding.xt9Indicator.visibility = if (enabled) View.VISIBLE else View.GONE
+    }
+
+    fun setAccentColor(color: Int) {
+        this.accentColor = color
+        binding.xt9Indicator.setTextColor(color)
     }
 
     fun setFontSize(sizeSp: Float) {
