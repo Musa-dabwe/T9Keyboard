@@ -1,17 +1,22 @@
 package com.musa.t9keyboard
 
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.databinding.EmojiPickerBinding
+import org.json.JSONArray
 
 class EmojiPickerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -22,17 +27,39 @@ class EmojiPickerView @JvmOverloads constructor(
     var onBackClickListener: (() -> Unit)? = null
 
     private var emojiTypeface: Typeface? = null
+    private val preferences = PreferencesManager(context)
+    private var recentlyUsed = mutableListOf<String>()
+    private var currentCategory = "Smileys & Emotion"
+    private var accentColor = Color.parseColor("#00BFA5") // Default accent
 
-    private val emojiCategories = mapOf(
-        "Smileys" to listOf("😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇"),
-        "People" to listOf("👶", "👧", "🧒", "👦", "👩", "🧑", "👨", "👩‍🦱", "🧑‍🦱", "👨‍🦱"),
-        "Animals" to listOf("🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯"),
-        "Food" to listOf("🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍈"),
-        "Travel" to listOf("🚗", "🚕", "🚙", "🚌", "🚎", "🏎", "🚓", "🚑", "🚒", "🚐"),
-        "Objects" to listOf("⌚", "📱", "📲", "💻", "⌨", "🖥", "🖨", "🖱", "🖲", "🕹"),
-        "Symbols" to listOf("💘", "💝", "💖", "💗", "💓", "💞", "💕", "💟", "❣", "💔"),
-        "Flags" to listOf("🏁", "🚩", "🎌", "🏴", "🏳", "🏳‍🌈", "🏳‍⚧", "🏴‍☠", "🇦🇫", "🇦🇽"),
-        "Recent" to listOf("😀", "🚗", "⌚")
+    private val allEmojiCategories = linkedMapOf(
+        "Smileys & Emotion" to listOf(
+            "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "🥲", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🥸", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🫣", "🤭", "🫢", "🫡", "🤫", "🫠", "🤥", "😶", "🫥", "😐", "🫤", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😮‍💨", "😵", "😵‍💫", "🫨", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕"
+        ),
+        "People & Body" to listOf(
+            "👋", "🤚", "🖐", "✋", "🖖", "🫱", "🫲", "🫳", "🫴", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🫀", "🫁", "🦷", "👀", "👁", "👅", "👄", "💋", "🩸", "👤", "👥", "🫂", "👶", "👧", "🧒", "👦", "👩", "🧑", "👨", "👩‍🦱", "🧑‍🦱", "👨‍🦱", "👩‍🦰", "🧑‍🦰", "👨‍🦰", "👱‍♀️", "👱", "👱‍♂️", "👩‍🦳", "🧑‍🦳", "👨‍🦳", "👩‍🦲", "🧑‍🦲", "👨‍🦲", "🧔‍♀️", "🧔", "🧔‍♂️", "👵", "🧓", "👴", "👲", "👳‍♀️", "👳", "👳‍♂️", "🧕", "👮‍♀️", "👮", "👮‍♂️", "👷‍♀️", "👷", "👷‍♂️", "💂‍♀️", "💂", "💂‍♂️"
+        ),
+        "Animals & Nature" to listOf(
+            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐻‍❄️", "🐨", "🐯", "🦁", "🐮", "🐷", "🐽", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🐔", "🐧", "🐦", "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🪱", "🐛", "🦋", "🐌", "🐞", "🐜", "🪰", "🪲", "🪳", "🦟", "🦗", "🕷", "🕸", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓", "🦍", "🦧", "🦣", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🦬", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐈‍⬛", "🐓", "🦃", "🦚", "🦜", "🦢", "🦩", "🕊", "🐇", "🦝", "🦨", "🦡", "🦦", "🦥", "🐁", "🐀", "🐿", "🦔", "🐾"
+        ),
+        "Food & Drink" to listOf(
+            "🍎", "🍊", "🍋", "🍇", "🍓", "🍔", "🍕", "🌮", "🍏", "🍐", "🍌", "🍉", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌶", "🫑", "🌽", "🥕", "🫒", "🧄", "🧅", "🍄", "🥜", "🫘", "🌰", "🍞", "🥐", "🥖", "🫓", "🥨", "🥯", "🥞", "🧇", "🧀", "🍖", "🍗", "🥩", "🥓", "🍟", "🥪", "🥙", "🧆", "🌯", "🥗", "🥘", "🍲", "🫕", "🥣", "🍿", "🧈", "🧂", "🥫", "🍱", "🍘", "🍙", "🍚", "🍛", "🍜", "🍝", "🍠", "🍢", "🍣", "🍤", "🍥", "🥮", "🍡", "🥟", "🥠", "🥡", "🦀", "🦞", "🦐", "🦑", "🦪", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰", "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕️", "🫖", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤", "🧋", "🧃", "🧉", "🧊"
+        ),
+        "Travel & Places" to listOf(
+            "✈️", "🚀", "🚗", "🚕", "🚙", "🚌", "🛸", "🏠", "🌍", "🌎", "🌏", "🗺", "🏔", "⛰", "🌋", "🗻", "🏕", "🏖", "🏜", "🏝", "🏞", "🏟", "🏛", "🏗", "🧱", "🏘", "🏚", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏩", "🏪", "🏫", "🏬", "🏭", "🏯", "🏰", "💒", "🗼", "🗽", "⛪️", "🕌", "⛩", "🕍", "🕋", "⛲️", "⛺️", "🌁", "🌃", "🏙", "🌄", "🌆", "🌇", "🌉", "♨️", "🎠", "🎡", "🎢", "💈", "🎪", "🚂", "🚃", "🚄", "🚅", "🚆", "🚇", "🚈", "🚉", "🚊", "🚝", "🚞", "🚋", "🚍", "🚎", "🚐", "🚑", "🚒", "🚓", "🚔", "🚖", "🚘", "🛻", "🚚", "🚛", "🚜", "🏎", "🏍", "🛵", "🦽", "🦼", "🛺", "🚲", "🛴", "🛹", "🛼", "🚏", "🛣", "🛤", "🛢", "⛽️", "🚨", "🚥", "🚦", "🛑", "🚧", "⚓️", "⛵️", "🛶", "🚤", "🛳", "⛴", "🚢", "🛩", "🛫", "🛬", "🪂", "💺", "🚁", "🚟", "🚠", "🚡", "🛰"
+        ),
+        "Activities" to listOf(
+            "⚽", "🏀", "🏈", "⚾", "🥎", "🏐", "🏉", "🎾", "🏒", "🏑", "🏏", "🏓", "🏸", "🏹", "⛳", "⛸", "🎣", "🚣", "🏊", "🏄", "🏇", "🚴", "🚵", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖", "🏵", "🎫", "🎟", "🎭", "🎨", "🎬", "🎤", "🎧", "🎹", "🥁", "🎷", "🎺", "🎸", "🪕", "🎻", "🎲", "♟", "🎯", "🎳", "🎮", "🕹", "🎰", "🧩", "🧸", "🪅", "🪩", "🪆", "🃏", "🀄️", "🎴", "🖼", "🧵", "🪡", "🧶", "🪢", "🧗‍♀️", "🧗", "🧗‍♂️", "🤺", "⛷", "🏂", "🏌️‍♀️", "🏌️", "🏌️‍♂️", "🏄‍♀️", "🏄", "🏄‍♂️", "🚣‍♀️", "🚣", "🚣‍♂️", "🏊‍♀️", "🏊", "🏊‍♂️", "⛹️‍♀️", "⛹️", "⛹️‍♂️", "🏋️‍♀️", "🏋️", "🏋️‍♂️", "🚴‍♀️", "🚴", "🚴‍♂️", "🚵‍♀️", "🚵", "🚵‍♂️", "🤸‍♀️", "🤸", "🤸‍♂️", "🤽‍♀️", "🤽", "🤽‍♂️", "🤾‍♀️", "🤾", "🤾‍♂️", "🤹‍♀️", "🤹", "🤹‍♂️", "🧘‍♀️", "🧘", "🧘‍♂️", "🛀", "🛌"
+        ),
+        "Objects" to listOf(
+            "💡", "📱", "💻", "⌨", "🖥", "🖨", "📷", "📹", "🎥", "🎞", "📞", "☎", "📟", "📠", "📺", "📻", "🎙", "🎚", "🎛", "🧭", "⏱", "⏲", "⏰", "🕰", "⏳", "⌛", "🔋", "🔌", "🔦", "🕯", "🪔", "🧯", "🛢", "💸", "💵", "💴", "💶", "💷", "🪙", "💰", "💳", "💎", "⚖", "🪜", "🔧", "🔨", "⚒", "🛠", "⛏", "🔩", "⚙", "🪛", "🧱", "⛓", "🧲", "🔫", "💣", "🧨", "🪓", "🗡", "⚔️", "🛡", "🚬", "⚰️", "🪦", "⚱️", "🏺", "🔮", "🪄", "🧿", "📿", "💈", "⚗️", "🔭", "🔬", "🕳", "💊", "💉", "🩸", "🩹", "🩺", "🌡", "🧹", "🪠", "🧺", "🧻", "🧼", "🫧", "🪥", "🪒", "🧽", "🪣", "🧴", "🛎", "🔑", "🗝", "🚪", "🪑", "🛋", "🛏", "🛌", "🪞", "🪟", "🛍", "🛒", "🎁", "🎈", "🎏", "🎀", "🏮", "🎐", "🧧", "✉️", "📩", "📨", "📧", "💌", "📥", "📤", "📦", "🏷", "🪪", "📪", "📫", "📬", "📭", "📮", "🗳", "✏️", "✒️", "🖋", "🖊", "🖌", "🖍", "📝"
+        ),
+        "Symbols" to listOf(
+            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️", "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "🕎", "☯️", "☦️", "🛐", "⛎", "♈️", "♉️", "♊️", "♋️", "♌️", "♍️", "♎️", "♏️", "♐️", "♑️", "♒️", "♓️", "🆔", "⚛️", "🉑", "☢️", "☣️", "📴", "📳", "🈶", "🈚️", "🈸", "🈺", "🈷️", "✴️", "VS", "🆚", "💮", "🉐", "㊙️", "㊗️", "🈴", "🈵", "🈹", "🈲", "🅰️", "🅱️", "🆑", "🅾️", "🆘", "❌", "⭕️", "🛑", "⛔️", "📛", "🚫", "💯", "💢", "♨️", "🚷", "🚯", "🚳", "🚱", "🔞", "📵", "🚭", "❗️", "❕", "❓", "❔", "‼️", "⁉️", "🔅", "🔆", "〽️", "⚠️", "🚸", "🔱", "⚜️", "🔰", "♻️", "✅", "🈯️", "💹", "❇️", "✳️", "❎", "🌐", "💠", "Ⓜ️", "🌀", "💤"
+        ),
+        "Flags" to listOf(
+            "🏁", "🚩", "🎌", "🏴", "🏳", "🇺🇳", "🏴‍☠", "🇿🇲", "🇦🇫", "🇦🇽", "🇦🇱", "🇩🇿", "🇦🇸", "🇦🇩", "🇦🇴", "🇦🇮", "🇦🇶", "🇦🇬", "🇦🇷", "🇦🇲", "🇦🇼", "🇦🇺", "🇦🇹", "🇦🇿", "🇧🇸", "🇧🇭", "🇧🇩", "🇧🇧", "🇧🇾", "🇧🇪", "🇧🇿", "🇧🇯", "🇧🇲", "🇧🇹", "🇧🇴", "🇧🇦", "🇧🇼", "🇧🇷", "🇮🇴", "🇻🇬", "🇧🇳", "🇧🇬", "🇧🇫", "🇧🇮", "🇰🇭", "🇨🇲", "🇨🇦", "🇮🇨", "🇨🇻", "🇧🇶", "🇰🇾", "🇨🇫", "🇹🇩", "🇨🇱", "🇨🇳", "🇨🇽", "🇨🇨", "🇨🇴", "🇰🇲", "🇨🇬", "🇨🇩", "🇨🇰", "🇨🇷", "🇨🇮", "🇭🇷", "🇨🇺", "🇨🇼", "🇨🇾", "🇨🇿", "🇩🇰", "🇩🇯", "🇩🇲", "🇩🇴", "🇪🇨", "🇪🇬", "🇸🇻", "🇬🇶", "🇪🇷", "🇪🇪", "🇸🇿", "🇪🇹", "🇪🇺", "🇫🇰", "🇫🇴", "🇫🇯", "🇫🇮", "🇫🇷", "🇬🇫", "🇵🇫", "🇹🇫", "🇬🇦", "🇬🇲", "🇬🇪", "🇩🇪", "🇬🇭", "🇬🇮", "🇬🇷", "🇬🇱", "🇬🇩", "🇬🇵", "🇬🇺", "🇬🇹", "🇬🇬", "🇬🇳", "🇬🇼", "🇬🇾", "🇭🇹", "🇭🇳", "🇭🇰", "🇭🇺", "🇮🇸", "🇮🇳", "🇮🇩", "🇮🇷", "🇮🇶", "🇮🇪", "🇮🇲", "🇮🇱", "🇮🇹", "🇯🇲", "🇯🇵", "🇯🇪", "🇯🇴", "🇰🇿", "🇰🇪", "🇰🇮", "🇽🇰", "🇰🇼", "🇰🇬", "🇱🇦", "🇱🇻", "🇱🇧", "🇱🇸", "🇱🇷", "🇱🇾", "🇱🇮", "🇱🇹", "🇱🇺", "🇲🇴", "🇲🇬", "🇲🇼", "🇲🇾", "🇲🇻", "🇲🇱", "🇲🇹", "🇲🇭", "🇲🇶", "🇲🇷", "🇲🇺", "🇾🇹", "🇲🇽", "🇫🇲", "🇲🇩", "🇲🇨", "🇲🇳", "🇲🇪", "🇲🇸", "🇲🇦", "🇲🇿", "🇲🇲", "🇳🇦", "🇳🇷", "🇳🇵", "🇳🇱", "🇳🇨", "🇳🇿", "🇳🇮", "🇳🇪", "🇳🇬", "🇳🇺", "🇳🇫", "🇰🇵", "🇲🇰", "🇲🇵", "🇳🇴", "🇴🇲", "🇵🇰", "🇵🇼", "🇵🇸", "🇵🇦", "🇵🇬", "🇵🇾", "🇵🇪", "🇵🇭", "🇵🇳", "🇵🇱", "🇵🇹", "🇵🇷", "🇶🇦", "🇷🇪", "🇷🇴", "🇷🇺", "🇷🇼", "🇼🇸", "🇸🇲", "🇸🇹", "🇸🇦", "🇸🇳", "🇷🇸", "🇸🇨", "🇸🇱", "🇸🇬", "🇸🇽", "🇸🇰", "🇸🇮", "🇬🇸", "🇸🇧", "🇸🇴", "🇿🇦", "🇰🇷", "🇸🇸", "🇪🇸", "🇱🇰", "🇧🇱", "🇸🇭", "🇰🇳", "🇱🇨", "🇵🇲", "🇻🇨", "🇸🇩", "🇸🇷", "🇸🇪", "🇨🇭", "🇸🇾", "🇹🇼", "🇹🇯", "🇹🇿", "🇹🇭", "🇹🇱", "🇹🇬", "🇹🇰", "🇹🇴", "🇹🇹", "🇹🇳", "🇹🇷", "🇹🇲", "🇹🇨", "🇹🇻", "🇻🇮", "🇺🇬", "🇺🇦", "🇦🇪", "🇬🇧", "🇺🇸", "🇺🇾", "🇺🇿", "🇻🇺", "🇻🇦", "🇻🇪", "🇻🇳", "🇼🇫", "🇪🇭", "🇾🇪", "🇿🇲", "🇿🇼"
+        )
     )
 
     init {
@@ -42,54 +69,138 @@ class EmojiPickerView @JvmOverloads constructor(
             // Fallback to system font
         }
 
-        binding.emojiRecycler.layoutManager = GridLayoutManager(context, 7)
+        loadRecentlyUsed()
+
+        binding.emojiRecycler.layoutManager = GridLayoutManager(context, 8)
         setupCategories()
-        displayCategory("Smileys")
+        displayCategory("Smileys & Emotion")
 
         setupSearch()
 
         binding.btnBackFromEmoji.setOnClickListener { onBackClickListener?.invoke() }
     }
 
+    private fun loadRecentlyUsed() {
+        val json = preferences.recentlyUsedEmojis
+        try {
+            val arr = JSONArray(json)
+            recentlyUsed.clear()
+            for (i in 0 until arr.length()) {
+                recentlyUsed.add(arr.getString(i))
+            }
+        } catch (e: Exception) {
+            recentlyUsed = mutableListOf()
+        }
+    }
+
+    private fun saveRecentlyUsed() {
+        val arr = JSONArray(recentlyUsed)
+        preferences.recentlyUsedEmojis = arr.toString()
+    }
+
+    private fun addToRecentlyUsed(emoji: String) {
+        val wasEmpty = recentlyUsed.isEmpty()
+        recentlyUsed.remove(emoji)
+        recentlyUsed.add(0, emoji)
+        if (recentlyUsed.size > 40) {
+            recentlyUsed.removeAt(recentlyUsed.size - 1)
+        }
+        saveRecentlyUsed()
+        if (currentCategory == "Recently Used") {
+            (binding.emojiRecycler.adapter as? EmojiAdapter)?.updateData(recentlyUsed)
+        }
+        if (wasEmpty) {
+            setupCategories() // Only refresh if we need to show the "Recently Used" tab
+        }
+    }
+
     private fun setupSearch() {
         binding.emojiSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val query = s.toString().lowercase()
-                if (query.isEmpty()) {
-                    displayCategory("Smileys")
-                } else {
-                    val filtered = emojiCategories.values.flatten().distinct().filter { it.contains(query) } // Note: Emojis don't really 'contain' text, but this is a placeholder for search logic
-                    binding.emojiRecycler.adapter = EmojiAdapter(filtered)
-                }
+                performSearch(s.toString())
             }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
     }
 
+    private fun performSearch(query: String) {
+        val currentList = if (currentCategory == "Recently Used") recentlyUsed else allEmojiCategories[currentCategory] ?: emptyList()
+        val filtered = if (query.isEmpty()) {
+            currentList
+        } else {
+            // Filter out non-emoji characters from query if any, though normally users type text
+            currentList.filter { it.contains(query) }
+        }
+        (binding.emojiRecycler.adapter as? EmojiAdapter)?.updateData(filtered)
+    }
+
     private fun setupCategories() {
-        emojiCategories.keys.forEach { category ->
-            val btn = Button(context).apply {
+        binding.emojiCategories.removeAllViews()
+        val categories = mutableListOf<String>()
+        if (recentlyUsed.isNotEmpty()) {
+            categories.add("Recently Used")
+        }
+        categories.addAll(allEmojiCategories.keys)
+
+        categories.forEach { category ->
+            val tv = TextView(context).apply {
                 text = category
-                setOnClickListener { displayCategory(category) }
+                setPadding(16.dpToPx(), 0, 16.dpToPx(), 0)
+                gravity = Gravity.CENTER
+                textSize = 14f
+                setTextColor(if (category == currentCategory) accentColor else Color.WHITE)
+                setOnClickListener {
+                    displayCategory(category)
+                    setupCategories() // Update text colors
+                }
                 layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT)
             }
-            binding.emojiCategories.addView(btn)
+            binding.emojiCategories.addView(tv)
         }
     }
 
     private fun displayCategory(category: String) {
-        val emojis = emojiCategories[category] ?: emptyList()
+        currentCategory = category
+        val emojis = if (category == "Recently Used") recentlyUsed else allEmojiCategories[category] ?: emptyList()
         binding.emojiRecycler.adapter = EmojiAdapter(emojis)
+        binding.emojiRecycler.scrollToPosition(0)
+        binding.emojiSearch.setText("")
     }
 
-    inner class EmojiAdapter(private val emojis: List<String>) : RecyclerView.Adapter<EmojiViewHolder>() {
+    fun setAccentColor(color: Int) {
+        accentColor = color
+        setupCategories()
+    }
+
+    inner class EmojiAdapter(private var emojis: List<String>) : RecyclerView.Adapter<EmojiViewHolder>() {
+
+        fun updateData(newEmojis: List<String>) {
+            emojis = newEmojis
+            notifyDataSetChanged()
+        }
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmojiViewHolder {
-            val tv = TextView(context).apply {
-                textSize = 32f
-                gravity = android.view.Gravity.CENTER
-                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 150)
+            val tv = object : androidx.appcompat.widget.AppCompatTextView(context) {
+                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                    super.onMeasure(widthMeasureSpec, widthMeasureSpec)
+                }
+            }.apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                textSize = 28f
+                gravity = Gravity.CENTER
+                setPadding(4.dpToPx(), 4.dpToPx(), 4.dpToPx(), 4.dpToPx())
                 emojiTypeface?.let { typeface = it }
+
+                val ripple = RippleDrawable(
+                    ColorStateList.valueOf(Color.parseColor("#3D3D3D")),
+                    null,
+                    ColorDrawable(Color.WHITE)
+                )
+                background = ripple
             }
             return EmojiViewHolder(tv)
         }
@@ -97,11 +208,16 @@ class EmojiPickerView @JvmOverloads constructor(
         override fun onBindViewHolder(holder: EmojiViewHolder, position: Int) {
             val emoji = emojis[position]
             (holder.itemView as TextView).text = emoji
-            holder.itemView.setOnClickListener { onEmojiClickListener?.invoke(emoji) }
+            holder.itemView.setOnClickListener {
+                onEmojiClickListener?.invoke(emoji)
+                addToRecentlyUsed(emoji)
+            }
         }
 
         override fun getItemCount(): Int = emojis.size
     }
 
     class EmojiViewHolder(view: View) : RecyclerView.ViewHolder(view)
+
+    private fun Int.dpToPx(): Int = (this * context.resources.displayMetrics.density).toInt()
 }

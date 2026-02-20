@@ -1,44 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="304dp"
+    android:layout_height="360dp"
     android:orientation="vertical"
     android:background="@color/keyboard_background">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/keyboard_background">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_toStartOf="@+id/btn_back_from_emoji"
+            android:scrollbars="none">
+            <LinearLayout
+                android:id="@+id/emoji_categories"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:gravity="center_vertical" />
+        </HorizontalScrollView>
+
+        <ImageButton
+            android:id="@+id/btn_back_from_emoji"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_back"
+            android:contentDescription="Back"
+            android:tint="@color/key_text_color" />
+    </RelativeLayout>
 
     <EditText
         android:id="@+id/emoji_search"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:hint="Search Emojis"
+        android:hint="Search emoji..."
         android:textColor="@color/key_text_color"
         android:textColorHint="#888888"
-        android:background="#333333"
-        android:padding="8dp"
+        android:background="#2B2B2B"
+        android:padding="12dp"
         android:maxLines="1"
         android:inputType="text" />
-
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none">
-        <LinearLayout
-            android:id="@+id/emoji_categories"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/emoji_recycler"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false" />
 
-    <Button
-        android:id="@+id/btn_back_from_emoji"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="ABC"
-        android:background="@color/key_background"
-        android:textColor="@color/key_text_color" />
 </LinearLayout>
