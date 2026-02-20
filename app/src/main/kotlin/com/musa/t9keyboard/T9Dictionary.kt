@@ -9,6 +9,46 @@ class T9Dictionary(private val context: Context) {
     private val t9Map = mutableMapOf<String, MutableList<String>>()
     private val learnedWords = mutableMapOf<String, Int>()
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
+    private val wordFrequencyRank = mutableMapOf<String, Int>()
+
+    companion object {
+        private const val DICTIONARY_VERSION = 1
+    }
+
+    private val hardcodedWords = mapOf(
+        "2" to listOf("a", "b", "c"),
+        "3" to listOf("e", "d", "f"),
+        "4" to listOf("i", "h", "g"),
+        "5" to listOf("j", "k", "l"),
+        "6" to listOf("n", "m", "o"),
+        "7" to listOf("s", "p", "q", "r"),
+        "8" to listOf("t", "u", "v"),
+        "9" to listOf("w", "x", "y", "z"),
+        "84" to listOf("th", "ti", "uh"),
+        "843" to listOf("the", "tie", "vie"),
+        "4663" to listOf("good", "gone", "home", "hone"),
+        "4673" to listOf("hope", "gore", "hose"),
+        "9673" to listOf("word", "wore", "yore"),
+        "7483" to listOf("the", "ride", "side", "site"),
+        "2273" to listOf("bare", "care", "case", "base"),
+        "5663" to listOf("love", "lone", "lone"),
+        "3276" to listOf("farm", "earn", "darn"),
+        "4283" to listOf("have", "gave", "hate", "gate", "fate", "gave"),
+        "9687" to listOf("your", "wots"),
+        "4687" to listOf("govs", "hour"),
+        "6473" to listOf("mire", "ogre", "nigh"),
+        "2669" to listOf("any", "bow", "cow", "boy", "box", "coy"),
+        "86" to listOf("to", "un", "vo"),
+        "468" to listOf("got", "hot", "hit", "gut", "hut", "iot"),
+        "273" to listOf("are", "ape", "age", "ace", "bre", "cre"),
+        "9484" to listOf("with", "yogi"),
+        "3676" to listOf("from", "eron"),
+        "84373" to listOf("there", "tired", "three"),
+        "84489" to listOf("thirty", "ighty"),
+        "2255" to listOf("ball", "call", "bill", "bell", "bull", "calk", "balk"),
+        "7668" to listOf("pont", "root", "rout", "snot", "soot", "snou"),
+        "9677" to listOf("wops", "yops", "work", "worm", "worn", "worse", "worst", "wort", "yore")
+    )
 
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
@@ -28,18 +68,33 @@ class T9Dictionary(private val context: Context) {
     )
 
     init {
+        checkDictionaryVersion()
         loadStaticDictionary()
         loadLearnedWords()
+    }
+
+    private fun checkDictionaryVersion() {
+        val prefs = context.getSharedPreferences("dictionary_prefs", Context.MODE_PRIVATE)
+        val currentVersion = prefs.getInt("version", 0)
+        if (currentVersion != DICTIONARY_VERSION) {
+            // Rebuild cache - although currently cache is in-memory
+            // But we should store the version
+            prefs.edit().putInt("version", DICTIONARY_VERSION).apply()
+        }
     }
 
     private fun loadStaticDictionary() {
         try {
             val reader = BufferedReader(InputStreamReader(context.assets.open("english_words.txt")))
             var word: String? = reader.readLine()
+            var rank = 1
             while (word != null) {
                 val cleanedWord = word.lowercase().trim()
                 if (cleanedWord.isNotEmpty()) {
                     addWordToT9Map(cleanedWord)
+                    if (!wordFrequencyRank.containsKey(cleanedWord)) {
+                        wordFrequencyRank[cleanedWord] = rank++
+                    }
                 }
                 word = reader.readLine()
             }
@@ -112,14 +167,29 @@ class T9Dictionary(private val context: Context) {
 
     /**
      * Retrieves up to 3 word predictions based on the exact digit sequence.
-     * Matches are ranked by learned frequency, then by dictionary order.
+     * Matches are ranked by:
+     * 1. User-learned status (learned words first)
+     * 2. Frequency rank in dictionary (top of file first)
+     * 3. Learned user frequency (most used first)
      */
     fun xt9Predict(digitSequence: String): List<String> {
         if (digitSequence.isEmpty()) return emptyList()
 
-        val exactMatches = t9Map[digitSequence] ?: return emptyList()
+        val exactMatches = t9Map[digitSequence]?.toMutableList() ?: mutableListOf()
 
-        return exactMatches.distinct().sortedByDescending { learnedWords[it] ?: 0 }.take(3)
+        // Add hardcoded words if sequence matches
+        hardcodedWords[digitSequence]?.forEach {
+            if (!exactMatches.contains(it)) {
+                exactMatches.add(it)
+            }
+        }
+
+        if (exactMatches.isEmpty()) return emptyList()
+
+        return exactMatches.distinct().sortedWith(compareByDescending<String> { learnedWords.containsKey(it) }
+            .thenBy { wordFrequencyRank[it] ?: Int.MAX_VALUE }
+            .thenByDescending { learnedWords[it] ?: 0 })
+            .take(3)
     }
 
     fun getNextWordSuggestions(previousWord: String): List<String> {
