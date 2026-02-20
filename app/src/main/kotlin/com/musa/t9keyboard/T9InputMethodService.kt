@@ -42,8 +42,14 @@ class T9InputMethodService : InputMethodService() {
         preferences = PreferencesManager(this)
     }
 
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        resetImeState(attribute)
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        resetImeState(info)
         keyboardView.setMultiTapTimeout(preferences.multiTapTimeout)
         keyboardView.setKeyFontSize(preferences.keyFontSize.toFloat())
         keyboardView.setFontSize(preferences.suggestionFontSize.toFloat())
@@ -51,6 +57,11 @@ class T9InputMethodService : InputMethodService() {
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         keyboardView.setAccentColor(accentColor)
         emojiPickerView.setAccentColor(accentColor)
+    }
+
+    override fun onFinishInput() {
+        super.onFinishInput()
+        resetImeState(null)
     }
 
     override fun onCreateInputView(): View {
@@ -68,16 +79,19 @@ class T9InputMethodService : InputMethodService() {
 
     private fun setupListeners() {
         keyboardView.onMultiTapListener = { char, tapCount, isFinished ->
-            performFeedback()
             handleMultiTap(char, tapCount, isFinished)
         }
 
         keyboardView.onActionClickListener = { action ->
-            performFeedback()
             handleAction(action)
         }
 
+        keyboardView.onFeedbackRequested = {
+            performFeedback()
+        }
+
         keyboardView.setOnSuggestionClickListener { suggestion ->
+            performFeedback()
             commitSuggestion(suggestion)
         }
 
@@ -201,7 +215,15 @@ class T9InputMethodService : InputMethodService() {
                 keyboardView.toggleNumMode()
             }
             KeyboardView.KeyboardAction.EMOJI -> {
-                showView(emojiPickerView)
+                try {
+                    if (emojiPickerView.isInitialized) {
+                        showView(emojiPickerView)
+                    } else {
+                        android.util.Log.e("T9InputMethodService", "Emoji picker not initialized correctly")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("T9InputMethodService", "Error showing emoji picker", e)
+                }
             }
             KeyboardView.KeyboardAction.SETTINGS -> {
                 val intent = android.content.Intent(this, SettingsActivity::class.java)
@@ -384,6 +406,38 @@ class T9InputMethodService : InputMethodService() {
             'w', 'x', 'y', 'z' -> '9'
             '.', ',', '?', '!', ':', ';' -> '1'
             else -> ' '
+        }
+    }
+
+    private fun resetImeState(info: EditorInfo?) {
+        composingText.setLength(0)
+        currentWordConstraints.clear()
+        xt9DigitSequence.setLength(0)
+        xt9RawSequence.setLength(0)
+        currentXt9Predictions = emptyList()
+        lastCommittedWord = null
+
+        currentInputConnection?.finishComposingText()
+        if (::keyboardView.isInitialized) {
+            keyboardView.resetState()
+            keyboardView.setSuggestions(emptyList())
+        }
+
+        shiftManager.reset()
+        info?.let {
+            val capsFlags = it.inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_FLAGS
+            if (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_CHARACTERS != 0) {
+                shiftManager.onDoubleTap() // CAPS_LOCK
+            } else if (capsFlags and (android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_WORDS or android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES) != 0) {
+                // For words or sentences, start with SHIFT ON
+                // Actually, let's just use ON for simplicity, it will be consumed after first char
+                if (shiftManager.currentState == ShiftState.OFF) {
+                    shiftManager.toggle()
+                }
+            }
+        }
+        if (::keyboardView.isInitialized) {
+            keyboardView.updateShiftState(shiftManager.currentState)
         }
     }
 }

@@ -21,8 +21,11 @@ class KeyboardView @JvmOverloads constructor(
     var onKeyClickListener: ((String) -> Unit)? = null
     var onActionClickListener: ((KeyboardAction) -> Unit)? = null
     var onMultiTapListener: ((Char, Int, Boolean) -> Unit)? = null // char, tapCount, isFinished
+    var onFeedbackRequested: (() -> Unit)? = null
 
     private val handler = Handler(Looper.getMainLooper())
+    private val delHandler = Handler(Looper.getMainLooper())
+    private var delRunnable: Runnable? = null
     private var currentKeyId: Int = -1
     private var tapCount: Int = 0
     private var multiTapTimeout: Long = 800L
@@ -65,15 +68,20 @@ class KeyboardView @JvmOverloads constructor(
         )
 
         letterKeys.forEach { button ->
-            button.setOnClickListener { handleLetterKey(button) }
+            button.setOnClickListener {
+                onFeedbackRequested?.invoke()
+                handleLetterKey(button)
+            }
         }
 
         binding.keyPunct.setOnLongClickListener {
+            onFeedbackRequested?.invoke()
             onActionClickListener?.invoke(KeyboardAction.SETTINGS)
             true
         }
 
         binding.keyShift.setOnClickListener {
+            onFeedbackRequested?.invoke()
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastShiftTapTime < 300) {
                 onActionClickListener?.invoke(KeyboardAction.CAPS_LOCK)
@@ -82,18 +90,64 @@ class KeyboardView @JvmOverloads constructor(
             }
             lastShiftTapTime = currentTime
         }
-        binding.keyDel.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.DEL) }
-        binding.keyEnter.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.ENTER) }
+        binding.keyDel.setOnClickListener {
+            onFeedbackRequested?.invoke()
+            onActionClickListener?.invoke(KeyboardAction.DEL)
+        }
+
+        binding.keyDel.setOnLongClickListener {
+            onFeedbackRequested?.invoke()
+            startRepeatingDel()
+            true
+        }
+
+        binding.keyDel.setOnTouchListener { v, event ->
+            if (event.action == android.view.MotionEvent.ACTION_UP || event.action == android.view.MotionEvent.ACTION_CANCEL) {
+                stopRepeatingDel()
+            }
+            false
+        }
+
+        binding.keyEnter.setOnClickListener {
+            onFeedbackRequested?.invoke()
+            onActionClickListener?.invoke(KeyboardAction.ENTER)
+        }
         binding.keySpace.setOnClickListener {
+            onFeedbackRequested?.invoke()
             if (isNumMode) {
                 onMultiTapListener?.invoke('0', 0, true)
             } else {
                 onActionClickListener?.invoke(KeyboardAction.SPACE)
             }
         }
-        binding.keySym.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.SYM) }
-        binding.key123.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.NUM) }
-        binding.keyEmoji.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.EMOJI) }
+        binding.keySym.setOnClickListener {
+            onFeedbackRequested?.invoke()
+            onActionClickListener?.invoke(KeyboardAction.SYM)
+        }
+        binding.key123.setOnClickListener {
+            onFeedbackRequested?.invoke()
+            onActionClickListener?.invoke(KeyboardAction.NUM)
+        }
+        binding.keyEmoji.setOnClickListener {
+            onFeedbackRequested?.invoke()
+            onActionClickListener?.invoke(KeyboardAction.EMOJI)
+        }
+    }
+
+    private fun startRepeatingDel() {
+        stopRepeatingDel()
+        delRunnable = object : Runnable {
+            override fun run() {
+                onActionClickListener?.invoke(KeyboardAction.DEL)
+                delHandler.postDelayed(this, 100)
+            }
+        }
+        delHandler.postDelayed(delRunnable!!, 500) // Initial delay
+    }
+
+    private fun stopRepeatingDel() {
+        delRunnable?.let { delHandler.removeCallbacks(it) }
+        delRunnable = null
     }
 
     private fun handleLetterKey(button: Button) {
@@ -149,6 +203,13 @@ class KeyboardView @JvmOverloads constructor(
             currentKeyId = -1
             tapCount = 0
         }
+    }
+
+    fun resetState() {
+        handler.removeCallbacksAndMessages(null)
+        currentKeyId = -1
+        tapCount = 0
+        stopRepeatingDel()
     }
 
     fun setMultiTapTimeout(timeout: Long) {
