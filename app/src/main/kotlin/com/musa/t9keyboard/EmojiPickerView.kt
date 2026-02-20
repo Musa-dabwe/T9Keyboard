@@ -24,6 +24,9 @@ class EmojiPickerView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
     private var binding: EmojiPickerBinding? = null
+    var isInitialized = false
+        private set
+
     var onEmojiClickListener: ((String) -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
 
@@ -74,16 +77,17 @@ class EmojiPickerView @JvmOverloads constructor(
 
         try {
             binding = EmojiPickerBinding.inflate(LayoutInflater.from(context), this, true)
+            binding?.let { b ->
+                b.emojiRecycler.layoutManager = GridLayoutManager(context, 8)
+                setupCategories()
+                displayCategory("Smileys & Emotion")
+                setupSearch()
+                b.btnBackFromEmoji.setOnClickListener { onBackClickListener?.invoke() }
+                isInitialized = true
+            }
         } catch (e: Exception) {
             Log.e("EmojiPickerView", "Failed to inflate emoji picker: ${e.message}")
-        }
-
-        binding?.let { b ->
-            b.emojiRecycler.layoutManager = GridLayoutManager(context, 8)
-            setupCategories()
-            displayCategory("Smileys & Emotion")
-            setupSearch()
-            b.btnBackFromEmoji.setOnClickListener { onBackClickListener?.invoke() }
+            isInitialized = false
         }
     }
 
