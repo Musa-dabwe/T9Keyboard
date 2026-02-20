@@ -6,7 +6,6 @@ import android.os.Looper
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -58,6 +57,7 @@ class KeyboardView @JvmOverloads constructor(
 
     init {
         setupKeys()
+        updateKeyLabels()
     }
 
     private fun setupKeys() {
@@ -67,10 +67,10 @@ class KeyboardView @JvmOverloads constructor(
             binding.keyPunct
         )
 
-        letterKeys.forEach { button ->
-            button.setOnClickListener {
+        letterKeys.forEach { view ->
+            view.setOnClickListener {
                 onFeedbackRequested?.invoke()
-                handleLetterKey(button)
+                handleLetterKey(view)
             }
         }
 
@@ -150,18 +150,18 @@ class KeyboardView @JvmOverloads constructor(
         delRunnable = null
     }
 
-    private fun handleLetterKey(button: Button) {
+    private fun handleLetterKey(view: View) {
         if (isNumMode) {
-            val text = when(button.id) {
-                binding.keyAbc.id -> "1"
-                binding.keyDef.id -> "2"
-                binding.keyGhi.id -> "3"
-                binding.keyJkl.id -> "4"
-                binding.keyMno.id -> "5"
-                binding.keyPqrs.id -> "6"
-                binding.keyTuv.id -> "7"
-                binding.keyWxyz.id -> "8"
-                binding.keyPunct.id -> "9"
+            val text = when(view.id) {
+                binding.keyPunct.id -> "1"
+                binding.keyAbc.id -> "2"
+                binding.keyDef.id -> "3"
+                binding.keyGhi.id -> "4"
+                binding.keyJkl.id -> "5"
+                binding.keyMno.id -> "6"
+                binding.keyPqrs.id -> "7"
+                binding.keyTuv.id -> "8"
+                binding.keyWxyz.id -> "9"
                 else -> ""
             }
             if (text.isNotEmpty()) {
@@ -170,7 +170,7 @@ class KeyboardView @JvmOverloads constructor(
             return
         }
 
-        val chars = keyMap[button.id] ?: return
+        val chars = keyMap[view.id] ?: return
 
         if (isXt9Mode) {
             commitCurrentTap()
@@ -178,12 +178,12 @@ class KeyboardView @JvmOverloads constructor(
             return
         }
 
-        if (currentKeyId == button.id) {
+        if (currentKeyId == view.id) {
             handler.removeCallbacksAndMessages(null)
             tapCount = (tapCount + 1) % chars.length
         } else {
             commitCurrentTap()
-            currentKeyId = button.id
+            currentKeyId = view.id
             tapCount = 0
         }
 
@@ -233,19 +233,19 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     fun setKeyFontSize(sizeSp: Float) {
-        val buttons = listOf(
-            binding.keyAbc, binding.keyDef, binding.keyGhi, binding.keyJkl,
-            binding.keyMno, binding.keyPqrs, binding.keyTuv, binding.keyWxyz,
-            binding.keyPunct, binding.keyShift, binding.keyDel, binding.keyEnter,
-            binding.keySpace, binding.keySym, binding.key123, binding.keyEmoji
+        val primaryLabels = listOf(
+            binding.labelAbc, binding.labelDef, binding.labelGhi, binding.labelJkl,
+            binding.labelMno, binding.labelPqrs, binding.labelTuv, binding.labelWxyz,
+            binding.labelPunct, binding.labelShift, binding.labelDel, binding.labelEnter,
+            binding.labelSpace, binding.labelSym, binding.label123, binding.labelEmoji
         )
-        buttons.forEach { it.textSize = sizeSp }
+        primaryLabels.forEach { it.textSize = sizeSp }
     }
 
     fun updateShiftState(state: ShiftState) {
         binding.keyShift.isActivated = (state != ShiftState.OFF)
-        binding.keyShift.text = when(state) {
-            ShiftState.OFF -> "shift"
+        binding.labelShift.text = when(state) {
+            ShiftState.OFF -> "SHIFT"
             ShiftState.ON -> "SHIFT"
             ShiftState.CAPS_LOCK -> "CAPS"
         }
@@ -253,30 +253,38 @@ class KeyboardView @JvmOverloads constructor(
 
     fun toggleNumMode() {
         isNumMode = !isNumMode
-        if (isNumMode) {
-            binding.keyAbc.text = "1"
-            binding.keyDef.text = "2"
-            binding.keyGhi.text = "3"
-            binding.keyJkl.text = "4"
-            binding.keyMno.text = "5"
-            binding.keyPqrs.text = "6"
-            binding.keyTuv.text = "7"
-            binding.keyWxyz.text = "8"
-            binding.keyPunct.text = "9"
-            binding.keySpace.text = "0"
-            binding.key123.text = "ABC"
-        } else {
-            binding.keyAbc.text = "abc"
-            binding.keyDef.text = "def"
-            binding.keyGhi.text = "ghi"
-            binding.keyJkl.text = "jkl"
-            binding.keyMno.text = "mno"
-            binding.keyPqrs.text = "pqrs"
-            binding.keyTuv.text = "tuv"
-            binding.keyWxyz.text = "wxyz"
-            binding.keyPunct.text = ".,?"
-            binding.keySpace.text = "SPACE"
-            binding.key123.text = "123"
+        updateKeyLabels()
+    }
+
+    private fun updateKeyLabels() {
+        val digitKeys = listOf(
+            Triple(binding.labelPunct, binding.secondaryLabelPunct, "1"),
+            Triple(binding.labelAbc, binding.secondaryLabelAbc, "2"),
+            Triple(binding.labelDef, binding.secondaryLabelDef, "3"),
+            Triple(binding.labelGhi, binding.secondaryLabelGhi, "4"),
+            Triple(binding.labelJkl, binding.secondaryLabelJkl, "5"),
+            Triple(binding.labelMno, binding.secondaryLabelMno, "6"),
+            Triple(binding.labelPqrs, binding.secondaryLabelPqrs, "7"),
+            Triple(binding.labelTuv, binding.secondaryLabelTuv, "8"),
+            Triple(binding.labelWxyz, binding.secondaryLabelWxyz, "9"),
+            Triple(binding.labelSpace, binding.secondaryLabelSpace, "0")
+        )
+
+        val letterLabels = listOf(
+            ".,?!", "ABC", "DEF", "GHI", "JKL", "MNO", "PQRS", "TUV", "WXYZ", "SPACE"
+        )
+
+        digitKeys.forEachIndexed { index, (primary, secondary, digit) ->
+            if (isNumMode) {
+                primary.text = digit
+                primary.textSize = 22f
+                secondary.visibility = View.GONE
+            } else {
+                primary.text = letterLabels[index]
+                primary.textSize = 18f
+                secondary.visibility = View.VISIBLE
+            }
         }
+        binding.label123.text = if (isNumMode) "ABC" else "123"
     }
 }

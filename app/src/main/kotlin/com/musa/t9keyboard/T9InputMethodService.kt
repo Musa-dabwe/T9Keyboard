@@ -128,6 +128,11 @@ class T9InputMethodService : InputMethodService() {
      *    triggering a refresh of the Suggestion Bar.
      */
     private fun handleMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
+        if (char.isDigit()) {
+            val ic = currentInputConnection ?: return
+            ic.commitText(char.toString(), 1)
+            return
+        }
         if (preferences.xt9Enabled) {
             handleXt9Tap(char)
             return
