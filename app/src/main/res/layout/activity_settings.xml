@@ -3,8 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/settings_background"
-    android:fitsSystemWindows="true">
+    android:background="@color/settings_background">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -15,7 +14,8 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_back"
             app:title="T9 Keyboard Settings"
             app:titleTextColor="@color/settings_text_primary"
@@ -350,7 +350,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="20dp"
+                    android:paddingVertical="20dp"
+                    android:paddingHorizontal="8dp"
                     android:gravity="center" />
             </com.google.android.material.card.MaterialCardView>
 

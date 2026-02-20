@@ -182,8 +182,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupAccentColorSelector() {
         binding.accentColorsLayout.removeAllViews()
-        val size = (36 * resources.displayMetrics.density).toInt()
-        val margin = (8 * resources.displayMetrics.density).toInt()
+        val size = (31 * resources.displayMetrics.density).toInt()
+        val margin = (4 * resources.displayMetrics.density).toInt()
 
         accentColors.forEachIndexed { index, colorResId ->
             val frame = FrameLayout(this).apply {
