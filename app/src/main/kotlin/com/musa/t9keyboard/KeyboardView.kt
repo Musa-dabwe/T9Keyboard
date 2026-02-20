@@ -172,7 +172,7 @@ class KeyboardView @JvmOverloads constructor(
 
         val chars = keyMap[view.id] ?: return
 
-        if (isXt9Mode) {
+        if (isXt9Mode && view.id != binding.keyPunct.id) {
             commitCurrentTap()
             onMultiTapListener?.invoke(chars[0], 0, true)
             return

@@ -96,7 +96,7 @@ class T9InputMethodService : InputMethodService() {
         }
 
         symbolsView.onSymbolClickListener = { symbol ->
-            currentInputConnection.commitText(symbol, 1)
+            commitPunctuation(symbol)
         }
 
         symbolsView.onBackClickListener = {
@@ -104,7 +104,7 @@ class T9InputMethodService : InputMethodService() {
         }
 
         emojiPickerView.onEmojiClickListener = { emoji ->
-            currentInputConnection.commitText(emoji, 1)
+            commitPunctuation(emoji)
         }
 
         emojiPickerView.onBackClickListener = {
@@ -129,10 +129,24 @@ class T9InputMethodService : InputMethodService() {
      */
     private fun handleMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
         if (char.isDigit()) {
-            val ic = currentInputConnection ?: return
-            ic.commitText(char.toString(), 1)
+            commitPunctuation(char.toString())
             return
         }
+
+        if (".,?!:;".contains(char)) {
+            val ic = currentInputConnection ?: return
+            if (isFinished) {
+                commitPunctuation(char.toString())
+            } else {
+                if (tapCount == 0) {
+                    if (xt9DigitSequence.isNotEmpty()) commitXt9Word()
+                    else if (composingText.isNotEmpty()) commitWord()
+                }
+                ic.setComposingText(char.toString(), 1)
+            }
+            return
+        }
+
         if (preferences.xt9Enabled) {
             handleXt9Tap(char)
             return
@@ -303,16 +317,7 @@ class T9InputMethodService : InputMethodService() {
     private fun handleXt9Tap(char: Char) {
         val digit = getDigitForChar(char)
         if (digit == ' ' || digit == '1') {
-            // For now, if it's not a dictionary key, just commit current word and handle it normally
-            // But prompt says "Tap each key once — keyboard predicts the word"
-            // If it's the punctuation key, maybe we should handle it.
-            // But let's stick to 2-9 for dictionary.
-            if (digit == '1') {
-                // Punctuation key
-                xt9DigitSequence.append('1')
-                xt9RawSequence.append('.')
-                updateXt9Suggestions()
-            }
+            // Digit 1 (punctuation) is now handled in handleMultiTap
             return
         }
 
@@ -359,6 +364,17 @@ class T9InputMethodService : InputMethodService() {
             shiftManager.consumeShift()
             keyboardView.updateShiftState(shiftManager.currentState)
         }
+    }
+
+    private fun commitPunctuation(char: String) {
+        val ic = currentInputConnection ?: return
+        if (xt9DigitSequence.isNotEmpty()) {
+            commitXt9Word()
+        } else if (composingText.isNotEmpty()) {
+            commitWord()
+        }
+        ic.commitText(char, 1)
+        keyboardView.setSuggestions(emptyList())
     }
 
     private fun applyShiftState(text: String): String {
