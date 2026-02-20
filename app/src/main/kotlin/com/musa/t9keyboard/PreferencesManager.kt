@@ -14,7 +14,17 @@ class PreferencesManager(context: Context) {
         const val KEY_MULTI_TAP_TIMEOUT = "multi_tap_timeout"
         const val KEY_KEY_FONT_SIZE = "key_font_size"
         const val KEY_SUGGESTION_FONT_SIZE = "suggestion_font_size"
+        const val KEY_THEME = "theme"
+        const val KEY_ACCENT_COLOR = "accent_color"
     }
+
+    var theme: Int
+        get() = prefs.getInt(KEY_THEME, 2) // Default to Follow System
+        set(value) = prefs.edit().putInt(KEY_THEME, value).apply()
+
+    var accentColorIndex: Int
+        get() = prefs.getInt(KEY_ACCENT_COLOR, 7) // Default to Purple (matching design)
+        set(value) = prefs.edit().putInt(KEY_ACCENT_COLOR, value).apply()
 
     var hapticEnabled: Boolean
         get() = prefs.getBoolean(KEY_HAPTIC_ENABLED, true)

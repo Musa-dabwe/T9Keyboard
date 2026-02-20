@@ -1,102 +1,398 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="@color/settings_background"
+    android:fitsSystemWindows="true">
 
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:background="@color/settings_background"
+        app:elevation="0dp">
 
-        <TextView
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_back"
+            app:title="T9 Keyboard Settings"
+            app:titleTextColor="@color/settings_text_primary"
+            app:menu="@menu/settings_menu" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="32dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="T9 Keyboard Settings"
-            android:textSize="24sp"
-            android:layout_marginBottom="24dp" />
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp">
 
-        <CheckBox
-            android:id="@+id/check_haptic"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Haptic feedback" />
+            <!-- FEEDBACK & SOUND -->
+            <TextView
+                android:id="@+id/header_feedback"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="FEEDBACK &amp; SOUND"
+                android:textColor="@color/accent_purple"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Haptic intensity (ms)" />
-        <SeekBar
-            android:id="@+id/seek_haptic_duration"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:min="10"
-            android:max="100" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/settings_card_background"
+                app:cardCornerRadius="24dp"
+                app:strokeWidth="0dp">
 
-        <View android:layout_width="match_parent" android:layout_height="16dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-        <CheckBox
-            android:id="@+id/check_sound"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Key press sound" />
+                    <!-- Haptic feedback -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_alignParentStart="true"
+                            android:layout_toStartOf="@id/check_haptic">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Haptic feedback"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Vibrate on keypress"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/check_haptic"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true" />
+                    </RelativeLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sound volume (%)" />
-        <SeekBar
-            android:id="@+id/seek_sound_volume"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="100" />
+                    <View android:layout_width="match_parent" android:layout_height="24dp" />
 
-        <View android:layout_width="match_parent" android:layout_height="16dp" />
+                    <!-- Haptic intensity slider -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Haptic intensity (ms)"
+                        android:textColor="@color/settings_text_primary"
+                        android:textSize="16sp" />
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/seek_haptic_duration"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0"
+                        android:valueTo="100" />
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0ms"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="12sp"
+                            android:layout_alignParentStart="true" />
+                        <TextView
+                            android:id="@+id/val_haptic_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="12sp"
+                            android:layout_centerHorizontal="true" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="100ms"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="12sp"
+                            android:layout_alignParentEnd="true" />
+                    </RelativeLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Multi-tap timeout (ms)" />
-        <SeekBar
-            android:id="@+id/seek_timeout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:min="400"
-            android:max="1200" />
+                    <View android:layout_width="match_parent" android:layout_height="24dp" />
 
-        <View android:layout_width="match_parent" android:layout_height="16dp" />
+                    <!-- Key press sound -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_alignParentStart="true"
+                            android:layout_toStartOf="@id/check_sound">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Key press sound"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Play sound when typing"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/check_sound"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true" />
+                    </RelativeLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Key label font size (sp)" />
-        <SeekBar
-            android:id="@+id/seek_key_font"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:min="10"
-            android:max="40" />
+                    <View android:layout_width="match_parent" android:layout_height="24dp" />
 
-        <View android:layout_width="match_parent" android:layout_height="16dp" />
+                    <!-- Sound volume slider -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sound volume (%)"
+                        android:textColor="@color/settings_text_primary"
+                        android:textSize="16sp" />
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/seek_sound_volume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0"
+                        android:valueTo="100" />
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0%"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="12sp"
+                            android:layout_alignParentStart="true" />
+                        <TextView
+                            android:id="@+id/val_sound_volume"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="12sp"
+                            android:layout_centerHorizontal="true" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="100%"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="12sp"
+                            android:layout_alignParentEnd="true" />
+                    </RelativeLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Suggestion font size (sp)" />
-        <SeekBar
-            android:id="@+id/seek_suggestion_font"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:min="10"
-            android:max="30" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-        <View android:layout_width="match_parent" android:layout_height="24dp" />
+            <!-- LAYOUT & SIZING -->
+            <TextView
+                android:id="@+id/header_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="LAYOUT &amp; SIZING"
+                android:textColor="@color/accent_purple"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-        <Button
-            android:id="@+id/btn_clear_dict"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Clear learned dictionary" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/settings_card_background"
+                app:cardCornerRadius="24dp"
+                app:strokeWidth="0dp">
 
-    </LinearLayout>
-</ScrollView>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Multi-tap timeout -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Multi-tap timeout (ms)"
+                            android:textColor="@color/settings_text_primary"
+                            android:textSize="16sp"
+                            android:layout_alignParentStart="true" />
+                        <TextView
+                            android:id="@+id/val_timeout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="600ms"
+                            android:textColor="@color/accent_purple"
+                            android:textSize="16sp"
+                            android:layout_alignParentEnd="true" />
+                    </RelativeLayout>
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/seek_timeout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="400"
+                        android:valueTo="1200" />
+
+                    <View android:layout_width="match_parent" android:layout_height="24dp" />
+
+                    <!-- Key label font size -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Key label font size (sp)"
+                            android:textColor="@color/settings_text_primary"
+                            android:textSize="16sp"
+                            android:layout_alignParentStart="true" />
+                        <TextView
+                            android:id="@+id/val_key_font"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="18sp"
+                            android:textColor="@color/accent_purple"
+                            android:textSize="16sp"
+                            android:layout_alignParentEnd="true" />
+                    </RelativeLayout>
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/seek_key_font"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="10"
+                        android:valueTo="40" />
+
+                    <View android:layout_width="match_parent" android:layout_height="24dp" />
+
+                    <!-- Suggestion font size -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Suggestion font size (sp)"
+                            android:textColor="@color/settings_text_primary"
+                            android:textSize="16sp"
+                            android:layout_alignParentStart="true" />
+                        <TextView
+                            android:id="@+id/val_suggestion_font"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="16sp"
+                            android:textColor="@color/accent_purple"
+                            android:textSize="16sp"
+                            android:layout_alignParentEnd="true" />
+                    </RelativeLayout>
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/seek_suggestion_font"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="10"
+                        android:valueTo="30" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ACCENT COLOR -->
+            <TextView
+                android:id="@+id/header_accent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="ACCENT COLOR"
+                android:textColor="@color/accent_purple"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/settings_card_background"
+                app:cardCornerRadius="24dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:id="@+id/accent_colors_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DICTIONARY -->
+            <TextView
+                android:id="@+id/header_dictionary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="DICTIONARY"
+                android:textColor="@color/accent_purple"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_clear_dict"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="Clear learned dictionary"
+                android:textAllCaps="false"
+                android:textColor="@color/settings_text_primary"
+                android:textSize="16sp"
+                app:cornerRadius="32dp"
+                app:icon="@drawable/ic_delete"
+                app:iconGravity="textStart"
+                app:iconPadding="12dp"
+                app:iconSize="24dp"
+                app:iconTint="@color/settings_text_primary"
+                app:strokeColor="@color/accent_purple" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="This will delete all custom words and predictions learned by the keyboard."
+                android:textColor="@color/settings_text_secondary"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
