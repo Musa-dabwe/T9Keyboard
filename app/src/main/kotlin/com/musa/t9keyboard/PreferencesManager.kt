@@ -16,7 +16,12 @@ class PreferencesManager(context: Context) {
         const val KEY_SUGGESTION_FONT_SIZE = "suggestion_font_size"
         const val KEY_THEME = "theme"
         const val KEY_ACCENT_COLOR = "accent_color"
+        const val KEY_XT9_ENABLED = "xt9_enabled"
     }
+
+    var xt9Enabled: Boolean
+        get() = prefs.getBoolean(KEY_XT9_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_XT9_ENABLED, value).apply()
 
     var theme: Int
         get() = prefs.getInt(KEY_THEME, 2) // Default to Follow System

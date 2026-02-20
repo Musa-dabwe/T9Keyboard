@@ -21,6 +21,21 @@ class T9InputMethodService : InputMethodService() {
     private var composingText = StringBuilder()
     private var lastCommittedWord: String? = null
 
+    private var xt9DigitSequence = StringBuilder()
+    private var xt9RawSequence = StringBuilder()
+    private var currentXt9Predictions = listOf<String>()
+
+    private val accentColorResIds = listOf(
+        R.color.accent_blue,
+        R.color.accent_teal,
+        R.color.accent_green,
+        R.color.accent_yellow,
+        R.color.accent_magenta,
+        R.color.accent_red,
+        R.color.accent_orange,
+        R.color.accent_purple
+    )
+
     override fun onCreate() {
         super.onCreate()
         dictionary = T9Dictionary(this)
@@ -32,6 +47,9 @@ class T9InputMethodService : InputMethodService() {
         keyboardView.setMultiTapTimeout(preferences.multiTapTimeout)
         keyboardView.setKeyFontSize(preferences.keyFontSize.toFloat())
         keyboardView.setFontSize(preferences.suggestionFontSize.toFloat())
+        keyboardView.isXt9Mode = preferences.xt9Enabled
+        val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
+        keyboardView.setAccentColor(accentColor)
     }
 
     override fun onCreateInputView(): View {
@@ -96,6 +114,10 @@ class T9InputMethodService : InputMethodService() {
      *    triggering a refresh of the Suggestion Bar.
      */
     private fun handleMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
+        if (preferences.xt9Enabled) {
+            handleXt9Tap(char)
+            return
+        }
         val ic = currentInputConnection ?: return
 
         val displayChar = if (shiftManager.currentState != ShiftState.OFF) char.uppercaseChar() else char
@@ -128,25 +150,40 @@ class T9InputMethodService : InputMethodService() {
         val ic = currentInputConnection ?: return
         when (action) {
             KeyboardView.KeyboardAction.DEL -> {
-                if (composingText.isNotEmpty()) {
+                if (preferences.xt9Enabled && xt9DigitSequence.isNotEmpty()) {
+                    xt9DigitSequence.deleteCharAt(xt9DigitSequence.length - 1)
+                    xt9RawSequence.deleteCharAt(xt9RawSequence.length - 1)
+                    if (xt9DigitSequence.isEmpty()) {
+                        ic.finishComposingText()
+                    }
+                    updateXt9Suggestions()
+                } else if (!preferences.xt9Enabled && composingText.isNotEmpty()) {
                     composingText.deleteCharAt(composingText.length - 1)
                     currentWordConstraints.removeAt(currentWordConstraints.size - 1)
                     ic.setComposingText(composingText, 1)
                     if (composingText.isEmpty()) {
                         ic.finishComposingText()
                     }
+                    updateSuggestions()
                 } else {
                     ic.deleteSurroundingText(1, 0)
                 }
-                updateSuggestions()
             }
             KeyboardView.KeyboardAction.SPACE -> {
-                commitWord()
+                if (preferences.xt9Enabled) {
+                    commitXt9Word()
+                } else {
+                    commitWord()
+                }
                 ic.commitText(" ", 1)
                 updateNextWordSuggestions()
             }
             KeyboardView.KeyboardAction.ENTER -> {
-                commitWord()
+                if (preferences.xt9Enabled) {
+                    commitXt9Word()
+                } else {
+                    commitWord()
+                }
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
             }
             KeyboardView.KeyboardAction.SHIFT -> {
@@ -165,6 +202,11 @@ class T9InputMethodService : InputMethodService() {
             }
             KeyboardView.KeyboardAction.EMOJI -> {
                 showView(emojiPickerView)
+            }
+            KeyboardView.KeyboardAction.SETTINGS -> {
+                val intent = android.content.Intent(this, SettingsActivity::class.java)
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
             }
         }
     }
@@ -185,13 +227,29 @@ class T9InputMethodService : InputMethodService() {
 
     private fun commitSuggestion(suggestion: String) {
         val ic = currentInputConnection ?: return
-        ic.setComposingText(suggestion, 1)
-        ic.finishComposingText()
-        ic.commitText(" ", 1)
-        dictionary.learnWord(suggestion, lastCommittedWord)
-        lastCommittedWord = suggestion
-        composingText.clear()
-        currentWordConstraints.clear()
+        if (preferences.xt9Enabled) {
+            // Find which suggestion was clicked to get the un-capitalized version for learning
+            val originalWord = currentXt9Predictions.find { applyShiftState(it) == suggestion }
+                ?: if (applyShiftState(xt9RawSequence.toString()) == suggestion) xt9RawSequence.toString() else suggestion
+
+            ic.commitText(suggestion, 1)
+            ic.commitText(" ", 1)
+            dictionary.learnWord(originalWord, lastCommittedWord)
+            lastCommittedWord = originalWord
+            xt9DigitSequence.setLength(0)
+            xt9RawSequence.setLength(0)
+            currentXt9Predictions = emptyList()
+        } else {
+            ic.setComposingText(suggestion, 1)
+            ic.finishComposingText()
+            ic.commitText(" ", 1)
+            dictionary.learnWord(suggestion, lastCommittedWord)
+            lastCommittedWord = suggestion
+            composingText.clear()
+            currentWordConstraints.clear()
+        }
+        shiftManager.consumeShift()
+        keyboardView.updateShiftState(shiftManager.currentState)
         updateNextWordSuggestions()
     }
 
@@ -213,6 +271,90 @@ class T9InputMethodService : InputMethodService() {
     private fun showView(view: View) {
         container.removeAllViews()
         container.addView(view)
+    }
+
+    private fun handleXt9Tap(char: Char) {
+        val digit = getDigitForChar(char)
+        if (digit == ' ' || digit == '1') {
+            // For now, if it's not a dictionary key, just commit current word and handle it normally
+            // But prompt says "Tap each key once — keyboard predicts the word"
+            // If it's the punctuation key, maybe we should handle it.
+            // But let's stick to 2-9 for dictionary.
+            if (digit == '1') {
+                // Punctuation key
+                xt9DigitSequence.append('1')
+                xt9RawSequence.append('.')
+                updateXt9Suggestions()
+            }
+            return
+        }
+
+        xt9DigitSequence.append(digit)
+        xt9RawSequence.append(getFirstCharForDigit(digit))
+        updateXt9Suggestions()
+    }
+
+    private fun updateXt9Suggestions() {
+        if (xt9DigitSequence.isEmpty()) {
+            keyboardView.setSuggestions(emptyList())
+            return
+        }
+
+        currentXt9Predictions = dictionary.xt9Predict(xt9DigitSequence.toString())
+        val displayPredictions = currentXt9Predictions.toMutableList()
+
+        if (displayPredictions.isEmpty()) {
+            displayPredictions.add(xt9RawSequence.toString())
+        }
+
+        val capitalizedPredictions = displayPredictions.map { applyShiftState(it) }
+        keyboardView.setSuggestions(capitalizedPredictions, xt9RawSequence.toString())
+
+        val activeCandidate = capitalizedPredictions[0]
+        currentInputConnection?.setComposingText(activeCandidate, 1)
+    }
+
+    private fun commitXt9Word() {
+        val ic = currentInputConnection ?: return
+        if (xt9DigitSequence.isNotEmpty()) {
+            val suggestions = currentXt9Predictions
+            val wordToCommit = if (suggestions.isNotEmpty()) suggestions[0] else xt9RawSequence.toString()
+            val finalWord = applyShiftState(wordToCommit)
+
+            ic.commitText(finalWord, 1)
+            dictionary.learnWord(wordToCommit, lastCommittedWord)
+            lastCommittedWord = wordToCommit
+
+            xt9DigitSequence.setLength(0)
+            xt9RawSequence.setLength(0)
+            currentXt9Predictions = emptyList()
+
+            shiftManager.consumeShift()
+            keyboardView.updateShiftState(shiftManager.currentState)
+        }
+    }
+
+    private fun applyShiftState(text: String): String {
+        return when (shiftManager.currentState) {
+            ShiftState.ON -> text.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            ShiftState.CAPS_LOCK -> text.uppercase()
+            else -> text
+        }
+    }
+
+    private fun getFirstCharForDigit(digit: Char): Char {
+        return when (digit) {
+            '2' -> 'a'
+            '3' -> 'd'
+            '4' -> 'g'
+            '5' -> 'j'
+            '6' -> 'm'
+            '7' -> 'p'
+            '8' -> 't'
+            '9' -> 'w'
+            '1' -> '.'
+            else -> ' '
+        }
     }
 
     private fun performFeedback() {
@@ -240,6 +382,7 @@ class T9InputMethodService : InputMethodService() {
             'p', 'q', 'r', 's' -> '7'
             't', 'u', 'v' -> '8'
             'w', 'x', 'y', 'z' -> '9'
+            '.', ',', '?', '!', ':', ';' -> '1'
             else -> ' '
         }
     }

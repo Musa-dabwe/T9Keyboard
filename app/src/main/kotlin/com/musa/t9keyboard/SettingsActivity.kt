@@ -113,6 +113,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // XT9 Predictive Text
+        binding.checkXt9.isChecked = preferences.xt9Enabled
+        binding.checkXt9.setOnCheckedChangeListener { _, isChecked ->
+            preferences.xt9Enabled = isChecked
+        }
+
         // Haptic feedback
         binding.checkHaptic.isChecked = preferences.hapticEnabled
         binding.checkHaptic.setOnCheckedChangeListener { _, isChecked ->
@@ -226,12 +232,22 @@ class SettingsActivity : AppCompatActivity() {
         val colorStateList = ColorStateList.valueOf(accentColor)
 
         // Headers
+        binding.headerInputMode.setTextColor(accentColor)
         binding.headerFeedback.setTextColor(accentColor)
         binding.headerLayout.setTextColor(accentColor)
         binding.headerAccent.setTextColor(accentColor)
         binding.headerDictionary.setTextColor(accentColor)
 
         // Switches
+        binding.checkXt9.thumbTintList = ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+            intArrayOf(Color.WHITE, Color.LTGRAY)
+        )
+        binding.checkXt9.trackTintList = ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+            intArrayOf(accentColor, Color.parseColor("#444444"))
+        )
+
         binding.checkHaptic.thumbTintList = ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
             intArrayOf(Color.WHITE, Color.LTGRAY)

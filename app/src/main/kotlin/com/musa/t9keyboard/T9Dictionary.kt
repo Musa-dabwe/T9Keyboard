@@ -110,6 +110,18 @@ class T9Dictionary(private val context: Context) {
             .take(3)
     }
 
+    /**
+     * Retrieves up to 3 word predictions based on the exact digit sequence.
+     * Matches are ranked by learned frequency, then by dictionary order.
+     */
+    fun xt9Predict(digitSequence: String): List<String> {
+        if (digitSequence.isEmpty()) return emptyList()
+
+        val exactMatches = t9Map[digitSequence] ?: return emptyList()
+
+        return exactMatches.distinct().sortedByDescending { learnedWords[it] ?: 0 }.take(3)
+    }
+
     fun getNextWordSuggestions(previousWord: String): List<String> {
         val lowerPrev = previousWord.lowercase().trim().replace(Regex("[^a-z]"), "")
         val nextWords = nextWordMap[lowerPrev] ?: return emptyList()
