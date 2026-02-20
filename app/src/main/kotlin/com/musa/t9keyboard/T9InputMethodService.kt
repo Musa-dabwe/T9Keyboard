@@ -132,6 +132,9 @@ class T9InputMethodService : InputMethodService() {
             commitTextWithFinalization(char.toString())
             return
         }
+        if (tapCount == 0 && composingText.isEmpty()) {
+            checkAutoCap()
+        }
         if (preferences.xt9Enabled) {
             val digit = getDigitForChar(char)
             if (digit == '1') {
@@ -243,12 +246,15 @@ class T9InputMethodService : InputMethodService() {
     private fun commitTextWithFinalization(text: String, addSpaceAfter: Boolean = false) {
         val ic = currentInputConnection ?: return
 
+        var committedWord: String? = null
+
         if (preferences.xt9Enabled && xt9DigitSequence.isNotEmpty()) {
             val suggestions = currentXt9Predictions
             val wordToCommit = if (suggestions.isNotEmpty()) suggestions[0] else xt9RawSequence.toString()
             val finalWord = applyShiftState(wordToCommit)
 
             ic.commitText(finalWord, 1)
+            committedWord = finalWord
             dictionary.learnWord(wordToCommit, lastCommittedWord)
             lastCommittedWord = wordToCommit
 
@@ -261,12 +267,20 @@ class T9InputMethodService : InputMethodService() {
         } else if (composingText.isNotEmpty()) {
             val word = composingText.toString()
             ic.finishComposingText()
+            committedWord = word
             dictionary.learnWord(word, lastCommittedWord)
             lastCommittedWord = word
             composingText.clear()
             currentWordConstraints.clear()
             shiftManager.consumeShift()
             keyboardView.updateShiftState(shiftManager.currentState)
+        }
+
+        // Rule 3: standalone letter "i" always capitalized
+        if (committedWord == "i") {
+            ic.deleteSurroundingText(1, 0)
+            ic.commitText("I", 1)
+            lastCommittedWord = "I"
         }
 
         if (text.isNotEmpty()) {
@@ -330,6 +344,9 @@ class T9InputMethodService : InputMethodService() {
         if (composingText.isNotEmpty()) {
             commitTextWithFinalization("")
         }
+        if (xt9DigitSequence.isEmpty()) {
+            checkAutoCap()
+        }
         val digit = getDigitForChar(char)
         if (digit == ' ' || digit == '1') {
             // For now, if it's not a dictionary key, just commit current word and handle it normally
@@ -366,9 +383,23 @@ class T9InputMethodService : InputMethodService() {
 
     private fun applyShiftState(text: String): String {
         return when (shiftManager.currentState) {
-            ShiftState.ON -> text.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            ShiftState.ONE_SHOT -> text.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
             ShiftState.CAPS_LOCK -> text.uppercase()
             else -> text
+        }
+    }
+
+    private fun checkAutoCap() {
+        if (shiftManager.wasShiftSetManually || shiftManager.currentState != ShiftState.OFF) return
+
+        val ic = currentInputConnection ?: return
+        val textBefore = ic.getTextBeforeCursor(3, 0)
+        if (textBefore != null && textBefore.length >= 2) {
+            val lastTwo = textBefore.substring(textBefore.length - 2)
+            if (lastTwo == ". " || lastTwo == "! " || lastTwo == "? ") {
+                shiftManager.setAutoShift(ShiftState.ONE_SHOT)
+                keyboardView.updateShiftState(shiftManager.currentState)
+            }
         }
     }
 
@@ -433,14 +464,25 @@ class T9InputMethodService : InputMethodService() {
 
         shiftManager.reset()
         info?.let {
-            val capsFlags = it.inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_FLAGS
+            val inputType = it.inputType
+            val capsFlags = inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_FLAGS
+            val variation = inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_VARIATION
+
             if (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_CHARACTERS != 0) {
                 shiftManager.onDoubleTap() // CAPS_LOCK
-            } else if (capsFlags and (android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_WORDS or android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES) != 0) {
-                // For words or sentences, start with SHIFT ON
-                // Actually, let's just use ON for simplicity, it will be consumed after first char
-                if (shiftManager.currentState == ShiftState.OFF) {
-                    shiftManager.toggle()
+            } else {
+                // Rule 2: Field start capitalization
+                val ic = currentInputConnection
+                val isAtStart = ic?.getTextBeforeCursor(1, 0)?.isEmpty() ?: true
+
+                if (isAtStart) {
+                    val isSentenceCap = (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES != 0)
+                    val isPlainText = (inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_CLASS == android.view.inputmethod.EditorInfo.TYPE_CLASS_TEXT) &&
+                                     (variation == android.view.inputmethod.EditorInfo.TYPE_TEXT_VARIATION_NORMAL || variation == android.view.inputmethod.EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)
+
+                    if (isSentenceCap || isPlainText) {
+                        shiftManager.setAutoShift(ShiftState.ONE_SHOT)
+                    }
                 }
             }
         }

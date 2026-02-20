@@ -23,6 +23,8 @@ class KeyboardView @JvmOverloads constructor(
     var onFeedbackRequested: (() -> Unit)? = null
 
     private val handler = Handler(Looper.getMainLooper())
+    private val commitRunnable = Runnable { commitCurrentTap() }
+    private var isWaitingToCommit = false
     private val delHandler = Handler(Looper.getMainLooper())
     private var delRunnable: Runnable? = null
     private var currentKeyId: Int = -1
@@ -68,9 +70,14 @@ class KeyboardView @JvmOverloads constructor(
         )
 
         letterKeys.forEach { view ->
-            view.setOnClickListener {
-                onFeedbackRequested?.invoke()
-                handleLetterKey(view)
+            view.setOnTouchListener { v, event ->
+                if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                    onFeedbackRequested?.invoke()
+                    handleLetterKey(v)
+                    true
+                } else {
+                    false
+                }
             }
         }
 
@@ -165,6 +172,10 @@ class KeyboardView @JvmOverloads constructor(
                 else -> ""
             }
             if (text.isNotEmpty()) {
+                if (isWaitingToCommit) {
+                    handler.removeCallbacks(commitRunnable)
+                    commitCurrentTap()
+                }
                 onMultiTapListener?.invoke(text[0], 0, true)
             }
             return
@@ -173,16 +184,25 @@ class KeyboardView @JvmOverloads constructor(
         val chars = keyMap[view.id] ?: return
 
         if (isXt9Mode && view.id != binding.keyPunct.id) {
-            commitCurrentTap()
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                commitCurrentTap()
+            }
             onMultiTapListener?.invoke(chars[0], 0, true)
             return
         }
 
         if (currentKeyId == view.id) {
-            handler.removeCallbacksAndMessages(null)
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                isWaitingToCommit = false
+            }
             tapCount = (tapCount + 1) % chars.length
         } else {
-            commitCurrentTap()
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                commitCurrentTap()
+            }
             currentKeyId = view.id
             tapCount = 0
         }
@@ -190,9 +210,8 @@ class KeyboardView @JvmOverloads constructor(
         val currentChar = chars[tapCount]
         onMultiTapListener?.invoke(currentChar, tapCount, false)
 
-        handler.postDelayed({
-            commitCurrentTap()
-        }, multiTapTimeout)
+        isWaitingToCommit = true
+        handler.postDelayed(commitRunnable, multiTapTimeout)
     }
 
     private fun commitCurrentTap() {
@@ -202,11 +221,13 @@ class KeyboardView @JvmOverloads constructor(
             onMultiTapListener?.invoke(currentChar, tapCount, true)
             currentKeyId = -1
             tapCount = 0
+            isWaitingToCommit = false
         }
     }
 
     fun resetState() {
-        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(commitRunnable)
+        isWaitingToCommit = false
         currentKeyId = -1
         tapCount = 0
         stopRepeatingDel()
@@ -246,7 +267,7 @@ class KeyboardView @JvmOverloads constructor(
         binding.keyShift.isActivated = (state != ShiftState.OFF)
         binding.labelShift.text = when(state) {
             ShiftState.OFF -> "SHIFT"
-            ShiftState.ON -> "SHIFT"
+            ShiftState.ONE_SHOT -> "SHIFT"
             ShiftState.CAPS_LOCK -> "CAPS"
         }
     }
