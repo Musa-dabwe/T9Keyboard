@@ -11,44 +11,90 @@
         android:layout_width="match_parent"
         android:layout_height="48dp" />
 
+    <!-- Row 1 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <Button android:id="@+id/key_sym" style="@style/KeyboardKey" android:text="SYM" />
-        <Button android:id="@+id/key_123" style="@style/KeyboardKey" android:text="123" />
-        <Button android:id="@+id/key_abc" style="@style/KeyboardKey" android:text="abc" />
-        <Button android:id="@+id/key_def" style="@style/KeyboardKey" android:text="def" />
+        <FrameLayout android:id="@+id/key_punct" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_punct" style="@style/KeyPrimaryLabel" android:text=".,?!" />
+            <TextView android:id="@+id/secondary_label_punct" style="@style/KeySecondaryLabel" android:text="1" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_abc" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_abc" style="@style/KeyPrimaryLabel" android:text="ABC" />
+            <TextView android:id="@+id/secondary_label_abc" style="@style/KeySecondaryLabel" android:text="2" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_def" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_def" style="@style/KeyPrimaryLabel" android:text="DEF" />
+            <TextView android:id="@+id/secondary_label_def" style="@style/KeySecondaryLabel" android:text="3" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_del" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_del" style="@style/KeyPrimaryLabel" android:text="DEL" />
+        </FrameLayout>
     </LinearLayout>
 
+    <!-- Row 2 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <Button android:id="@+id/key_emoji" style="@style/KeyboardKey" android:text="◉⁠‿⁠◉" />
-        <Button android:id="@+id/key_ghi" style="@style/KeyboardKey" android:text="ghi" />
-        <Button android:id="@+id/key_jkl" style="@style/KeyboardKey" android:text="jkl" />
-        <Button android:id="@+id/key_mno" style="@style/KeyboardKey" android:text="mno" />
+        <FrameLayout android:id="@+id/key_ghi" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_ghi" style="@style/KeyPrimaryLabel" android:text="GHI" />
+            <TextView android:id="@+id/secondary_label_ghi" style="@style/KeySecondaryLabel" android:text="4" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_jkl" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_jkl" style="@style/KeyPrimaryLabel" android:text="JKL" />
+            <TextView android:id="@+id/secondary_label_jkl" style="@style/KeySecondaryLabel" android:text="5" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_mno" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_mno" style="@style/KeyPrimaryLabel" android:text="MNO" />
+            <TextView android:id="@+id/secondary_label_mno" style="@style/KeySecondaryLabel" android:text="6" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
+        </FrameLayout>
     </LinearLayout>
 
+    <!-- Row 3 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <Button android:id="@+id/key_shift" style="@style/KeyboardKey" android:text="SHIFT" />
-        <Button android:id="@+id/key_pqrs" style="@style/KeyboardKey" android:text="pqrs" />
-        <Button android:id="@+id/key_tuv" style="@style/KeyboardKey" android:text="tuv" />
-        <Button android:id="@+id/key_wxyz" style="@style/KeyboardKey" android:text="wxyz" />
+        <FrameLayout android:id="@+id/key_pqrs" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_pqrs" style="@style/KeyPrimaryLabel" android:text="PQRS" />
+            <TextView android:id="@+id/secondary_label_pqrs" style="@style/KeySecondaryLabel" android:text="7" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_tuv" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_tuv" style="@style/KeyPrimaryLabel" android:text="TUV" />
+            <TextView android:id="@+id/secondary_label_tuv" style="@style/KeySecondaryLabel" android:text="8" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_wxyz" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_wxyz" style="@style/KeyPrimaryLabel" android:text="WXYZ" />
+            <TextView android:id="@+id/secondary_label_wxyz" style="@style/KeySecondaryLabel" android:text="9" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_shift" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_shift" style="@style/KeyPrimaryLabel" android:text="SHIFT" />
+        </FrameLayout>
     </LinearLayout>
 
+    <!-- Row 4 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <Button android:id="@+id/key_punct" style="@style/KeyboardKey" android:text=".,?" />
-        <Button android:id="@+id/key_enter" style="@style/KeyboardKey" android:text="↩" />
-        <Button android:id="@+id/key_space" style="@style/KeyboardKey" android:text="SPACE" />
-        <Button android:id="@+id/key_del" style="@style/KeyboardKey" android:text="DEL" />
+        <FrameLayout android:id="@+id/key_sym" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_sym" style="@style/KeyPrimaryLabel" android:text="SYM" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_space" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_space" style="@style/KeyPrimaryLabel" android:text="SPACE" />
+            <TextView android:id="@+id/secondary_label_space" style="@style/KeySecondaryLabel" android:text="0" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_emoji" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_emoji" style="@style/KeyPrimaryLabel" android:text="EMOJI" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
+        </FrameLayout>
     </LinearLayout>
 
 </LinearLayout>
