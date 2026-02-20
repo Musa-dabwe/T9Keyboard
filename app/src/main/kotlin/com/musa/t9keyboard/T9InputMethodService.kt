@@ -50,6 +50,7 @@ class T9InputMethodService : InputMethodService() {
         keyboardView.isXt9Mode = preferences.xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         keyboardView.setAccentColor(accentColor)
+        emojiPickerView.setAccentColor(accentColor)
     }
 
     override fun onCreateInputView(): View {
@@ -90,7 +91,6 @@ class T9InputMethodService : InputMethodService() {
 
         emojiPickerView.onEmojiClickListener = { emoji ->
             currentInputConnection.commitText(emoji, 1)
-            showView(keyboardView)
         }
 
         emojiPickerView.onBackClickListener = {

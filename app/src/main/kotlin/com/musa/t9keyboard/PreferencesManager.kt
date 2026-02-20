@@ -17,7 +17,12 @@ class PreferencesManager(context: Context) {
         const val KEY_THEME = "theme"
         const val KEY_ACCENT_COLOR = "accent_color"
         const val KEY_XT9_ENABLED = "xt9_enabled"
+        const val KEY_RECENTLY_USED_EMOJIS = "recently_used_emojis"
     }
+
+    var recentlyUsedEmojis: String
+        get() = prefs.getString(KEY_RECENTLY_USED_EMOJIS, "[]") ?: "[]"
+        set(value) = prefs.edit().putString(KEY_RECENTLY_USED_EMOJIS, value).apply()
 
     var xt9Enabled: Boolean
         get() = prefs.getBoolean(KEY_XT9_ENABLED, false)
