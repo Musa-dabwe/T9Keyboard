@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -22,7 +23,7 @@ class EmojiPickerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
-    private val binding: EmojiPickerBinding = EmojiPickerBinding.inflate(LayoutInflater.from(context), this, true)
+    private var binding: EmojiPickerBinding? = null
     var onEmojiClickListener: ((String) -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
 
@@ -71,13 +72,19 @@ class EmojiPickerView @JvmOverloads constructor(
 
         loadRecentlyUsed()
 
-        binding.emojiRecycler.layoutManager = GridLayoutManager(context, 8)
-        setupCategories()
-        displayCategory("Smileys & Emotion")
+        try {
+            binding = EmojiPickerBinding.inflate(LayoutInflater.from(context), this, true)
+        } catch (e: Exception) {
+            Log.e("EmojiPickerView", "Failed to inflate emoji picker: ${e.message}")
+        }
 
-        setupSearch()
-
-        binding.btnBackFromEmoji.setOnClickListener { onBackClickListener?.invoke() }
+        binding?.let { b ->
+            b.emojiRecycler.layoutManager = GridLayoutManager(context, 8)
+            setupCategories()
+            displayCategory("Smileys & Emotion")
+            setupSearch()
+            b.btnBackFromEmoji.setOnClickListener { onBackClickListener?.invoke() }
+        }
     }
 
     private fun loadRecentlyUsed() {
@@ -107,7 +114,7 @@ class EmojiPickerView @JvmOverloads constructor(
         }
         saveRecentlyUsed()
         if (currentCategory == "Recently Used") {
-            (binding.emojiRecycler.adapter as? EmojiAdapter)?.updateData(recentlyUsed)
+            (binding?.emojiRecycler?.adapter as? EmojiAdapter)?.updateData(recentlyUsed)
         }
         if (wasEmpty) {
             setupCategories() // Only refresh if we need to show the "Recently Used" tab
@@ -115,7 +122,7 @@ class EmojiPickerView @JvmOverloads constructor(
     }
 
     private fun setupSearch() {
-        binding.emojiSearch.addTextChangedListener(object : android.text.TextWatcher {
+        binding?.emojiSearch?.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 performSearch(s.toString())
@@ -132,11 +139,12 @@ class EmojiPickerView @JvmOverloads constructor(
             // Filter out non-emoji characters from query if any, though normally users type text
             currentList.filter { it.contains(query) }
         }
-        (binding.emojiRecycler.adapter as? EmojiAdapter)?.updateData(filtered)
+        (binding?.emojiRecycler?.adapter as? EmojiAdapter)?.updateData(filtered)
     }
 
     private fun setupCategories() {
-        binding.emojiCategories.removeAllViews()
+        val b = binding ?: return
+        b.emojiCategories.removeAllViews()
         val categories = mutableListOf<String>()
         if (recentlyUsed.isNotEmpty()) {
             categories.add("Recently Used")
@@ -156,21 +164,24 @@ class EmojiPickerView @JvmOverloads constructor(
                 }
                 layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT)
             }
-            binding.emojiCategories.addView(tv)
+            b.emojiCategories.addView(tv)
         }
     }
 
     private fun displayCategory(category: String) {
+        val b = binding ?: return
         currentCategory = category
         val emojis = if (category == "Recently Used") recentlyUsed else allEmojiCategories[category] ?: emptyList()
-        binding.emojiRecycler.adapter = EmojiAdapter(emojis)
-        binding.emojiRecycler.scrollToPosition(0)
-        binding.emojiSearch.setText("")
+        b.emojiRecycler.adapter = EmojiAdapter(emojis)
+        b.emojiRecycler.scrollToPosition(0)
+        b.emojiSearch.setText("")
     }
 
     fun setAccentColor(color: Int) {
         accentColor = color
-        setupCategories()
+        if (binding != null) {
+            setupCategories()
+        }
     }
 
     inner class EmojiAdapter(private var emojis: List<String>) : RecyclerView.Adapter<EmojiViewHolder>() {
