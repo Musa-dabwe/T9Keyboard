@@ -37,10 +37,10 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putLong(KEY_MULTI_TAP_TIMEOUT, value).apply()
 
     var keyFontSize: Int
-        get() = prefs.getInt(KEY_KEY_FONT_SIZE, 37)
+        get() = prefs.getInt(KEY_KEY_FONT_SIZE, 18)
         set(value) = prefs.edit().putInt(KEY_KEY_FONT_SIZE, value).apply()
 
     var suggestionFontSize: Int
-        get() = prefs.getInt(KEY_SUGGESTION_FONT_SIZE, 27)
+        get() = prefs.getInt(KEY_SUGGESTION_FONT_SIZE, 16)
         set(value) = prefs.edit().putInt(KEY_SUGGESTION_FONT_SIZE, value).apply()
 }

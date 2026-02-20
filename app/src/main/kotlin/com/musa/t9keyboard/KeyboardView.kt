@@ -11,7 +11,6 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import com.musa.t9keyboard.databinding.KeyboardViewBinding
-import com.musa.t9keyboard.databinding.PopupMultitapBinding
 
 class KeyboardView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -29,9 +28,6 @@ class KeyboardView @JvmOverloads constructor(
     private var multiTapTimeout: Long = 800L
     private var lastShiftTapTime: Long = 0
     private var isNumMode = false
-
-    private var popupWindow: PopupWindow? = null
-    private var popupBinding: PopupMultitapBinding? = null
 
     private val keyMap = mapOf(
         binding.keyAbc.id to "abc",
@@ -65,10 +61,6 @@ class KeyboardView @JvmOverloads constructor(
 
         letterKeys.forEach { button ->
             button.setOnClickListener { handleLetterKey(button) }
-            button.setOnLongClickListener {
-                showPopupPicker(button)
-                true
-            }
         }
 
         binding.keyShift.setOnClickListener {
@@ -81,10 +73,6 @@ class KeyboardView @JvmOverloads constructor(
             lastShiftTapTime = currentTime
         }
         binding.keyDel.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.DEL) }
-        binding.keyDel.setOnLongClickListener {
-            startContinuousDelete()
-            true
-        }
         binding.keyEnter.setOnClickListener { onActionClickListener?.invoke(KeyboardAction.ENTER) }
         binding.keySpace.setOnClickListener {
             if (isNumMode) {
@@ -130,7 +118,6 @@ class KeyboardView @JvmOverloads constructor(
 
         val currentChar = chars[tapCount]
         onMultiTapListener?.invoke(currentChar, tapCount, false)
-        showMultiTapPopup(button, chars, tapCount)
 
         handler.postDelayed({
             commitCurrentTap()
@@ -144,99 +131,7 @@ class KeyboardView @JvmOverloads constructor(
             onMultiTapListener?.invoke(currentChar, tapCount, true)
             currentKeyId = -1
             tapCount = 0
-            hideMultiTapPopup()
         }
-    }
-
-    private fun showMultiTapPopup(anchor: View, chars: String, selectedIndex: Int) {
-        if (popupWindow == null) {
-            val inflater = LayoutInflater.from(context)
-            popupBinding = PopupMultitapBinding.inflate(inflater)
-            popupWindow = PopupWindow(popupBinding?.root, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
-        }
-
-        val spannable = android.text.SpannableString(chars)
-        spannable.setSpan(android.text.style.UnderlineSpan(), selectedIndex, selectedIndex + 1, 0)
-        spannable.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), selectedIndex, selectedIndex + 1, 0)
-        popupBinding?.popupText?.text = spannable
-
-        popupWindow?.showAsDropDown(anchor, 0, -anchor.height - 50)
-    }
-
-    private fun hideMultiTapPopup() {
-        popupWindow?.dismiss()
-    }
-
-    /**
-     * Displays a popup picker for the long-pressed key.
-     * Includes swipe-to-select logic: user can either tap a letter or drag and release.
-     */
-    private fun showPopupPicker(anchor: View) {
-        val chars = keyMap[anchor.id] ?: return
-        val popupView = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            background = context.getDrawable(R.drawable.key_background_normal)
-            setPadding(16, 16, 16, 16)
-        }
-        val pickerPopup = PopupWindow(popupView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, true)
-
-        val buttons = mutableListOf<Button>()
-        chars.forEach { char ->
-            val btn = Button(context).apply {
-                text = char.toString()
-                setTextColor(android.graphics.Color.WHITE)
-                background = null
-                textSize = 24f
-                setOnClickListener {
-                    onMultiTapListener?.invoke(char, 0, true)
-                    pickerPopup.dismiss()
-                }
-            }
-            popupView.addView(btn)
-            buttons.add(btn)
-        }
-
-        // Swipe-to-select logic implementation
-        popupView.setOnTouchListener { v, event ->
-            if (event.action == android.view.MotionEvent.ACTION_MOVE) {
-                // Find which button is under the touch
-                buttons.forEach { btn ->
-                    val rect = android.graphics.Rect()
-                    btn.getGlobalVisibleRect(rect)
-                    if (rect.contains(event.rawX.toInt(), event.rawY.toInt())) {
-                        btn.isPressed = true
-                    } else {
-                        btn.isPressed = false
-                    }
-                }
-            } else if (event.action == android.view.MotionEvent.ACTION_UP) {
-                buttons.forEach { btn ->
-                    val rect = android.graphics.Rect()
-                    btn.getGlobalVisibleRect(rect)
-                    if (rect.contains(event.rawX.toInt(), event.rawY.toInt())) {
-                        onMultiTapListener?.invoke(btn.text[0], 0, true)
-                        pickerPopup.dismiss()
-                        return@setOnTouchListener true
-                    }
-                }
-                pickerPopup.dismiss()
-            }
-            true
-        }
-
-        pickerPopup.showAsDropDown(anchor, 0, -anchor.height - 100)
-    }
-
-    private fun startContinuousDelete() {
-        val deleteRunnable = object : Runnable {
-            override fun run() {
-                if (binding.keyDel.isPressed) {
-                    onActionClickListener?.invoke(KeyboardAction.DEL)
-                    handler.postDelayed(this, 100)
-                }
-            }
-        }
-        handler.post(deleteRunnable)
     }
 
     fun setMultiTapTimeout(timeout: Long) {
