@@ -74,8 +74,8 @@
             android:id="@+id/seek_key_font"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:min="24"
-            android:max="48" />
+            android:min="10"
+            android:max="40" />
 
         <View android:layout_width="match_parent" android:layout_height="16dp" />
 
@@ -87,8 +87,8 @@
             android:id="@+id/seek_suggestion_font"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:min="18"
-            android:max="36" />
+            android:min="10"
+            android:max="30" />
 
         <View android:layout_width="match_parent" android:layout_height="24dp" />
 
