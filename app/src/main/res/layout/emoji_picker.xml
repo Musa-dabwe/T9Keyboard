@@ -27,13 +27,13 @@
 
         <ImageButton
             android:id="@+id/btn_back_from_emoji"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_back"
-            android:contentDescription="Back"
+            android:contentDescription="Close emoji picker"
             android:tint="@color/key_text_color" />
     </RelativeLayout>
 
