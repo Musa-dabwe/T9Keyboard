@@ -29,7 +29,10 @@
             <TextView android:id="@+id/secondary_label_def" style="@style/KeySecondaryLabel" android:text="3" />
         </FrameLayout>
         <FrameLayout android:id="@+id/key_del" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_del" style="@style/KeyPrimaryLabel" android:text="DEL" />
+            <TextView android:id="@+id/label_del" style="@style/KeyPrimaryLabel"
+                android:text="⌫"
+                android:textColor="@color/delete_key_color"
+                android:textSize="22sp" />
         </FrameLayout>
     </LinearLayout>
 
