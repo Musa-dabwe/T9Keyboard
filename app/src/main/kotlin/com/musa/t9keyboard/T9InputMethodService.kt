@@ -345,11 +345,20 @@ class T9InputMethodService : InputMethodService() {
 
     private fun showView(view: View) {
         container.removeAllViews()
+        if (view is EmojiPickerView) {
+            view.layoutParams = FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                dpToPx(304)
+            )
+        }
         container.addView(view)
         if (view is SymbolsView) {
             view.resetScroll()
         }
     }
+
+    private fun dpToPx(dp: Int): Int =
+        (dp * resources.displayMetrics.density + 0.5f).toInt()
 
     private fun handleXt9Tap(char: Char) {
         if (composingText.isNotEmpty()) {
