@@ -1,238 +1,324 @@
 package com.musa.t9keyboard
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.musa.t9keyboard.databinding.EmojiPickerBinding
-import org.json.JSONArray
 
+/**
+ * GBoard-style emoji panel:
+ * - Category tabs row at top (scrollable horizontal strip)
+ * - Vertical RecyclerView with section headers + emoji grid rows (8 per row)
+ */
 class EmojiPickerView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
-    private var binding: EmojiPickerBinding? = null
+    companion object {
+        const val COLS = 8
+        const val VIEW_TYPE_HEADER = 0
+        const val VIEW_TYPE_EMOJI_ROW = 1
+    }
+
+    var onEmojiClickListener: ((String) -> Unit)? = null
+    var onBackspaceClick: (() -> Unit)? = null
+    var onBackClickListener: (() -> Unit)? = null
+
     var isInitialized = false
         private set
 
-    var onEmojiClickListener: ((String) -> Unit)? = null
-    var onBackClickListener: (() -> Unit)? = null
+    private lateinit var tabsRecycler: RecyclerView
+    private lateinit var emojiRecycler: RecyclerView
+    private lateinit var tabsAdapter: TabsAdapter
+    private lateinit var emojiListAdapter: EmojiListAdapter
 
-    private var emojiTypeface: Typeface? = null
-    private val preferences = PreferencesManager(context)
-    private var recentlyUsed = mutableListOf<String>()
-    private var currentCategory = "Smileys & Emotion"
-    private var accentColor = Color.parseColor("#00BFA5") // Default accent
+    // Flat list of items for the main recycler
+    sealed class ListItem {
+        data class Header(val categoryName: String, val subcategoryName: String) : ListItem()
+        data class EmojiRow(val emojis: List<String>) : ListItem()
+    }
 
-    private val allEmojiCategories = linkedMapOf(
-        "Smileys & Emotion" to listOf(
-            "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "🥲", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🥸", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🫣", "🤭", "🫢", "🫡", "🤫", "🫠", "🤥", "😶", "🫥", "😐", "🫤", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😮‍💨", "😵", "😵‍💫", "🫨", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕"
-        ),
-        "People & Body" to listOf(
-            "👋", "🤚", "🖐", "✋", "🖖", "🫱", "🫲", "🫳", "🫴", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🫀", "🫁", "🦷", "👀", "👁", "👅", "👄", "💋", "🩸", "👤", "👥", "🫂", "👶", "👧", "🧒", "👦", "👩", "🧑", "👨", "👩‍🦱", "🧑‍🦱", "👨‍🦱", "👩‍🦰", "🧑‍🦰", "👨‍🦰", "👱‍♀️", "👱", "👱‍♂️", "👩‍🦳", "🧑‍🦳", "👨‍🦳", "👩‍🦲", "🧑‍🦲", "👨‍🦲", "🧔‍♀️", "🧔", "🧔‍♂️", "👵", "🧓", "👴", "👲", "👳‍♀️", "👳", "👳‍♂️", "🧕", "👮‍♀️", "👮", "👮‍♂️", "👷‍♀️", "👷", "👷‍♂️", "💂‍♀️", "💂", "💂‍♂️"
-        ),
-        "Animals & Nature" to listOf(
-            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐻‍❄️", "🐨", "🐯", "🦁", "🐮", "🐷", "🐽", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🐔", "🐧", "🐦", "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🪱", "🐛", "🦋", "🐌", "🐞", "🐜", "🪰", "🪲", "🪳", "🦟", "🦗", "🕷", "🕸", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓", "🦍", "🦧", "🦣", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🦬", "🐃", "🐂", "🐄", "🐎", "🐖", "🐏", "🐑", "🐐", "🦌", "🐕", "🐩", "🦮", "🐕‍🦺", "🐈", "🐈‍⬛", "🐓", "🦃", "🦚", "🦜", "🦢", "🦩", "🕊", "🐇", "🦝", "🦨", "🦡", "🦦", "🦥", "🐁", "🐀", "🐿", "🦔", "🐾"
-        ),
-        "Food & Drink" to listOf(
-            "🍎", "🍊", "🍋", "🍇", "🍓", "🍔", "🍕", "🌮", "🍏", "🍐", "🍌", "🍉", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦", "🥬", "🥒", "🌶", "🫑", "🌽", "🥕", "🫒", "🧄", "🧅", "🍄", "🥜", "🫘", "🌰", "🍞", "🥐", "🥖", "🫓", "🥨", "🥯", "🥞", "🧇", "🧀", "🍖", "🍗", "🥩", "🥓", "🍟", "🥪", "🥙", "🧆", "🌯", "🥗", "🥘", "🍲", "🫕", "🥣", "🍿", "🧈", "🧂", "🥫", "🍱", "🍘", "🍙", "🍚", "🍛", "🍜", "🍝", "🍠", "🍢", "🍣", "🍤", "🍥", "🥮", "🍡", "🥟", "🥠", "🥡", "🦀", "🦞", "🦐", "🦑", "🦪", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰", "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕️", "🫖", "🍵", "🍶", "🍾", "🍷", "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤", "🧋", "🧃", "🧉", "🧊"
-        ),
-        "Travel & Places" to listOf(
-            "✈️", "🚀", "🚗", "🚕", "🚙", "🚌", "🛸", "🏠", "🌍", "🌎", "🌏", "🗺", "🏔", "⛰", "🌋", "🗻", "🏕", "🏖", "🏜", "🏝", "🏞", "🏟", "🏛", "🏗", "🧱", "🏘", "🏚", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏩", "🏪", "🏫", "🏬", "🏭", "🏯", "🏰", "💒", "🗼", "🗽", "⛪️", "🕌", "⛩", "🕍", "🕋", "⛲️", "⛺️", "🌁", "🌃", "🏙", "🌄", "🌆", "🌇", "🌉", "♨️", "🎠", "🎡", "🎢", "💈", "🎪", "🚂", "🚃", "🚄", "🚅", "🚆", "🚇", "🚈", "🚉", "🚊", "🚝", "🚞", "🚋", "🚍", "🚎", "🚐", "🚑", "🚒", "🚓", "🚔", "🚖", "🚘", "🛻", "🚚", "🚛", "🚜", "🏎", "🏍", "🛵", "🦽", "🦼", "🛺", "🚲", "🛴", "🛹", "🛼", "🚏", "🛣", "🛤", "🛢", "⛽️", "🚨", "🚥", "🚦", "🛑", "🚧", "⚓️", "⛵️", "🛶", "🚤", "🛳", "⛴", "🚢", "🛩", "🛫", "🛬", "🪂", "💺", "🚁", "🚟", "🚠", "🚡", "🛰"
-        ),
-        "Activities" to listOf(
-            "⚽", "🏀", "🏈", "⚾", "🥎", "🏐", "🏉", "🎾", "🏒", "🏑", "🏏", "🏓", "🏸", "🏹", "⛳", "⛸", "🎣", "🚣", "🏊", "🏄", "🏇", "🚴", "🚵", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖", "🏵", "🎫", "🎟", "🎭", "🎨", "🎬", "🎤", "🎧", "🎹", "🥁", "🎷", "🎺", "🎸", "🪕", "🎻", "🎲", "♟", "🎯", "🎳", "🎮", "🕹", "🎰", "🧩", "🧸", "🪅", "🪩", "🪆", "🃏", "🀄️", "🎴", "🖼", "🧵", "🪡", "🧶", "🪢", "🧗‍♀️", "🧗", "🧗‍♂️", "🤺", "⛷", "🏂", "🏌️‍♀️", "🏌️", "🏌️‍♂️", "🏄‍♀️", "🏄", "🏄‍♂️", "🚣‍♀️", "🚣", "🚣‍♂️", "🏊‍♀️", "🏊", "🏊‍♂️", "⛹️‍♀️", "⛹️", "⛹️‍♂️", "🏋️‍♀️", "🏋️", "🏋️‍♂️", "🚴‍♀️", "🚴", "🚴‍♂️", "🚵‍♀️", "🚵", "🚵‍♂️", "🤸‍♀️", "🤸", "🤸‍♂️", "🤽‍♀️", "🤽", "🤽‍♂️", "🤾‍♀️", "🤾", "🤾‍♂️", "🤹‍♀️", "🤹", "🤹‍♂️", "🧘‍♀️", "🧘", "🧘‍♂️", "🛀", "🛌"
-        ),
-        "Objects" to listOf(
-            "💡", "📱", "💻", "⌨", "🖥", "🖨", "📷", "📹", "🎥", "🎞", "📞", "☎", "📟", "📠", "📺", "📻", "🎙", "🎚", "🎛", "🧭", "⏱", "⏲", "⏰", "🕰", "⏳", "⌛", "🔋", "🔌", "🔦", "🕯", "🪔", "🧯", "🛢", "💸", "💵", "💴", "💶", "💷", "🪙", "💰", "💳", "💎", "⚖", "🪜", "🔧", "🔨", "⚒", "🛠", "⛏", "🔩", "⚙", "🪛", "🧱", "⛓", "🧲", "🔫", "💣", "🧨", "🪓", "🗡", "⚔️", "🛡", "🚬", "⚰️", "🪦", "⚱️", "🏺", "🔮", "🪄", "🧿", "📿", "💈", "⚗️", "🔭", "🔬", "🕳", "💊", "💉", "🩸", "🩹", "🩺", "🌡", "🧹", "🪠", "🧺", "🧻", "🧼", "🫧", "🪥", "🪒", "🧽", "🪣", "🧴", "🛎", "🔑", "🗝", "🚪", "🪑", "🛋", "🛏", "🛌", "🪞", "🪟", "🛍", "🛒", "🎁", "🎈", "🎏", "🎀", "🏮", "🎐", "🧧", "✉️", "📩", "📨", "📧", "💌", "📥", "📤", "📦", "🏷", "🪪", "📪", "📫", "📬", "📭", "📮", "🗳", "✏️", "✒️", "🖋", "🖊", "🖌", "🖍", "📝"
-        ),
-        "Symbols" to listOf(
-            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️", "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "🕎", "☯️", "☦️", "🛐", "⛎", "♈️", "♉️", "♊️", "♋️", "♌️", "♍️", "♎️", "♏️", "♐️", "♑️", "♒️", "♓️", "🆔", "⚛️", "🉑", "☢️", "☣️", "📴", "📳", "🈶", "🈚️", "🈸", "🈺", "🈷️", "✴️", "VS", "🆚", "💮", "🉐", "㊙️", "㊗️", "🈴", "🈵", "🈹", "🈲", "🅰️", "🅱️", "🆑", "🅾️", "🆘", "❌", "⭕️", "🛑", "⛔️", "📛", "🚫", "💯", "💢", "♨️", "🚷", "🚯", "🚳", "🚱", "🔞", "📵", "🚭", "❗️", "❕", "❓", "❔", "‼️", "⁉️", "🔅", "🔆", "〽️", "⚠️", "🚸", "🔱", "⚜️", "🔰", "♻️", "✅", "🈯️", "💹", "❇️", "✳️", "❎", "🌐", "💠", "Ⓜ️", "🌀", "💤"
-        ),
-        "Flags" to listOf(
-            "🏁", "🚩", "🎌", "🏴", "🏳", "🇺🇳", "🏴‍☠", "🇿🇲", "🇦🇫", "🇦🇽", "🇦🇱", "🇩🇿", "🇦🇸", "🇦🇩", "🇦🇴", "🇦🇮", "🇦🇶", "🇦🇬", "🇦🇷", "🇦🇲", "🇦🇼", "🇦🇺", "🇦🇹", "🇦🇿", "🇧🇸", "🇧🇭", "🇧🇩", "🇧🇧", "🇧🇾", "🇧🇪", "🇧🇿", "🇧🇯", "🇧🇲", "🇧🇹", "🇧🇴", "🇧🇦", "🇧🇼", "🇧🇷", "🇮🇴", "🇻🇬", "🇧🇳", "🇧🇬", "🇧🇫", "🇧🇮", "🇰🇭", "🇨🇲", "🇨🇦", "🇮🇨", "🇨🇻", "🇧🇶", "🇰🇾", "🇨🇫", "🇹🇩", "🇨🇱", "🇨🇳", "🇨🇽", "🇨🇨", "🇨🇴", "🇰🇲", "🇨🇬", "🇨🇩", "🇨🇰", "🇨🇷", "🇨🇮", "🇭🇷", "🇨🇺", "🇨🇼", "🇨🇾", "🇨🇿", "🇩🇰", "🇩🇯", "🇩🇲", "🇩🇴", "🇪🇨", "🇪🇬", "🇸🇻", "🇬🇶", "🇪🇷", "🇪🇪", "🇸🇿", "🇪🇹", "🇪🇺", "🇫🇰", "🇫🇴", "🇫🇯", "🇫🇮", "🇫🇷", "🇬🇫", "🇵🇫", "🇹🇫", "🇬🇦", "🇬🇲", "🇬🇪", "🇩🇪", "🇬🇭", "🇬🇮", "🇬🇷", "🇬🇱", "🇬🇩", "🇬🇵", "🇬🇺", "🇬🇹", "🇬🇬", "🇬🇳", "🇬🇼", "🇬🇾", "🇭🇹", "🇭🇳", "🇭🇰", "🇭🇺", "🇮🇸", "🇮🇳", "🇮🇩", "🇮🇷", "🇮🇶", "🇮🇪", "🇮🇲", "🇮🇱", "🇮🇹", "🇯🇲", "🇯🇵", "🇯🇪", "🇯🇴", "🇰🇿", "🇰🇪", "🇰🇮", "🇽🇰", "🇰🇼", "🇰🇬", "🇱🇦", "🇱🇻", "🇱🇧", "🇱🇸", "🇱🇷", "🇱🇾", "🇱🇮", "🇱🇹", "🇱🇺", "🇲🇴", "🇲🇬", "🇲🇼", "🇲🇾", "🇲🇻", "🇲🇱", "🇲🇹", "🇲🇭", "🇲🇶", "🇲🇷", "🇲🇺", "🇾🇹", "🇲🇽", "🇫🇲", "🇲🇩", "🇲🇨", "🇲🇳", "🇲🇪", "🇲🇸", "🇲🇦", "🇲🇿", "🇲🇲", "🇳🇦", "🇳🇷", "🇳🇵", "🇳🇱", "🇳🇨", "🇳🇿", "🇳🇮", "🇳🇪", "🇳🇬", "🇳🇺", "🇳🇫", "🇰🇵", "🇲🇰", "🇲🇵", "🇳🇴", "🇴🇲", "🇵🇰", "🇵🇼", "🇵🇸", "🇵🇦", "🇵🇬", "🇵🇾", "🇵🇪", "🇵🇭", "🇵🇳", "🇵🇱", "🇵🇹", "🇵🇷", "🇶🇦", "🇷🇪", "🇷🇴", "🇷🇺", "🇷🇼", "🇼🇸", "🇸🇲", "🇸🇹", "🇸🇦", "🇸🇳", "🇷🇸", "🇸🇨", "🇸🇱", "🇸🇬", "🇸🇽", "🇸🇰", "🇸🇮", "🇬🇸", "🇸🇧", "🇸🇴", "🇿🇦", "🇰🇷", "🇸🇸", "🇪🇸", "🇱🇰", "🇧🇱", "🇸🇭", "🇰🇳", "🇱🇨", "🇵🇲", "🇻🇨", "🇸🇩", "🇸🇷", "🇸🇪", "🇨🇭", "🇸🇾", "🇹🇼", "🇹🇯", "🇹🇿", "🇹🇭", "🇹🇱", "🇹🇬", "🇹🇰", "🇹🇴", "🇹🇹", "🇹🇳", "🇹🇷", "🇹🇲", "🇹🇨", "🇹🇻", "🇻🇮", "🇺🇬", "🇺🇦", "🇦🇪", "🇬🇧", "🇺🇸", "🇺🇾", "🇺🇿", "🇻🇺", "🇻🇦", "🇻🇪", "🇻🇳", "🇼🇫", "🇪🇭", "🇾🇪", "🇿🇲", "🇿🇼"
-        )
-    )
+    // Map from category index to first item position in flat list
+    private val categoryPositions = mutableListOf<Int>()
+    private val flatList = mutableListOf<ListItem>()
 
     init {
         try {
-            emojiTypeface = Typeface.createFromAsset(context.assets, "emojifont.ttf")
+            orientation = VERTICAL
+            setBackgroundColor(Color.parseColor("#1A1A1A"))
+            buildFlatList()
+            setupViews()
+            isInitialized = true
         } catch (e: Exception) {
-            // Fallback to system font
-        }
-
-        loadRecentlyUsed()
-
-        try {
-            binding = EmojiPickerBinding.inflate(LayoutInflater.from(context), this, true)
-            binding?.let { b ->
-                b.emojiRecycler.layoutManager = GridLayoutManager(context, 8)
-                setupCategories()
-                displayCategory("Smileys & Emotion")
-                setupSearch()
-                b.btnBackFromEmoji.setOnClickListener { onBackClickListener?.invoke() }
-                isInitialized = true
-            }
-        } catch (e: Exception) {
-            Log.e("EmojiPickerView", "Failed to inflate emoji picker: ${e.message}")
+            Log.e("EmojiPickerView", "Failed to initialize emoji picker: ${e.message}")
             isInitialized = false
         }
     }
 
-    private fun loadRecentlyUsed() {
-        val json = preferences.recentlyUsedEmojis
-        try {
-            val arr = JSONArray(json)
-            recentlyUsed.clear()
-            for (i in 0 until arr.length()) {
-                recentlyUsed.add(arr.getString(i))
+    private fun buildFlatList() {
+        flatList.clear()
+        categoryPositions.clear()
+
+        EmojiData.categories.forEachIndexed { catIndex, cat ->
+            categoryPositions.add(flatList.size)
+            val subsMap = EmojiData.emojiMap[cat.name] ?: return@forEachIndexed
+
+            subsMap.forEach { (subName, emojis) ->
+                flatList.add(ListItem.Header(cat.name, subName))
+                // Chunk emojis into rows of COLS
+                emojis.chunked(COLS).forEach { rowEmojis ->
+                    flatList.add(ListItem.EmojiRow(rowEmojis))
+                }
             }
-        } catch (e: Exception) {
-            recentlyUsed = mutableListOf()
         }
     }
 
-    private fun saveRecentlyUsed() {
-        val arr = JSONArray(recentlyUsed)
-        preferences.recentlyUsedEmojis = arr.toString()
-    }
+    private fun setupViews() {
+        // --- Top bar: Category tabs ---
+        val topBar = LinearLayout(context).apply {
+            orientation = HORIZONTAL
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(44))
+            setBackgroundColor(Color.parseColor("#111111"))
+            gravity = Gravity.CENTER_VERTICAL
+        }
 
-    private fun addToRecentlyUsed(emoji: String) {
-        val wasEmpty = recentlyUsed.isEmpty()
-        recentlyUsed.remove(emoji)
-        recentlyUsed.add(0, emoji)
-        if (recentlyUsed.size > 40) {
-            recentlyUsed.removeAt(recentlyUsed.size - 1)
+        tabsRecycler = RecyclerView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            overScrollMode = View.OVER_SCROLL_NEVER
         }
-        saveRecentlyUsed()
-        if (currentCategory == "Recently Used") {
-            (binding?.emojiRecycler?.adapter as? EmojiAdapter)?.updateData(recentlyUsed)
+        tabsAdapter = TabsAdapter(EmojiData.categories) { catIndex ->
+            scrollToCategory(catIndex)
+            tabsAdapter.setSelected(catIndex)
         }
-        if (wasEmpty) {
-            setupCategories() // Only refresh if we need to show the "Recently Used" tab
-        }
-    }
+        tabsAdapter.setSelected(0)
+        tabsRecycler.adapter = tabsAdapter
 
-    private fun setupSearch() {
-        binding?.emojiSearch?.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                performSearch(s.toString())
-            }
-            override fun afterTextChanged(s: android.text.Editable?) {}
+        topBar.addView(tabsRecycler)
+        addView(topBar)
+
+        // --- Divider ---
+        addView(View(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 1)
+            setBackgroundColor(Color.parseColor("#333333"))
         })
+
+        // --- Main emoji grid recycler ---
+        emojiRecycler = RecyclerView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
+            overScrollMode = View.OVER_SCROLL_NEVER
+            setBackgroundColor(Color.parseColor("#2B2B2B"))
+        }
+
+        emojiRecycler.layoutManager = LinearLayoutManager(context)
+        emojiListAdapter = EmojiListAdapter(flatList) { emoji ->
+            onEmojiClickListener?.invoke(emoji)
+        }
+        emojiRecycler.adapter = emojiListAdapter
+
+        // Sync tab highlight when scrolling
+        emojiRecycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                val lm = recyclerView.layoutManager as LinearLayoutManager
+                val firstVisible = lm.findFirstVisibleItemPosition()
+                if (firstVisible == RecyclerView.NO_POSITION) return
+
+                // Find which category we're in
+                var activeCat = 0
+                for (i in categoryPositions.indices) {
+                    if (firstVisible >= categoryPositions[i]) activeCat = i
+                    else break
+                }
+                tabsAdapter.setSelected(activeCat)
+            }
+        })
+
+        addView(emojiRecycler)
+
+        // --- Bottom bar: ABC and DEL ---
+        val bottomBar = LinearLayout(context).apply {
+            orientation = HORIZONTAL
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
+            setBackgroundColor(Color.parseColor("#1A1A1A"))
+        }
+
+        val abcBtn = TextView(context).apply {
+            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 3f)
+            text = "ABC"
+            setTextColor(Color.WHITE)
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onBackClickListener?.invoke() }
+        }
+
+        val delBtn = TextView(context).apply {
+            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
+            text = "⌫"
+            setTextColor(Color.parseColor("#FF5252"))
+            textSize = 22f
+            gravity = Gravity.CENTER
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onBackspaceClick?.invoke() }
+        }
+
+        bottomBar.addView(abcBtn)
+        bottomBar.addView(delBtn)
+        addView(bottomBar)
     }
 
-    private fun performSearch(query: String) {
-        val currentList = if (currentCategory == "Recently Used") recentlyUsed else allEmojiCategories[currentCategory] ?: emptyList()
-        val filtered = if (query.isEmpty()) {
-            currentList
-        } else {
-            // Filter out non-emoji characters from query if any, though normally users type text
-            currentList.filter { it.contains(query) }
+    fun scrollToCategory(catIndex: Int) {
+        if (catIndex < categoryPositions.size) {
+            (emojiRecycler.layoutManager as LinearLayoutManager)
+                .scrollToPositionWithOffset(categoryPositions[catIndex], 0)
         }
-        (binding?.emojiRecycler?.adapter as? EmojiAdapter)?.updateData(filtered)
     }
 
-    private fun setupCategories() {
-        val b = binding ?: return
-        b.emojiCategories.removeAllViews()
-        val categories = mutableListOf<String>()
-        if (recentlyUsed.isNotEmpty()) {
-            categories.add("Recently Used")
-        }
-        categories.addAll(allEmojiCategories.keys)
+    fun resetScroll() {
+        emojiRecycler.scrollToPosition(0)
+        tabsAdapter.setSelected(0)
+    }
 
-        categories.forEach { category ->
+    // ---- TABS ADAPTER ----
+    inner class TabsAdapter(
+        private val categories: List<EmojiData.EmojiCategory>,
+        private val onTabClick: (Int) -> Unit
+    ) : RecyclerView.Adapter<TabsAdapter.TabVH>() {
+
+        private var selectedIndex = 0
+
+        fun setSelected(index: Int) {
+            if (selectedIndex == index) return
+            val old = selectedIndex
+            selectedIndex = index
+            notifyItemChanged(old)
+            notifyItemChanged(index)
+            tabsRecycler.scrollToPosition(index)
+        }
+
+        inner class TabVH(val tv: TextView) : RecyclerView.ViewHolder(tv)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TabVH {
             val tv = TextView(context).apply {
-                text = category
-                setPadding(16.dpToPx(), 0, 16.dpToPx(), 0)
+                layoutParams = ViewGroup.LayoutParams(dpToPx(48), dpToPx(44))
+                textSize = 22f
                 gravity = Gravity.CENTER
-                textSize = 14f
-                setTextColor(if (category == currentCategory) accentColor else Color.WHITE)
-                setOnClickListener {
-                    displayCategory(category)
-                    setupCategories() // Update text colors
+                isClickable = true
+                isFocusable = true
+            }
+            return TabVH(tv)
+        }
+
+        override fun onBindViewHolder(holder: TabVH, position: Int) {
+            holder.tv.text = categories[position].icon
+            val isSelected = position == selectedIndex
+            holder.tv.setBackgroundColor(
+                if (isSelected) Color.parseColor("#2D2D2D") else Color.TRANSPARENT
+            )
+            holder.tv.setOnClickListener { onTabClick(position) }
+        }
+
+        override fun getItemCount() = categories.size
+    }
+
+    // ---- EMOJI LIST ADAPTER ----
+    inner class EmojiListAdapter(
+        private val items: List<ListItem>,
+        private val onEmojiClick: (String) -> Unit
+    ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+        override fun getItemViewType(position: Int) = when (items[position]) {
+            is ListItem.Header -> VIEW_TYPE_HEADER
+            is ListItem.EmojiRow -> VIEW_TYPE_EMOJI_ROW
+        }
+
+        inner class HeaderVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val tv: TextView = itemView as TextView
+        }
+
+        inner class EmojiRowVH(val row: LinearLayout) : RecyclerView.ViewHolder(row)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+            return when (viewType) {
+                VIEW_TYPE_HEADER -> {
+                    val tv = TextView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            dpToPx(32)
+                        )
+                        textSize = 11f
+                        setTextColor(Color.parseColor("#888888"))
+                        setTypeface(null, Typeface.BOLD)
+                        setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(4))
+                        gravity = Gravity.CENTER_VERTICAL
+                    }
+                    HeaderVH(tv)
                 }
-                layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT)
-            }
-            b.emojiCategories.addView(tv)
-        }
-    }
-
-    private fun displayCategory(category: String) {
-        val b = binding ?: return
-        currentCategory = category
-        val emojis = if (category == "Recently Used") recentlyUsed else allEmojiCategories[category] ?: emptyList()
-        b.emojiRecycler.adapter = EmojiAdapter(emojis)
-        b.emojiRecycler.scrollToPosition(0)
-        b.emojiSearch.setText("")
-    }
-
-    fun setAccentColor(color: Int) {
-        accentColor = color
-        if (binding != null) {
-            setupCategories()
-        }
-    }
-
-    inner class EmojiAdapter(private var emojis: List<String>) : RecyclerView.Adapter<EmojiViewHolder>() {
-
-        fun updateData(newEmojis: List<String>) {
-            emojis = newEmojis
-            notifyDataSetChanged()
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmojiViewHolder {
-            val tv = object : androidx.appcompat.widget.AppCompatTextView(context) {
-                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-                    super.onMeasure(widthMeasureSpec, widthMeasureSpec)
+                else -> {
+                    val row = LinearLayout(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            dpToPx(48)
+                        )
+                        orientation = HORIZONTAL
+                    }
+                    repeat(COLS) {
+                        val cell = TextView(context).apply {
+                            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                            textSize = 24f
+                            gravity = Gravity.CENTER
+                            isClickable = true
+                            isFocusable = true
+                        }
+                        row.addView(cell)
+                    }
+                    EmojiRowVH(row)
                 }
-            }.apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                textSize = 28f
-                gravity = Gravity.CENTER
-                setPadding(4.dpToPx(), 4.dpToPx(), 4.dpToPx(), 4.dpToPx())
-                emojiTypeface?.let { typeface = it }
-
-                val ripple = RippleDrawable(
-                    ColorStateList.valueOf(Color.parseColor("#3D3D3D")),
-                    null,
-                    ColorDrawable(Color.WHITE)
-                )
-                background = ripple
-            }
-            return EmojiViewHolder(tv)
-        }
-
-        override fun onBindViewHolder(holder: EmojiViewHolder, position: Int) {
-            val emoji = emojis[position]
-            (holder.itemView as TextView).text = emoji
-            holder.itemView.setOnClickListener {
-                onEmojiClickListener?.invoke(emoji)
-                addToRecentlyUsed(emoji)
             }
         }
 
-        override fun getItemCount(): Int = emojis.size
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            when (val item = items[position]) {
+                is ListItem.Header -> {
+                    val hVH = holder as HeaderVH
+                    hVH.tv.text = item.subcategoryName
+                        .replace('-', ' ')
+                        .uppercase()
+                }
+                is ListItem.EmojiRow -> {
+                    val rVH = holder as EmojiRowVH
+                    for (i in 0 until COLS) {
+                        val cell = rVH.row.getChildAt(i) as TextView
+                        if (i < item.emojis.size) {
+                            cell.text = item.emojis[i]
+                            cell.visibility = View.VISIBLE
+                            cell.setOnClickListener { onEmojiClick(item.emojis[i]) }
+                        } else {
+                            cell.text = ""
+                            cell.visibility = View.INVISIBLE
+                            cell.setOnClickListener(null)
+                        }
+                    }
+                }
+            }
+        }
+
+        override fun getItemCount() = items.size
     }
 
-    class EmojiViewHolder(view: View) : RecyclerView.ViewHolder(view)
-
-    private fun Int.dpToPx(): Int = (this * context.resources.displayMetrics.density).toInt()
+    private fun dpToPx(dp: Int): Int =
+        (dp * resources.displayMetrics.density + 0.5f).toInt()
 }

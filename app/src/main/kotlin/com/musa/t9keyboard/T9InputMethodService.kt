@@ -56,7 +56,6 @@ class T9InputMethodService : InputMethodService() {
         keyboardView.isXt9Mode = preferences.xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         keyboardView.setAccentColor(accentColor)
-        emojiPickerView.setAccentColor(accentColor)
     }
 
     override fun onFinishInput() {
@@ -109,6 +108,10 @@ class T9InputMethodService : InputMethodService() {
 
         emojiPickerView.onEmojiClickListener = { emoji ->
             commitTextWithFinalization(emoji)
+        }
+
+        emojiPickerView.onBackspaceClick = {
+            handleAction(KeyboardView.KeyboardAction.DEL)
         }
 
         emojiPickerView.onBackClickListener = {
@@ -231,6 +234,7 @@ class T9InputMethodService : InputMethodService() {
             KeyboardView.KeyboardAction.EMOJI -> {
                 try {
                     if (emojiPickerView.isInitialized) {
+                        emojiPickerView.resetScroll()
                         showView(emojiPickerView)
                     } else {
                         android.util.Log.e("T9InputMethodService", "Emoji picker not initialized correctly")
