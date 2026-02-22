@@ -259,7 +259,7 @@ class KeyboardView @JvmOverloads constructor(
         val primaryLabels = listOf(
             binding.labelAbc, binding.labelDef, binding.labelGhi, binding.labelJkl,
             binding.labelMno, binding.labelPqrs, binding.labelTuv, binding.labelWxyz,
-            binding.labelPunct, binding.labelShift, binding.labelDel, binding.labelEnter,
+            binding.labelPunct, binding.labelShift, binding.labelEnter,
             binding.labelSpace, binding.labelSym, binding.label123, binding.labelEmoji
         )
         primaryLabels.forEach { it.textSize = sizeSp }
