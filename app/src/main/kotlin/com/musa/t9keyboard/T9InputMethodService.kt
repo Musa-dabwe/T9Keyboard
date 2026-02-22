@@ -338,6 +338,9 @@ class T9InputMethodService : InputMethodService() {
     private fun showView(view: View) {
         container.removeAllViews()
         container.addView(view)
+        if (view is SymbolsView) {
+            view.resetScroll()
+        }
     }
 
     private fun handleXt9Tap(char: Char) {
