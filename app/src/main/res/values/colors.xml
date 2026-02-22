@@ -9,6 +9,7 @@
     <color name="dimmed_white">#AAAAAA</color>
     <color name="symbol_ripple">#3D3D3D</color>
     <color name="abc_button_background">#1A1A1A</color>
+    <color name="delete_key_color">#FF5252</color>
 
     <!-- Redesigned Settings Colors -->
     <color name="settings_background">#F5F5F5</color>
