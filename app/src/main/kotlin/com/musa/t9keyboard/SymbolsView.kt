@@ -13,6 +13,7 @@ class SymbolsView @JvmOverloads constructor(
 
     private val binding: SymbolsViewBinding = SymbolsViewBinding.inflate(LayoutInflater.from(context), this, true)
     var onSymbolClickListener: ((String) -> Unit)? = null
+    var onDeleteClickListener: (() -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
 
     init {
@@ -21,6 +22,7 @@ class SymbolsView @JvmOverloads constructor(
             onSymbolClickListener?.invoke(symbol)
         }
         binding.btnBackToAbc.setOnClickListener { onBackClickListener?.invoke() }
+        binding.btnSymbolDelete.setOnClickListener { onDeleteClickListener?.invoke() }
     }
 
     fun resetScroll() {

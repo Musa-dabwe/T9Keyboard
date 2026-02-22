@@ -103,6 +103,10 @@ class T9InputMethodService : InputMethodService() {
             showView(keyboardView)
         }
 
+        symbolsView.onDeleteClickListener = {
+            handleAction(KeyboardView.KeyboardAction.DEL)
+        }
+
         emojiPickerView.onEmojiClickListener = { emoji ->
             commitTextWithFinalization(emoji)
         }
