@@ -1,59 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    The emoji picker is fully programmatic via EmojiPickerView.kt.
+    This layout simply hosts the view as the root element.
+    Height is controlled by the keyboard container.
+-->
+<com.musa.t9keyboard.EmojiPickerView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/emojiPickerView"
     android:layout_width="match_parent"
-    android:layout_height="360dp"
-    android:orientation="vertical"
-    android:background="@color/keyboard_background">
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@color/keyboard_background">
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_toStartOf="@+id/btn_back_from_emoji"
-            android:scrollbars="none">
-            <LinearLayout
-                android:id="@+id/emoji_categories"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:gravity="center_vertical" />
-        </HorizontalScrollView>
-
-        <ImageButton
-            android:id="@+id/btn_back_from_emoji"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Close emoji picker"
-            android:tint="@color/key_text_color" />
-    </RelativeLayout>
-
-    <EditText
-        android:id="@+id/emoji_search"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:hint="Search emoji..."
-        android:textColor="@color/key_text_color"
-        android:textColorHint="#888888"
-        android:background="#2B2B2B"
-        android:padding="12dp"
-        android:maxLines="1"
-        android:inputType="text" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/emoji_recycler"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false" />
-
-</LinearLayout>
+    android:layout_height="match_parent"
+    android:orientation="vertical" />
