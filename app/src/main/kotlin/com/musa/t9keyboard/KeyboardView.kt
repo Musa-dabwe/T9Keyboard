@@ -231,6 +231,8 @@ class KeyboardView @JvmOverloads constructor(
         currentKeyId = -1
         tapCount = 0
         stopRepeatingDel()
+        isNumMode = false
+        updateKeyLabels()
     }
 
     fun setMultiTapTimeout(timeout: Long) {
