@@ -44,12 +44,12 @@ class T9InputMethodService : InputMethodService() {
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
-        resetImeState(attribute)
+        resetImeState(attribute, resetShift = true)
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        resetImeState(info)
+        resetImeState(info, resetShift = false)
         keyboardView.setMultiTapTimeout(preferences.multiTapTimeout)
         keyboardView.setKeyFontSize(preferences.keyFontSize.toFloat())
         keyboardView.setFontSize(preferences.suggestionFontSize.toFloat())
@@ -61,7 +61,7 @@ class T9InputMethodService : InputMethodService() {
 
     override fun onFinishInput() {
         super.onFinishInput()
-        resetImeState(null)
+        resetImeState(null, resetShift = true)
     }
 
     override fun onCreateInputView(): View {
@@ -448,7 +448,7 @@ class T9InputMethodService : InputMethodService() {
         }
     }
 
-    private fun resetImeState(info: EditorInfo?) {
+    private fun resetImeState(info: EditorInfo?, resetShift: Boolean = true) {
         composingText.setLength(0)
         currentWordConstraints.clear()
         xt9DigitSequence.setLength(0)
@@ -460,28 +460,33 @@ class T9InputMethodService : InputMethodService() {
         if (::keyboardView.isInitialized) {
             keyboardView.resetState()
             keyboardView.setSuggestions(emptyList())
+            if (::container.isInitialized) {
+                showView(keyboardView)
+            }
         }
 
-        shiftManager.reset()
-        info?.let {
-            val inputType = it.inputType
-            val capsFlags = inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_FLAGS
-            val variation = inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_VARIATION
+        if (resetShift) {
+            shiftManager.reset()
+            info?.let {
+                val inputType = it.inputType
+                val capsFlags = inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_FLAGS
+                val variation = inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_VARIATION
 
-            if (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_CHARACTERS != 0) {
-                shiftManager.onDoubleTap() // CAPS_LOCK
-            } else {
-                // Rule 2: Field start capitalization
-                val ic = currentInputConnection
-                val isAtStart = ic?.getTextBeforeCursor(1, 0)?.isEmpty() ?: true
+                if (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_CHARACTERS != 0) {
+                    shiftManager.onDoubleTap() // CAPS_LOCK
+                } else {
+                    // Rule 2: Field start capitalization
+                    val ic = currentInputConnection
+                    val isAtStart = ic?.getTextBeforeCursor(1, 0)?.isEmpty() ?: true
 
-                if (isAtStart) {
-                    val isSentenceCap = (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES != 0)
-                    val isPlainText = (inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_CLASS == android.view.inputmethod.EditorInfo.TYPE_CLASS_TEXT) &&
-                                     (variation == android.view.inputmethod.EditorInfo.TYPE_TEXT_VARIATION_NORMAL || variation == android.view.inputmethod.EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)
+                    if (isAtStart) {
+                        val isSentenceCap = (capsFlags and android.view.inputmethod.EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES != 0)
+                        val isPlainText = (inputType and android.view.inputmethod.EditorInfo.TYPE_MASK_CLASS == android.view.inputmethod.EditorInfo.TYPE_CLASS_TEXT) &&
+                                         (variation == android.view.inputmethod.EditorInfo.TYPE_TEXT_VARIATION_NORMAL || variation == android.view.inputmethod.EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)
 
-                    if (isSentenceCap || isPlainText) {
-                        shiftManager.setAutoShift(ShiftState.ONE_SHOT)
+                        if (isSentenceCap || isPlainText) {
+                            shiftManager.setAutoShift(ShiftState.ONE_SHOT)
+                        }
                     }
                 }
             }
