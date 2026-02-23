@@ -1,11 +1,14 @@
 package com.musa.t9keyboard
 
+import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import android.widget.Toast
 
 class T9InputMethodService : InputMethodService() {
 
@@ -248,7 +251,25 @@ class T9InputMethodService : InputMethodService() {
                 intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(intent)
             }
+            KeyboardView.KeyboardAction.SWITCH_KEYBOARD -> {
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.showInputMethodPicker()
+            }
+            KeyboardView.KeyboardAction.TOGGLE_XT9 -> {
+                val newState = !preferences.xt9Enabled
+                if (preferences.xt9Enabled && !newState) {
+                    commitCurrentComposing()
+                }
+                preferences.xt9Enabled = newState
+                keyboardView.isXt9Mode = newState
+                val status = if (newState) "On" else "Off"
+                Toast.makeText(this, "XT9 $status", Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    private fun commitCurrentComposing() {
+        commitTextWithFinalization("")
     }
 
     private fun commitTextWithFinalization(text: String, addSpaceAfter: Boolean = false) {
