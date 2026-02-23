@@ -54,7 +54,7 @@ class KeyboardView @JvmOverloads constructor(
      * Enum defining standard keyboard actions.
      */
     enum class KeyboardAction {
-        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI, SETTINGS
+        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9
     }
 
     init {
@@ -131,9 +131,21 @@ class KeyboardView @JvmOverloads constructor(
             onFeedbackRequested?.invoke()
             onActionClickListener?.invoke(KeyboardAction.SYM)
         }
+        binding.keySym.setOnLongClickListener {
+            onFeedbackRequested?.invoke()
+            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+            onActionClickListener?.invoke(KeyboardAction.SWITCH_KEYBOARD)
+            true
+        }
         binding.key123.setOnClickListener {
             onFeedbackRequested?.invoke()
             onActionClickListener?.invoke(KeyboardAction.NUM)
+        }
+        binding.key123.setOnLongClickListener {
+            onFeedbackRequested?.invoke()
+            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+            onActionClickListener?.invoke(KeyboardAction.TOGGLE_XT9)
+            true
         }
         binding.keyEmoji.setOnClickListener {
             onFeedbackRequested?.invoke()
@@ -309,5 +321,9 @@ class KeyboardView @JvmOverloads constructor(
             }
         }
         binding.label123.text = if (isNumMode) "ABC" else "123"
+
+        val visibility = if (isNumMode) View.GONE else View.VISIBLE
+        binding.secondaryLabelSym.visibility = visibility
+        binding.secondaryLabel123.visibility = visibility
     }
 }
