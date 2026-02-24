@@ -95,6 +95,7 @@
         </FrameLayout>
         <FrameLayout android:id="@+id/key_emoji" style="@style/KeyboardKeyLayout">
             <TextView android:id="@+id/label_emoji" style="@style/KeyPrimaryLabel" android:text="EMOJI" />
+            <TextView android:id="@+id/secondary_label_emoji" style="@style/KeySecondaryLabel" android:text="📋" />
         </FrameLayout>
         <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
             <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />

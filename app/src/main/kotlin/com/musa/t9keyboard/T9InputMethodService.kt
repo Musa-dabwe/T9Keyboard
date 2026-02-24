@@ -5,6 +5,7 @@ import android.inputmethodservice.InputMethodService
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
@@ -16,6 +17,7 @@ class T9InputMethodService : InputMethodService() {
     private lateinit var keyboardView: KeyboardView
     private lateinit var symbolsView: SymbolsView
     private lateinit var emojiPickerView: EmojiPickerView
+    private lateinit var textEditingView: TextEditingView
     private lateinit var preferences: PreferencesManager
     private val shiftManager = ShiftStateManager()
 
@@ -26,6 +28,7 @@ class T9InputMethodService : InputMethodService() {
     private var xt9DigitSequence = StringBuilder()
     private var xt9RawSequence = StringBuilder()
     private var currentXt9Predictions = listOf<String>()
+    private var isSelectionMode = false
 
     private val accentColorResIds = listOf(
         R.color.accent_blue,
@@ -73,6 +76,7 @@ class T9InputMethodService : InputMethodService() {
         keyboardView = KeyboardView(this)
         symbolsView = SymbolsView(this)
         emojiPickerView = EmojiPickerView(this)
+        textEditingView = TextEditingView(this)
 
         setupListeners()
 
@@ -120,6 +124,20 @@ class T9InputMethodService : InputMethodService() {
 
         emojiPickerView.onBackClickListener = {
             showView(keyboardView)
+        }
+
+        textEditingView.onAction = { action ->
+            handleEditAction(action)
+        }
+
+        textEditingView.onAbcClick = {
+            isSelectionMode = false
+            textEditingView.setSelectionMode(false)
+            showView(keyboardView)
+        }
+
+        textEditingView.onFeedbackRequested = {
+            performFeedback()
         }
     }
 
@@ -246,6 +264,9 @@ class T9InputMethodService : InputMethodService() {
                 } catch (e: Exception) {
                     android.util.Log.e("T9InputMethodService", "Error showing emoji picker", e)
                 }
+            }
+            KeyboardView.KeyboardAction.SHOW_TEXT_EDITING -> {
+                showTextEditingPanel()
             }
             KeyboardView.KeyboardAction.SETTINGS -> {
                 val intent = android.content.Intent(this, SettingsActivity::class.java)
@@ -374,7 +395,7 @@ class T9InputMethodService : InputMethodService() {
 
     private fun showView(view: View) {
         container.removeAllViews()
-        if (view is EmojiPickerView) {
+        if (view is EmojiPickerView || view is TextEditingView) {
             view.layoutParams = FrameLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 dpToPx(304)
@@ -383,6 +404,156 @@ class T9InputMethodService : InputMethodService() {
         container.addView(view)
         if (view is SymbolsView) {
             view.resetScroll()
+        }
+        if (view is TextEditingView) {
+            updateEditingSelectionState()
+        }
+    }
+
+    private fun showTextEditingPanel() {
+        val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
+        textEditingView.setAccentColor(accentColor)
+        updateEditingSelectionState()
+        showView(textEditingView)
+    }
+
+    private fun handleEditAction(action: TextEditingView.EditAction) {
+        val ic = currentInputConnection ?: return
+        val now = System.currentTimeMillis()
+        when (action) {
+            TextEditingView.EditAction.HOME -> {
+                val meta = if (isSelectionMode) KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON else KeyEvent.META_CTRL_ON
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_HOME, 0, meta))
+            }
+            TextEditingView.EditAction.HOME_LONG -> {
+                ic.setSelection(0, 0)
+            }
+            TextEditingView.EditAction.END -> {
+                val meta = if (isSelectionMode) KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON else KeyEvent.META_CTRL_ON
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_END, 0, meta))
+            }
+            TextEditingView.EditAction.END_LONG -> {
+                val et = ic.getExtractedText(ExtractedTextRequest(), 0)
+                et?.let {
+                    ic.setSelection(it.text.length, it.text.length)
+                }
+            }
+            TextEditingView.EditAction.UP -> {
+                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_UP, 0, meta))
+            }
+            TextEditingView.EditAction.DOWN -> {
+                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN, 0, meta))
+            }
+            TextEditingView.EditAction.LEFT -> {
+                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, 0, meta))
+            }
+            TextEditingView.EditAction.RIGHT -> {
+                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, 0, meta))
+            }
+            TextEditingView.EditAction.SELECT_ALL -> {
+                ic.performContextMenuAction(android.R.id.selectAll)
+            }
+            TextEditingView.EditAction.SELECT -> {
+                isSelectionMode = !isSelectionMode
+                textEditingView.setSelectionMode(isSelectionMode)
+            }
+            TextEditingView.EditAction.SELECT_WORD -> {
+                selectWord()
+            }
+            TextEditingView.EditAction.COPY -> {
+                ic.performContextMenuAction(android.R.id.copy)
+            }
+            TextEditingView.EditAction.COPY_LONG -> {
+                ic.performContextMenuAction(android.R.id.copy)
+                Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
+            }
+            TextEditingView.EditAction.CUT -> {
+                ic.performContextMenuAction(android.R.id.cut)
+            }
+            TextEditingView.EditAction.CUT_LONG -> {
+                ic.performContextMenuAction(android.R.id.cut)
+                Toast.makeText(this, "Cut", Toast.LENGTH_SHORT).show()
+            }
+            TextEditingView.EditAction.PASTE -> {
+                ic.performContextMenuAction(android.R.id.paste)
+            }
+            TextEditingView.EditAction.PASTE_LONG -> {
+                val intent = android.content.Intent("android.intent.action.CLIPBOARD_MANAGER")
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    ic.performContextMenuAction(android.R.id.paste)
+                }
+            }
+            TextEditingView.EditAction.SELECT_LEFT_WORD -> {
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON))
+            }
+            TextEditingView.EditAction.SELECT_LEFT_WORD_LONG -> {
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_HOME, 0, KeyEvent.META_SHIFT_ON))
+            }
+            TextEditingView.EditAction.SELECT_RIGHT_WORD -> {
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON))
+            }
+            TextEditingView.EditAction.SELECT_RIGHT_WORD_LONG -> {
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_END, 0, KeyEvent.META_SHIFT_ON))
+            }
+            TextEditingView.EditAction.UNDO -> {
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_Z, 0, KeyEvent.META_CTRL_ON))
+            }
+            TextEditingView.EditAction.REDO -> {
+                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_Z, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON))
+            }
+            TextEditingView.EditAction.DELETE -> {
+                handleAction(KeyboardView.KeyboardAction.DEL)
+            }
+        }
+        updateEditingSelectionState()
+    }
+
+    private fun selectWord() {
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(100, 0) ?: ""
+        val after = ic.getTextAfterCursor(100, 0) ?: ""
+
+        var start = before.length
+        while (start > 0 && before[start - 1].isLetterOrDigit()) {
+            start--
+        }
+
+        var end = 0
+        while (end < after.length && after[end].isLetterOrDigit()) {
+            end++
+        }
+
+        val et = ic.getExtractedText(ExtractedTextRequest(), 0)
+        if (et != null) {
+            val cursor = et.selectionStart
+            ic.setSelection(cursor - (before.length - start), cursor + end)
+        }
+    }
+
+    private fun updateEditingSelectionState() {
+        val ic = currentInputConnection ?: return
+        val selectedText = ic.getSelectedText(0)
+        val hasSelection = !selectedText.isNullOrEmpty()
+        if (::textEditingView.isInitialized) {
+            textEditingView.updateSelectionState(hasSelection)
+        }
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int, oldSelEnd: Int,
+        newSelStart: Int, newSelEnd: Int,
+        candidatesStart: Int, candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        if (::textEditingView.isInitialized && textEditingView.parent != null) {
+            updateEditingSelectionState()
         }
     }
 
@@ -511,6 +682,10 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun resetImeState(info: EditorInfo?, resetShift: Boolean = true) {
+        isSelectionMode = false
+        if (::textEditingView.isInitialized) {
+            textEditingView.setSelectionMode(false)
+        }
         composingText.setLength(0)
         currentWordConstraints.clear()
         xt9DigitSequence.setLength(0)
