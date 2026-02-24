@@ -29,6 +29,8 @@ class T9InputMethodService : InputMethodService() {
     private var xt9RawSequence = StringBuilder()
     private var currentXt9Predictions = listOf<String>()
     private var isSelectionMode = false
+    private var selectionAnchor = -1
+    private var movingPosition = -1
 
     private val accentColorResIds = listOf(
         R.color.accent_blue,
@@ -393,6 +395,13 @@ class T9InputMethodService : InputMethodService() {
         keyboardView.setSuggestions(combined)
     }
 
+    private fun sendDownUpKeyEvents(keyCode: Int, meta: Int) {
+        val ic = currentInputConnection ?: return
+        val now = System.currentTimeMillis()
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta))
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta))
+    }
+
     private fun showView(view: View) {
         container.removeAllViews()
         if (view is EmojiPickerView || view is TextEditingView) {
@@ -419,40 +428,83 @@ class T9InputMethodService : InputMethodService() {
 
     private fun handleEditAction(action: TextEditingView.EditAction) {
         val ic = currentInputConnection ?: return
-        val now = System.currentTimeMillis()
+        val et = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return
+        val textLength = et.text.length
+        val selectionStart = et.selectionStart
+        val selectionEnd = et.selectionEnd
+
+        if (isSelectionMode && movingPosition == -1) {
+            movingPosition = selectionEnd
+        }
+
         when (action) {
             TextEditingView.EditAction.HOME -> {
-                val meta = if (isSelectionMode) KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON else KeyEvent.META_CTRL_ON
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_HOME, 0, meta))
+                if (isSelectionMode) {
+                    movingPosition = 0
+                    ic.setSelection(selectionAnchor, movingPosition)
+                } else {
+                    ic.setSelection(0, 0)
+                }
             }
             TextEditingView.EditAction.HOME_LONG -> {
-                ic.setSelection(0, 0)
+                if (isSelectionMode) {
+                    movingPosition = 0
+                    ic.setSelection(selectionAnchor, movingPosition)
+                } else {
+                    ic.setSelection(0, 0)
+                }
             }
             TextEditingView.EditAction.END -> {
-                val meta = if (isSelectionMode) KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON else KeyEvent.META_CTRL_ON
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_END, 0, meta))
+                if (isSelectionMode) {
+                    movingPosition = textLength
+                    ic.setSelection(selectionAnchor, movingPosition)
+                } else {
+                    ic.setSelection(textLength, textLength)
+                }
             }
             TextEditingView.EditAction.END_LONG -> {
-                val et = ic.getExtractedText(ExtractedTextRequest(), 0)
-                et?.let {
-                    ic.setSelection(it.text.length, it.text.length)
+                if (isSelectionMode) {
+                    movingPosition = textLength
+                    ic.setSelection(selectionAnchor, movingPosition)
+                } else {
+                    ic.setSelection(textLength, textLength)
                 }
             }
             TextEditingView.EditAction.UP -> {
-                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_UP, 0, meta))
+                if (selectionStart > 0) {
+                    val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP, meta)
+                }
             }
             TextEditingView.EditAction.DOWN -> {
-                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN, 0, meta))
+                if (selectionEnd < textLength) {
+                    val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN, meta)
+                }
             }
             TextEditingView.EditAction.LEFT -> {
-                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, 0, meta))
+                val currentPos = if (isSelectionMode) movingPosition else selectionStart
+                if (currentPos > 0) {
+                    val newPos = currentPos - 1
+                    if (isSelectionMode) {
+                        movingPosition = newPos
+                        ic.setSelection(selectionAnchor, movingPosition)
+                    } else {
+                        ic.setSelection(newPos, newPos)
+                    }
+                }
             }
             TextEditingView.EditAction.RIGHT -> {
-                val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, 0, meta))
+                val currentPos = if (isSelectionMode) movingPosition else selectionEnd
+                if (currentPos < textLength) {
+                    val newPos = currentPos + 1
+                    if (isSelectionMode) {
+                        movingPosition = newPos
+                        ic.setSelection(selectionAnchor, movingPosition)
+                    } else {
+                        ic.setSelection(newPos, newPos)
+                    }
+                }
             }
             TextEditingView.EditAction.SELECT_ALL -> {
                 ic.performContextMenuAction(android.R.id.selectAll)
@@ -460,6 +512,13 @@ class T9InputMethodService : InputMethodService() {
             TextEditingView.EditAction.SELECT -> {
                 isSelectionMode = !isSelectionMode
                 textEditingView.setSelectionMode(isSelectionMode)
+                if (isSelectionMode) {
+                    selectionAnchor = selectionStart
+                    movingPosition = selectionEnd
+                } else {
+                    selectionAnchor = -1
+                    movingPosition = -1
+                }
             }
             TextEditingView.EditAction.SELECT_WORD -> {
                 selectWord()
@@ -491,22 +550,30 @@ class T9InputMethodService : InputMethodService() {
                 }
             }
             TextEditingView.EditAction.SELECT_LEFT_WORD -> {
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON))
+                if (selectionStart > 0) {
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON)
+                }
             }
             TextEditingView.EditAction.SELECT_LEFT_WORD_LONG -> {
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_HOME, 0, KeyEvent.META_SHIFT_ON))
+                if (selectionStart > 0) {
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.META_SHIFT_ON)
+                }
             }
             TextEditingView.EditAction.SELECT_RIGHT_WORD -> {
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON))
+                if (selectionEnd < textLength) {
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON)
+                }
             }
             TextEditingView.EditAction.SELECT_RIGHT_WORD_LONG -> {
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_END, 0, KeyEvent.META_SHIFT_ON))
+                if (selectionEnd < textLength) {
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_MOVE_END, KeyEvent.META_SHIFT_ON)
+                }
             }
             TextEditingView.EditAction.UNDO -> {
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_Z, 0, KeyEvent.META_CTRL_ON))
+                sendDownUpKeyEvents(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON)
             }
             TextEditingView.EditAction.REDO -> {
-                ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_Z, 0, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON))
+                sendDownUpKeyEvents(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON)
             }
             TextEditingView.EditAction.DELETE -> {
                 handleAction(KeyboardView.KeyboardAction.DEL)
@@ -552,6 +619,18 @@ class T9InputMethodService : InputMethodService() {
         candidatesStart: Int, candidatesEnd: Int
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+
+        if (isSelectionMode) {
+            if (newSelStart == selectionAnchor) {
+                movingPosition = newSelEnd
+            } else if (newSelEnd == selectionAnchor) {
+                movingPosition = newSelStart
+            } else {
+                selectionAnchor = newSelStart
+                movingPosition = newSelEnd
+            }
+        }
+
         if (::textEditingView.isInitialized && textEditingView.parent != null) {
             updateEditingSelectionState()
         }
@@ -683,6 +762,8 @@ class T9InputMethodService : InputMethodService() {
 
     private fun resetImeState(info: EditorInfo?, resetShift: Boolean = true) {
         isSelectionMode = false
+        selectionAnchor = -1
+        movingPosition = -1
         if (::textEditingView.isInitialized) {
             textEditingView.setSelectionMode(false)
         }

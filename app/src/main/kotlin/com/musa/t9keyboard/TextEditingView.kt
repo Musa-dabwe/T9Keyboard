@@ -293,22 +293,13 @@ class TextEditingView @JvmOverloads constructor(
 
     private inner class SelectKeyDrawable(val isSelected: Boolean) : Drawable() {
         private val bgPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        private val accentPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
 
         override fun draw(canvas: android.graphics.Canvas) {
-            bgPaint.color = if (isSelected) Color.parseColor("#3D3D3D") else Color.parseColor("#2D2D2D")
-            accentPaint.color = accentColor
+            bgPaint.color = if (isSelected) accentColor else Color.parseColor("#2D2D2D")
 
             val rect = android.graphics.RectF(bounds)
             val radius = dpToPx(4).toFloat()
             canvas.drawRoundRect(rect, radius, radius, bgPaint)
-
-            if (isSelected) {
-                canvas.save()
-                canvas.clipRect(bounds.left.toFloat(), bounds.top.toFloat(), bounds.left.toFloat() + dpToPx(4), bounds.bottom.toFloat())
-                canvas.drawRoundRect(rect, radius, radius, accentPaint)
-                canvas.restore()
-            }
         }
 
         override fun setAlpha(alpha: Int) { bgPaint.alpha = alpha }
