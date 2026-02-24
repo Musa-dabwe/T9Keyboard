@@ -54,7 +54,7 @@ class KeyboardView @JvmOverloads constructor(
      * Enum defining standard keyboard actions.
      */
     enum class KeyboardAction {
-        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9
+        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9, SHOW_TEXT_EDITING
     }
 
     init {
@@ -150,6 +150,12 @@ class KeyboardView @JvmOverloads constructor(
         binding.keyEmoji.setOnClickListener {
             onFeedbackRequested?.invoke()
             onActionClickListener?.invoke(KeyboardAction.EMOJI)
+        }
+        binding.keyEmoji.setOnLongClickListener {
+            onFeedbackRequested?.invoke()
+            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+            onActionClickListener?.invoke(KeyboardAction.SHOW_TEXT_EDITING)
+            true
         }
     }
 
@@ -325,5 +331,6 @@ class KeyboardView @JvmOverloads constructor(
         val visibility = if (isNumMode) View.GONE else View.VISIBLE
         binding.secondaryLabelSym.visibility = visibility
         binding.secondaryLabel123.visibility = visibility
+        binding.secondaryLabelEmoji.visibility = visibility
     }
 }
