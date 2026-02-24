@@ -419,8 +419,8 @@ class T9InputMethodService : InputMethodService() {
         val learned = LearnedDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
         val aosp = AospDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
 
-        var combined = (learned + aosp).distinctBy { it.word }
-            .sortedByDescending { it.frequency }
+        var combined = (learned + aosp).sortedByDescending { it.frequency }
+            .distinctBy { it.word.lowercase() }
 
         if (combined.isEmpty() && xt9DigitSequence.length >= 3) {
             // Fallback to prefix completions

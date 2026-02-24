@@ -46,7 +46,10 @@ object LearnedDictionary {
     private fun addToT9Map(word: String) {
         val sequence = getT9Sequence(word)
         if (sequence.isNotEmpty()) {
-            t9Map.getOrPut(sequence) { mutableListOf() }.add(word)
+            val list = t9Map.getOrPut(sequence) { mutableListOf() }
+            if (!list.contains(word)) {
+                list.add(word)
+            }
         }
     }
 
@@ -55,7 +58,7 @@ object LearnedDictionary {
     }
 
     fun learnWord(word: String, previousWord: String? = null) {
-        val lowerWord = word.lowercase().trim().replace(Regex("[^a-z]"), "")
+        val lowerWord = word.lowercase().trim() // Keep punctuation for learning!
         if (lowerWord.isEmpty()) return
 
         val newFreq = (learnedWords[lowerWord] ?: 0) + 1
@@ -67,7 +70,7 @@ object LearnedDictionary {
         }
 
         if (previousWord != null) {
-            val lowerPrev = previousWord.lowercase().trim().replace(Regex("[^a-z]"), "")
+            val lowerPrev = previousWord.lowercase().trim()
             if (lowerPrev.isNotEmpty()) {
                 val nextMap = nextWordMap.getOrPut(lowerPrev) { mutableMapOf() }
                 nextMap[lowerWord] = (nextMap[lowerWord] ?: 0) + 1
@@ -109,14 +112,14 @@ object LearnedDictionary {
         val potentialMatches = t9Map.filterKeys { it.startsWith(digitSequence) }
         val results = mutableListOf<AospDictionary.WordSuggestion>()
 
-        for ((sequence, words) in potentialMatches) {
+        for ((_, words) in potentialMatches) {
             for (word in words) {
                 var matches = true
-                val cleanedWord = word.lowercase().filter { it in 'a'..'z' }
+                val stripped = word.lowercase().filter { it in 'a'..'z' }
                 for (i in constraints.indices) {
                     val constraint = constraints[i]
                     if (constraint.length == 1 && !constraint[0].isDigit()) {
-                        if (cleanedWord.length <= i || cleanedWord[i] != constraint[0]) {
+                        if (stripped.length <= i || stripped[i] != constraint[0]) {
                             matches = false
                             break
                         }
@@ -131,7 +134,7 @@ object LearnedDictionary {
     }
 
     fun getNextWordSuggestions(previousWord: String): List<String> {
-        val lowerPrev = previousWord.lowercase().trim().replace(Regex("[^a-z]"), "")
+        val lowerPrev = previousWord.lowercase().trim()
         val nextWords = nextWordMap[lowerPrev] ?: return emptyList()
         return nextWords.toList()
             .sortedByDescending { it.second }

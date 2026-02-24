@@ -6,8 +6,12 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 object AospDictionary {
-    private val t9Map = mutableMapOf<String, MutableList<String>>()
-    private val wordFrequency = mutableMapOf<String, Int>()
+    data class WordEntry(val stripped: String, val frequency: Int, val display: String) {
+        val word: String get() = if (display.isNotEmpty()) display else stripped
+    }
+
+    private val t9Map = mutableMapOf<String, MutableList<WordEntry>>()
+    private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
 
     data class WordSuggestion(val word: String, val frequency: Int)
 
@@ -57,27 +61,25 @@ object AospDictionary {
         "9677" to listOf("wops", "yops", "work", "worm", "worn", "worse", "worst", "wort", "yore")
     )
 
-    private val displayWords = mutableMapOf<String, String>()
-
     fun loadFromAssets(context: Context) {
         try {
             t9Map.clear()
-            wordFrequency.clear()
-            displayWords.clear()
+            wordMap.clear()
             val reader = BufferedReader(InputStreamReader(context.assets.open("en_us_words.bin")))
             var line: String? = reader.readLine()
             while (line != null) {
                 val parts = line.split("\t")
                 if (parts.size >= 2) {
-                    val word = parts[0]
+                    val stripped = parts[0]
                     val freq = parts[1].toInt()
-                    wordFrequency[word] = freq
-                    if (parts.size >= 3 && parts[2].isNotEmpty()) {
-                        displayWords[word] = parts[2]
-                    }
-                    val sequence = getT9Sequence(word)
-                    if (sequence.isNotEmpty()) {
-                        t9Map.getOrPut(sequence) { mutableListOf() }.add(word)
+                    val display = if (parts.size >= 3) parts[2] else ""
+                    val entry = WordEntry(stripped, freq, display)
+
+                    wordMap.getOrPut(stripped) { mutableListOf() }.add(entry)
+
+                    val digits = getT9Sequence(stripped)
+                    if (digits.isNotEmpty()) {
+                        t9Map.getOrPut(digits) { mutableListOf() }.add(entry)
                     }
                 }
                 line = reader.readLine()
@@ -93,37 +95,31 @@ object AospDictionary {
     }
 
     fun contains(word: String): Boolean {
-        return wordFrequency.containsKey(word.lowercase().trim())
-    }
-
-    fun getFrequency(word: String): Int {
-        return wordFrequency[word.lowercase().trim()] ?: 0
+        val lower = word.lowercase().trim()
+        val stripped = lower.filter { it in 'a'..'z' }
+        return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
     }
 
     fun getWordsStartingWith(prefix: String): List<WordSuggestion> {
-        // prefix is a T9 digit sequence
         return t9Map.filterKeys { it.startsWith(prefix) }
-            .flatMap { (seq, words) ->
-                words.map { word ->
-                    WordSuggestion(displayWords[word] ?: word, wordFrequency[word] ?: 0)
-                }
+            .flatMap { (_, entries) ->
+                entries.map { WordSuggestion(it.word, it.frequency) }
             }
             .sortedByDescending { it.frequency }
             .take(10)
     }
 
     fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
-        val words = t9Map[t9sequence]?.toMutableList() ?: mutableListOf()
+        val entries = t9Map[t9sequence] ?: mutableListOf<WordEntry>()
+        val results = entries.map { WordSuggestion(it.word, it.frequency) }.toMutableList()
 
-        hardcodedWords[t9sequence]?.forEach {
-            if (!words.contains(it)) {
-                words.add(it)
+        hardcodedWords[t9sequence]?.forEach { word ->
+            if (results.none { it.word == word }) {
+                results.add(WordSuggestion(word, 0))
             }
         }
 
-        return words.distinct().map { word ->
-            WordSuggestion(displayWords[word] ?: word, wordFrequency[word] ?: 0)
-        }
+        return results.distinctBy { it.word }
     }
 
     fun getSuggestions(constraints: List<String>): List<WordSuggestion> {
@@ -136,18 +132,10 @@ object AospDictionary {
         val potentialMatches = t9Map.filterKeys { it.startsWith(digitSequence) }
         val results = mutableListOf<WordSuggestion>()
 
-        for ((sequence, words) in potentialMatches) {
-            for (word in words) {
+        for ((_, entries) in potentialMatches) {
+            for (entry in entries) {
                 var matches = true
-                // word here is the strippedWord from the file
-                if (word.length < constraints.size) {
-                    // Optimization: if word is shorter than constraints, it can't match unless we're doing prefix
-                    // But getSuggestions is usually for the current length
-                    // Wait, T9Dictionary implementation allowed startsWith for multi-tap?
-                    // "Find all words whose T9 sequence starts with this digit sequence"
-                    // Yes, so it supports prefix.
-                }
-
+                val word = entry.stripped
                 for (i in constraints.indices) {
                     val constraint = constraints[i]
                     if (constraint.length == 1 && !constraint[0].isDigit()) {
@@ -158,7 +146,7 @@ object AospDictionary {
                     }
                 }
                 if (matches) {
-                    results.add(WordSuggestion(displayWords[word] ?: word, wordFrequency[word] ?: 0))
+                    results.add(WordSuggestion(entry.word, entry.frequency))
                 }
             }
         }
