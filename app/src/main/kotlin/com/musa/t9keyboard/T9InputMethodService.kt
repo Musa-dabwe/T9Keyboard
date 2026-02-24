@@ -419,10 +419,16 @@ class T9InputMethodService : InputMethodService() {
         val learned = LearnedDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
         val aosp = AospDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
 
-        currentXt9Predictions = (learned + aosp).distinctBy { it.word }
+        var combined = (learned + aosp).distinctBy { it.word }
             .sortedByDescending { it.frequency }
-            .map { it.word }
-            .take(3)
+
+        if (combined.isEmpty()) {
+            // Fallback to prefix completions
+            combined = AospDictionary.getWordsStartingWith(xt9DigitSequence.toString())
+                .sortedByDescending { it.frequency }
+        }
+
+        currentXt9Predictions = combined.map { it.word }.take(3)
 
         val displayPredictions = currentXt9Predictions.toMutableList()
 
