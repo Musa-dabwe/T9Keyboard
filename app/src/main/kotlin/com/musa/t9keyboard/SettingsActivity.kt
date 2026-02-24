@@ -22,7 +22,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var preferences: PreferencesManager
-    private lateinit var dictionary: T9Dictionary
 
     private val accentColors = listOf(
         R.color.accent_blue,
@@ -53,7 +52,7 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         preferences = PreferencesManager(this)
-        dictionary = T9Dictionary(this)
+        LearnedDictionary.load(this)
 
         setupToolbar()
         setupUI()
@@ -181,7 +180,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // Clear dictionary
         binding.btnClearDict.setOnClickListener {
-            dictionary.clearLearnedDictionary()
+            LearnedDictionary.clear()
             Toast.makeText(this, "Learned dictionary cleared", Toast.LENGTH_SHORT).show()
         }
     }

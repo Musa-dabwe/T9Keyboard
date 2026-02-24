@@ -16,7 +16,6 @@ class T9InputMethodService : InputMethodService() {
     private lateinit var keyboardView: KeyboardView
     private lateinit var symbolsView: SymbolsView
     private lateinit var emojiPickerView: EmojiPickerView
-    private lateinit var dictionary: T9Dictionary
     private lateinit var preferences: PreferencesManager
     private val shiftManager = ShiftStateManager()
 
@@ -41,7 +40,9 @@ class T9InputMethodService : InputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
-        dictionary = T9Dictionary(this)
+        AospDictionary.loadFromAssets(this)
+        LearnedDictionary.load(this)
+        AospBigrams.loadFromAssets(this)
         preferences = PreferencesManager(this)
     }
 
@@ -284,7 +285,7 @@ class T9InputMethodService : InputMethodService() {
 
             ic.commitText(finalWord, 1)
             committedWord = finalWord
-            dictionary.learnWord(wordToCommit, lastCommittedWord)
+            LearnedDictionary.learnWord(wordToCommit, lastCommittedWord)
             lastCommittedWord = wordToCommit
 
             xt9DigitSequence.setLength(0)
@@ -297,7 +298,7 @@ class T9InputMethodService : InputMethodService() {
             val word = composingText.toString()
             ic.finishComposingText()
             committedWord = word
-            dictionary.learnWord(word, lastCommittedWord)
+            LearnedDictionary.learnWord(word, lastCommittedWord)
             lastCommittedWord = word
             composingText.clear()
             currentWordConstraints.clear()
@@ -330,7 +331,7 @@ class T9InputMethodService : InputMethodService() {
 
             ic.commitText(suggestion, 1)
             ic.commitText(" ", 1)
-            dictionary.learnWord(originalWord, lastCommittedWord)
+            LearnedDictionary.learnWord(originalWord, lastCommittedWord)
             lastCommittedWord = originalWord
             xt9DigitSequence.setLength(0)
             xt9RawSequence.setLength(0)
@@ -339,7 +340,7 @@ class T9InputMethodService : InputMethodService() {
             ic.setComposingText(suggestion, 1)
             ic.finishComposingText()
             ic.commitText(" ", 1)
-            dictionary.learnWord(suggestion, lastCommittedWord)
+            LearnedDictionary.learnWord(suggestion, lastCommittedWord)
             lastCommittedWord = suggestion
             composingText.clear()
             currentWordConstraints.clear()
@@ -354,14 +355,21 @@ class T9InputMethodService : InputMethodService() {
             keyboardView.setSuggestions(emptyList())
             return
         }
-        val suggestions = dictionary.getSuggestions(currentWordConstraints)
-        keyboardView.setSuggestions(suggestions)
+        val learned = LearnedDictionary.getSuggestions(currentWordConstraints)
+        val aosp = AospDictionary.getSuggestions(currentWordConstraints)
+        val combined = (learned + aosp).distinctBy { it.word }
+            .sortedByDescending { it.frequency }
+            .map { it.word }
+            .take(3)
+        keyboardView.setSuggestions(combined)
     }
 
     private fun updateNextWordSuggestions() {
         val word = lastCommittedWord ?: return
-        val suggestions = dictionary.getNextWordSuggestions(word)
-        keyboardView.setSuggestions(suggestions)
+        val learned = LearnedDictionary.getNextWordSuggestions(word)
+        val aosp = AospBigrams.getNextWordSuggestions(word)
+        val combined = (learned + aosp).distinct().take(3)
+        keyboardView.setSuggestions(combined)
     }
 
     private fun showView(view: View) {
@@ -408,7 +416,14 @@ class T9InputMethodService : InputMethodService() {
             return
         }
 
-        currentXt9Predictions = dictionary.xt9Predict(xt9DigitSequence.toString())
+        val learned = LearnedDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
+        val aosp = AospDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
+
+        currentXt9Predictions = (learned + aosp).distinctBy { it.word }
+            .sortedByDescending { it.frequency }
+            .map { it.word }
+            .take(3)
+
         val displayPredictions = currentXt9Predictions.toMutableList()
 
         if (displayPredictions.isEmpty()) {
