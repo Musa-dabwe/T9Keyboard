@@ -422,7 +422,7 @@ class T9InputMethodService : InputMethodService() {
         var combined = (learned + aosp).distinctBy { it.word }
             .sortedByDescending { it.frequency }
 
-        if (combined.isEmpty()) {
+        if (combined.isEmpty() && xt9DigitSequence.length >= 3) {
             // Fallback to prefix completions
             combined = AospDictionary.getWordsStartingWith(xt9DigitSequence.toString())
                 .sortedByDescending { it.frequency }
