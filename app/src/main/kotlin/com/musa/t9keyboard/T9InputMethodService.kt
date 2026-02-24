@@ -230,7 +230,12 @@ class T9InputMethodService : InputMethodService() {
                     }
                     updateSuggestions()
                 } else {
-                    ic.deleteSurroundingText(1, 0)
+                    val selectedText = ic.getSelectedText(0)
+                    if (!selectedText.isNullOrEmpty()) {
+                        ic.commitText("", 1)
+                    } else {
+                        ic.deleteSurroundingText(1, 0)
+                    }
                 }
             }
             KeyboardView.KeyboardAction.SPACE -> {
@@ -472,12 +477,18 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.UP -> {
                 if (selectionStart > 0) {
+                    if (!isSelectionMode && selectionStart != selectionEnd) {
+                        ic.setSelection(selectionStart, selectionStart)
+                    }
                     val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP, meta)
                 }
             }
             TextEditingView.EditAction.DOWN -> {
                 if (selectionEnd < textLength) {
+                    if (!isSelectionMode && selectionStart != selectionEnd) {
+                        ic.setSelection(selectionEnd, selectionEnd)
+                    }
                     val meta = if (isSelectionMode) KeyEvent.META_SHIFT_ON else 0
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN, meta)
                 }
@@ -507,7 +518,11 @@ class T9InputMethodService : InputMethodService() {
                 }
             }
             TextEditingView.EditAction.SELECT_ALL -> {
-                ic.performContextMenuAction(android.R.id.selectAll)
+                if (selectionStart == 0 && selectionEnd == textLength && textLength > 0) {
+                    ic.setSelection(selectionEnd, selectionEnd)
+                } else {
+                    ic.performContextMenuAction(android.R.id.selectAll)
+                }
             }
             TextEditingView.EditAction.SELECT -> {
                 isSelectionMode = !isSelectionMode
@@ -516,6 +531,7 @@ class T9InputMethodService : InputMethodService() {
                     selectionAnchor = selectionStart
                     movingPosition = selectionEnd
                 } else {
+                    ic.setSelection(movingPosition, movingPosition)
                     selectionAnchor = -1
                     movingPosition = -1
                 }
