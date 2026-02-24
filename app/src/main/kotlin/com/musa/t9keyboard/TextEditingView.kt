@@ -83,7 +83,7 @@ class TextEditingView @JvmOverloads constructor(
             textSize = 13f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            textAllCaps = true
+            setAllCaps(true)
         })
 
         val gridLayout = LinearLayout(context).apply {
