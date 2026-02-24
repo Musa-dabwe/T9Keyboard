@@ -636,6 +636,18 @@ class T9InputMethodService : InputMethodService() {
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
 
+        // Clear internal buffers if the selection moved away from the current composing word
+        if (candidatesStart == -1 && candidatesEnd == -1) {
+            if (composingText.isNotEmpty() || xt9DigitSequence.isNotEmpty()) {
+                composingText.setLength(0)
+                currentWordConstraints.clear()
+                xt9DigitSequence.setLength(0)
+                xt9RawSequence.setLength(0)
+                currentXt9Predictions = emptyList()
+                keyboardView.setSuggestions(emptyList())
+            }
+        }
+
         if (isSelectionMode) {
             if (newSelStart == selectionAnchor) {
                 movingPosition = newSelEnd
