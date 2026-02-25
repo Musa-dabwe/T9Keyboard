@@ -169,7 +169,7 @@ class T9InputMethodService : InputMethodService() {
         if (preferences.xt9Enabled) {
             val digit = getDigitForChar(char)
             if (digit == '1') {
-                if (tapCount == 0) {
+                if (tapCount == 0 && !isFinished) {
                     commitTextWithFinalization("")
                 }
             } else {
@@ -178,7 +178,7 @@ class T9InputMethodService : InputMethodService() {
             }
         } else {
             // Multi-tap mode
-            if (getDigitForChar(char) == '1' && tapCount == 0) {
+            if (getDigitForChar(char) == '1' && tapCount == 0 && !isFinished) {
                 commitTextWithFinalization("")
             }
         }
@@ -391,7 +391,7 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun updateSuggestions() {
-        if (composingText.isEmpty()) {
+        if (composingText.isEmpty() || composingText.all { !it.isLetter() }) {
             keyboardView.setSuggestions(emptyList())
             return
         }
