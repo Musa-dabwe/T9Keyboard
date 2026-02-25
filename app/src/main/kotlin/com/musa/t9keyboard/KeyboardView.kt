@@ -63,28 +63,33 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     private fun setupKeys() {
-        val letterKeys = listOf(
-            binding.keyAbc, binding.keyDef, binding.keyGhi, binding.keyJkl,
-            binding.keyMno, binding.keyPqrs, binding.keyTuv, binding.keyWxyz,
-            binding.keyPunct
+        val numberKeys = listOf(
+            binding.keyPunct to '1',
+            binding.keyAbc to '2',
+            binding.keyDef to '3',
+            binding.keyGhi to '4',
+            binding.keyJkl to '5',
+            binding.keyMno to '6',
+            binding.keyPqrs to '7',
+            binding.keyTuv to '8',
+            binding.keyWxyz to '9'
         )
 
-        letterKeys.forEach { view ->
+        numberKeys.forEach { (view, digit) ->
             view.setOnTouchListener { v, event ->
                 if (event.action == android.view.MotionEvent.ACTION_DOWN) {
                     onFeedbackRequested?.invoke()
-                    handleLetterKey(v)
-                    true
-                } else {
-                    false
                 }
+                false
             }
-        }
-
-        binding.keyPunct.setOnLongClickListener {
-            onFeedbackRequested?.invoke()
-            onActionClickListener?.invoke(KeyboardAction.SETTINGS)
-            true
+            view.setOnClickListener {
+                handleLetterKey(view)
+            }
+            view.setOnLongClickListener {
+                onFeedbackRequested?.invoke()
+                onMultiTapListener?.invoke(digit, 0, true)
+                true
+            }
         }
 
         binding.keyShift.setOnClickListener {
@@ -119,13 +124,23 @@ class KeyboardView @JvmOverloads constructor(
             onFeedbackRequested?.invoke()
             onActionClickListener?.invoke(KeyboardAction.ENTER)
         }
+        binding.keySpace.setOnTouchListener { v, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                onFeedbackRequested?.invoke()
+            }
+            false
+        }
         binding.keySpace.setOnClickListener {
-            onFeedbackRequested?.invoke()
             if (isNumMode) {
                 onMultiTapListener?.invoke('0', 0, true)
             } else {
                 onActionClickListener?.invoke(KeyboardAction.SPACE)
             }
+        }
+        binding.keySpace.setOnLongClickListener {
+            onFeedbackRequested?.invoke()
+            onMultiTapListener?.invoke('0', 0, true)
+            true
         }
         binding.keySym.setOnClickListener {
             onFeedbackRequested?.invoke()
