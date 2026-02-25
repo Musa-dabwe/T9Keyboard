@@ -298,11 +298,12 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun commitCurrentComposing() {
-        commitTextWithFinalization("")
+        finalizeCurrentComposing(moveCursorToEnd = true)
     }
 
-    private fun commitTextWithFinalization(text: String, addSpaceAfter: Boolean = false) {
+    private fun finalizeCurrentComposing(moveCursorToEnd: Boolean = true) {
         val ic = currentInputConnection ?: return
+        if (composingText.isEmpty() && xt9DigitSequence.isEmpty()) return
 
         var committedWord: String? = null
 
@@ -311,7 +312,11 @@ class T9InputMethodService : InputMethodService() {
             val wordToCommit = if (suggestions.isNotEmpty()) suggestions[0] else xt9RawSequence.toString()
             val finalWord = applyShiftState(wordToCommit)
 
-            ic.commitText(finalWord, 1)
+            if (moveCursorToEnd) {
+                ic.commitText(finalWord, 1)
+            } else {
+                ic.finishComposingText()
+            }
             committedWord = finalWord
             LearnedDictionary.learnWord(wordToCommit, lastCommittedWord)
             lastCommittedWord = wordToCommit
@@ -324,6 +329,9 @@ class T9InputMethodService : InputMethodService() {
             keyboardView.updateShiftState(shiftManager.currentState)
         } else if (composingText.isNotEmpty()) {
             val word = composingText.toString()
+            if (moveCursorToEnd) {
+                ic.setComposingText(word, 1)
+            }
             ic.finishComposingText()
             committedWord = word
             LearnedDictionary.learnWord(word, lastCommittedWord)
@@ -334,12 +342,17 @@ class T9InputMethodService : InputMethodService() {
             keyboardView.updateShiftState(shiftManager.currentState)
         }
 
-        // Rule 3: standalone letter "i" always capitalized
-        if (committedWord == "i") {
+        if (committedWord == "i" && moveCursorToEnd) {
             ic.deleteSurroundingText(1, 0)
             ic.commitText("I", 1)
             lastCommittedWord = "I"
         }
+        keyboardView.setSuggestions(emptyList())
+    }
+
+    private fun commitTextWithFinalization(text: String, addSpaceAfter: Boolean = false) {
+        val ic = currentInputConnection ?: return
+        finalizeCurrentComposing(moveCursorToEnd = true)
 
         if (text.isNotEmpty()) {
             ic.commitText(text, 1)
@@ -347,7 +360,6 @@ class T9InputMethodService : InputMethodService() {
         if (addSpaceAfter) {
             ic.commitText(" ", 1)
         }
-        keyboardView.setSuggestions(emptyList())
     }
 
     private fun commitSuggestion(suggestion: String) {
@@ -433,6 +445,13 @@ class T9InputMethodService : InputMethodService() {
 
     private fun handleEditAction(action: TextEditingView.EditAction) {
         val ic = currentInputConnection ?: return
+
+        // Finalize any active composing text before performing edit actions,
+        // unless it's a delete action which handles its own internal buffer.
+        if (action != TextEditingView.EditAction.DELETE) {
+            finalizeCurrentComposing(moveCursorToEnd = false)
+        }
+
         val et = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return
         val textLength = et.text.length
         val selectionStart = et.selectionStart
@@ -636,16 +655,11 @@ class T9InputMethodService : InputMethodService() {
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
 
-        // Clear internal buffers if the selection moved away from the current composing word
-        if (candidatesStart == -1 && candidatesEnd == -1) {
-            if (composingText.isNotEmpty() || xt9DigitSequence.isNotEmpty()) {
-                composingText.setLength(0)
-                currentWordConstraints.clear()
-                xt9DigitSequence.setLength(0)
-                xt9RawSequence.setLength(0)
-                currentXt9Predictions = emptyList()
-                keyboardView.setSuggestions(emptyList())
-            }
+        // Detect if the cursor moved outside of the current composing region (manual move)
+        val isManualMove = candidatesStart != -1 && (newSelStart != candidatesEnd || newSelEnd != candidatesEnd)
+
+        if (candidatesStart == -1 || isManualMove) {
+            finalizeCurrentComposing(moveCursorToEnd = false)
         }
 
         if (isSelectionMode) {
