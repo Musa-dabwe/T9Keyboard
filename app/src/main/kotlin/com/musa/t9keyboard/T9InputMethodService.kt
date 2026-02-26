@@ -161,53 +161,104 @@ class T9InputMethodService : InputMethodService() {
      *    triggering a refresh of the Suggestion Bar.
      */
     private fun handleMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
+        val ic = currentInputConnection ?: return
+        val digit = getDigitForChar(char)
+        val isPunctuation = (digit == '1')
+
+        // Handle digit mode or long press
         if (char.isDigit()) {
             commitTextWithFinalization(char.toString())
             return
         }
-        if (tapCount == 0 && composingText.isEmpty()) {
-            checkAutoCap()
-        }
-        if (preferences.xt9Enabled) {
-            val digit = getDigitForChar(char)
-            if (digit == '1') {
-                if (tapCount == 0 && !isFinished) {
-                    commitTextWithFinalization("")
-                }
-            } else {
-                handleXt9Tap(char)
-                return
+
+        // On the very first tap of a new multi-tap sequence
+        if (tapCount == 0 && !isFinished) {
+            // If it's a punctuation key, finalize any active word before starting the symbol cycle
+            if (isPunctuation) {
+                finalizeCurrentComposing()
             }
-        } else {
-            // Multi-tap mode
-            if (getDigitForChar(char) == '1' && tapCount == 0 && !isFinished) {
-                commitTextWithFinalization("")
+
+            // Auto-capitalization check for new words
+            if (composingText.isEmpty() && xt9DigitSequence.isEmpty()) {
+                checkAutoCap()
             }
         }
-        val ic = currentInputConnection ?: return
 
         val displayChar = if (shiftManager.currentState != ShiftState.OFF) char.uppercaseChar() else char
 
+        if (isPunctuation) {
+            handlePunctuationTap(displayChar, tapCount, isFinished)
+        } else {
+            if (preferences.xt9Enabled) {
+                handleXt9Tap(char)
+            } else {
+                handleLetterMultiTap(displayChar, char, tapCount, isFinished)
+            }
+        }
+    }
+
+    private fun handlePunctuationTap(displayChar: Char, tapCount: Int, isFinished: Boolean) {
+        val ic = currentInputConnection ?: return
+
         if (isFinished) {
-            // Last char of the cycle is committed
+            // Finalize the punctuation immediately as requested
             if (composingText.isNotEmpty()) {
-                composingText.setCharAt(composingText.length - 1, displayChar)
-                currentWordConstraints[currentWordConstraints.size - 1] = char.toString()
+                val textToCommit = composingText.toString()
+                ic.commitText(textToCommit, 1)
+                composingText.setLength(0)
+                currentWordConstraints.clear()
+
+                shiftManager.consumeShift()
+                keyboardView.updateShiftState(shiftManager.currentState)
+            }
+            keyboardView.setSuggestions(emptyList())
+        } else {
+            // Cycling or first tap
+            if (tapCount == 0) {
+                composingText.setLength(0)
+                composingText.append(displayChar)
+                currentWordConstraints.clear()
+                currentWordConstraints.add("1")
+            } else {
+                if (composingText.isNotEmpty()) {
+                    composingText.setCharAt(composingText.length - 1, displayChar)
+                } else {
+                    composingText.append(displayChar)
+                    currentWordConstraints.clear()
+                    currentWordConstraints.add("1")
+                }
             }
             ic.setComposingText(composingText, 1)
-            updateSuggestions()
-            shiftManager.consumeShift()
-            keyboardView.updateShiftState(shiftManager.currentState)
-        } else {
-            // Still cycling or first tap of a new key
-            if (tapCount == 0) {
-                // First tap of a new key
-                composingText.append(displayChar)
-                currentWordConstraints.add(getDigitForChar(char).toString())
-            } else {
-                // Subsequent tap of same key
+        }
+    }
+
+    private fun handleLetterMultiTap(displayChar: Char, rawChar: Char, tapCount: Int, isFinished: Boolean) {
+        val ic = currentInputConnection ?: return
+
+        if (isFinished) {
+            // For letters, we stay in composing state after timeout (Option A)
+            if (composingText.isNotEmpty()) {
                 composingText.setCharAt(composingText.length - 1, displayChar)
-                currentWordConstraints[currentWordConstraints.size - 1] = char.toString()
+                if (currentWordConstraints.isNotEmpty()) {
+                    currentWordConstraints[currentWordConstraints.size - 1] = rawChar.toString()
+                }
+                ic.setComposingText(composingText, 1)
+                updateSuggestions()
+                shiftManager.consumeShift()
+                keyboardView.updateShiftState(shiftManager.currentState)
+            }
+        } else {
+            // cycling or new key tap
+            if (tapCount == 0) {
+                composingText.append(displayChar)
+                currentWordConstraints.add(getDigitForChar(rawChar).toString())
+            } else {
+                if (composingText.isNotEmpty()) {
+                    composingText.setCharAt(composingText.length - 1, displayChar)
+                    if (currentWordConstraints.isNotEmpty()) {
+                        currentWordConstraints[currentWordConstraints.size - 1] = rawChar.toString()
+                    }
+                }
             }
             ic.setComposingText(composingText, 1)
             updateSuggestions()
@@ -227,7 +278,9 @@ class T9InputMethodService : InputMethodService() {
                     updateXt9Suggestions()
                 } else if (!preferences.xt9Enabled && composingText.isNotEmpty()) {
                     composingText.deleteCharAt(composingText.length - 1)
-                    currentWordConstraints.removeAt(currentWordConstraints.size - 1)
+                    if (currentWordConstraints.isNotEmpty()) {
+                        currentWordConstraints.removeAt(currentWordConstraints.size - 1)
+                    }
                     ic.setComposingText(composingText, 1)
                     if (composingText.isEmpty()) {
                         ic.finishComposingText()
@@ -801,7 +854,7 @@ class T9InputMethodService : InputMethodService() {
             'p', 'q', 'r', 's' -> '7'
             't', 'u', 'v' -> '8'
             'w', 'x', 'y', 'z' -> '9'
-            '.', ',', '?', '!', ':', ';' -> '1'
+            '.', ',', '?', '!' -> '1'
             else -> ' '
         }
     }
