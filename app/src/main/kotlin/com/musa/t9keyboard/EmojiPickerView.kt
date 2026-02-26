@@ -39,6 +39,7 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private lateinit var tabsRecycler: RecyclerView
     private lateinit var emojiRecycler: RecyclerView
+    private var accentColor = Color.parseColor("#00BFA5")
     private lateinit var tabsAdapter: TabsAdapter
     private lateinit var emojiListAdapter: EmojiListAdapter
 
@@ -199,6 +200,13 @@ class EmojiPickerView @JvmOverloads constructor(
         tabsAdapter.setSelected(0)
     }
 
+    fun setAccentColor(color: Int) {
+        this.accentColor = color
+        if (::tabsAdapter.isInitialized) {
+            tabsAdapter.notifyDataSetChanged()
+        }
+    }
+
     // ---- TABS ADAPTER ----
     inner class TabsAdapter(
         private val categories: List<EmojiData.EmojiCategory>,
@@ -233,7 +241,7 @@ class EmojiPickerView @JvmOverloads constructor(
             holder.tv.text = categories[position].icon
             val isSelected = position == selectedIndex
             holder.tv.setBackgroundColor(
-                if (isSelected) Color.parseColor("#2D2D2D") else Color.TRANSPARENT
+                if (isSelected) accentColor else Color.TRANSPARENT
             )
             holder.tv.setOnClickListener { onTabClick(position) }
         }

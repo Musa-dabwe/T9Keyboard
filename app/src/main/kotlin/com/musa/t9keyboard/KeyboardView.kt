@@ -32,6 +32,8 @@ class KeyboardView @JvmOverloads constructor(
     private var multiTapTimeout: Long = 800L
     private var lastShiftTapTime: Long = 0
     private var isNumMode = false
+    private var accentColor: Int = android.graphics.Color.parseColor("#00BFA5")
+    private var lastShiftState: ShiftState = ShiftState.OFF
     var isXt9Mode = false
         set(value) {
             field = value
@@ -265,6 +267,7 @@ class KeyboardView @JvmOverloads constructor(
         tapCount = 0
         stopRepeatingDel()
         isNumMode = false
+        updateKeyAccent(binding.key123, false)
         updateKeyLabels()
     }
 
@@ -281,7 +284,22 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     fun setAccentColor(color: Int) {
+        this.accentColor = color
         binding.suggestionBar.setAccentColor(color)
+        updateShiftState(lastShiftState)
+        if (isNumMode) {
+            updateKeyAccent(binding.key123, true)
+        }
+    }
+
+    private fun updateKeyAccent(view: View, isActivated: Boolean) {
+        view.isActivated = isActivated
+        if (isActivated) {
+            view.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
+            view.backgroundTintMode = android.graphics.PorterDuff.Mode.SRC_IN
+        } else {
+            view.backgroundTintList = null
+        }
     }
 
     fun setOnSuggestionClickListener(listener: (String) -> Unit) {
@@ -299,7 +317,8 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     fun updateShiftState(state: ShiftState) {
-        binding.keyShift.isActivated = (state != ShiftState.OFF)
+        lastShiftState = state
+        updateKeyAccent(binding.keyShift, state != ShiftState.OFF)
         binding.labelShift.text = when(state) {
             ShiftState.OFF -> "SHIFT"
             ShiftState.ONE_SHOT -> "SHIFT"
@@ -310,6 +329,7 @@ class KeyboardView @JvmOverloads constructor(
     fun toggleNumMode() {
         isNumMode = !isNumMode
         updateKeyLabels()
+        updateKeyAccent(binding.key123, isNumMode)
     }
 
     private fun updateKeyLabels() {

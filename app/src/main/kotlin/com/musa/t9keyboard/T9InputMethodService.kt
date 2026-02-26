@@ -65,6 +65,8 @@ class T9InputMethodService : InputMethodService() {
         keyboardView.isXt9Mode = preferences.xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         keyboardView.setAccentColor(accentColor)
+        emojiPickerView.setAccentColor(accentColor)
+        textEditingView.setAccentColor(accentColor)
     }
 
     override fun onFinishInput() {
@@ -194,6 +196,8 @@ class T9InputMethodService : InputMethodService() {
             }
             ic.setComposingText(composingText, 1)
             updateSuggestions()
+            shiftManager.consumeShift()
+            keyboardView.updateShiftState(shiftManager.currentState)
         } else {
             // Still cycling or first tap of a new key
             if (tapCount == 0) {
@@ -360,6 +364,8 @@ class T9InputMethodService : InputMethodService() {
         if (addSpaceAfter) {
             ic.commitText(" ", 1)
         }
+        shiftManager.consumeShift()
+        keyboardView.updateShiftState(shiftManager.currentState)
     }
 
     private fun commitSuggestion(suggestion: String) {
@@ -437,8 +443,6 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun showTextEditingPanel() {
-        val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
-        textEditingView.setAccentColor(accentColor)
         updateEditingSelectionState()
         showView(textEditingView)
     }
