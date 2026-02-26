@@ -232,7 +232,7 @@ class KeyboardView @JvmOverloads constructor(
                 handler.removeCallbacks(commitRunnable)
                 isWaitingToCommit = false
             }
-            tapCount = (tapCount + 1) % chars.length
+            tapCount++
         } else {
             if (isWaitingToCommit) {
                 handler.removeCallbacks(commitRunnable)
@@ -242,7 +242,7 @@ class KeyboardView @JvmOverloads constructor(
             tapCount = 0
         }
 
-        val currentChar = chars[tapCount]
+        val currentChar = chars[tapCount % chars.length]
         onMultiTapListener?.invoke(currentChar, tapCount, false)
 
         isWaitingToCommit = true
