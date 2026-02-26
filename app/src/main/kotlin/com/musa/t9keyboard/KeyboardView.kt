@@ -49,7 +49,7 @@ class KeyboardView @JvmOverloads constructor(
         binding.keyPqrs.id to "pqrs",
         binding.keyTuv.id to "tuv",
         binding.keyWxyz.id to "wxyz",
-        binding.keyPunct.id to ".,?!:;"
+        binding.keyPunct.id to ".,!?"
     )
 
     /**
@@ -347,7 +347,7 @@ class KeyboardView @JvmOverloads constructor(
         )
 
         val letterLabels = listOf(
-            ".,?!", "ABC", "DEF", "GHI", "JKL", "MNO", "PQRS", "TUV", "WXYZ", "SPACE"
+            ".,!?", "ABC", "DEF", "GHI", "JKL", "MNO", "PQRS", "TUV", "WXYZ", "SPACE"
         )
 
         digitKeys.forEachIndexed { index, (primary, secondary, digit) ->
