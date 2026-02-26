@@ -31,6 +31,8 @@ class T9InputMethodService : InputMethodService() {
     private var isSelectionMode = false
     private var selectionAnchor = -1
     private var movingPosition = -1
+    private var lastTapTime = 0L
+    private var lastDigit = ' '
 
     private val accentColorResIds = listOf(
         R.color.accent_blue,
@@ -161,6 +163,7 @@ class T9InputMethodService : InputMethodService() {
      *    triggering a refresh of the Suggestion Bar.
      */
     private fun handleMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
+        lastTapTime = System.currentTimeMillis()
         val ic = currentInputConnection ?: return
         val digit = getDigitForChar(char)
         val isPunctuation = (digit == '1')
@@ -168,13 +171,16 @@ class T9InputMethodService : InputMethodService() {
         // Handle digit mode or long press
         if (char.isDigit()) {
             commitTextWithFinalization(char.toString())
+            lastDigit = ' '
             return
         }
 
         // On the very first tap of a new multi-tap sequence
         if (tapCount == 0 && !isFinished) {
-            // If it's a punctuation key, finalize any active word before starting the symbol cycle
-            if (isPunctuation) {
+            // If it's a punctuation key, finalize any active word before starting the symbol cycle.
+            // We only finalize if it's a transition to punctuation from a different key.
+            // This avoids premature finalization when cycling past the last character of the punctuation key.
+            if (isPunctuation && lastDigit != '1') {
                 finalizeCurrentComposing()
             }
 
@@ -188,7 +194,9 @@ class T9InputMethodService : InputMethodService() {
 
         if (isPunctuation) {
             handlePunctuationTap(displayChar, tapCount, isFinished)
+            lastDigit = '1'
         } else {
+            lastDigit = digit
             if (preferences.xt9Enabled) {
                 handleXt9Tap(char)
             } else {
@@ -405,6 +413,7 @@ class T9InputMethodService : InputMethodService() {
             lastCommittedWord = "I"
         }
         keyboardView.setSuggestions(emptyList())
+        lastDigit = ' '
     }
 
     private fun commitTextWithFinalization(text: String, addSpaceAfter: Boolean = false) {
@@ -715,7 +724,12 @@ class T9InputMethodService : InputMethodService() {
         // Detect if the cursor moved outside of the current composing region (manual move)
         val isManualMove = candidatesStart != -1 && (newSelStart != candidatesEnd || newSelEnd != candidatesEnd)
 
-        if (candidatesStart == -1 || isManualMove) {
+        // Premature finalization fix:
+        // Only finalize if it's a real manual move by the user.
+        // We avoid finalizing if candidatesStart is -1 while we are actively typing (within 200ms of a tap),
+        // as some systems/editors report -1 transiently during setComposingText updates.
+        val isRecentTap = System.currentTimeMillis() - lastTapTime < 200
+        if (isManualMove || (candidatesStart == -1 && !isRecentTap)) {
             finalizeCurrentComposing(moveCursorToEnd = false)
         }
 
@@ -863,6 +877,7 @@ class T9InputMethodService : InputMethodService() {
         isSelectionMode = false
         selectionAnchor = -1
         movingPosition = -1
+        lastDigit = ' '
         if (::textEditingView.isInitialized) {
             textEditingView.setSelectionMode(false)
         }
