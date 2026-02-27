@@ -310,9 +310,9 @@ class KeyboardView @JvmOverloads constructor(
 
         val keys = listOf(
             binding.keyPunct, binding.keyAbc, binding.keyDef, binding.keyDel,
-            binding.keyGhi, binding.keyJkl, binding.keyMno, binding.keyEnter,
+            binding.keyGhi, binding.keyJkl, binding.keyMno, binding.key123,
             binding.keyPqrs, binding.keyTuv, binding.keyWxyz, binding.keyShift,
-            binding.keySym, binding.keySpace, binding.keyEmoji, binding.key123
+            binding.keySym, binding.keySpace, binding.keyEmoji, binding.keyEnter
         )
 
         keys.forEach { it.backgroundTintList = pressedColorList }

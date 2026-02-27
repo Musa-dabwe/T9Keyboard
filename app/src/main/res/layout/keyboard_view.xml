@@ -53,8 +53,9 @@
             <TextView android:id="@+id/label_mno" style="@style/KeyPrimaryLabel" android:text="MNO" />
             <TextView android:id="@+id/secondary_label_mno" style="@style/KeySecondaryLabel" android:text="6" />
         </FrameLayout>
-        <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
+        <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
+            <TextView android:id="@+id/secondary_label_123" style="@style/KeySecondaryLabel" android:text="XT9" />
         </FrameLayout>
     </LinearLayout>
 
@@ -105,9 +106,8 @@
                 android:src="@drawable/ic_text_editor"
                 android:tint="#AAAAAA" />
         </FrameLayout>
-        <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
-            <TextView android:id="@+id/secondary_label_123" style="@style/KeySecondaryLabel" android:text="XT9" />
+        <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
         </FrameLayout>
     </LinearLayout>
 
