@@ -25,6 +25,19 @@ class SymbolsView @JvmOverloads constructor(
         binding.btnSymbolDelete.setOnClickListener { onDeleteClickListener?.invoke() }
     }
 
+    fun setAccentColor(color: Int) {
+        val pressedColor = (color and 0x00FFFFFF) or (0x44 shl 24)
+        val ripple = android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(pressedColor),
+            null,
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE)
+        )
+        binding.btnBackToAbc.background = ripple
+        binding.btnSymbolDelete.background = ripple.constantState?.newDrawable()?.mutate()
+
+        (binding.symbolRecyclerView.adapter as? SymbolAdapter)?.setAccentColor(color)
+    }
+
     fun resetScroll() {
         binding.symbolRecyclerView.scrollToPosition(0)
     }

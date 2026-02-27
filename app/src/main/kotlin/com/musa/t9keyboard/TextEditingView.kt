@@ -63,6 +63,8 @@ class TextEditingView @JvmOverloads constructor(
     private lateinit var selectKey: TextView
     private lateinit var copyKey: TextView
     private lateinit var cutKey: TextView
+    private lateinit var abcBtn: TextView
+    private var allKeys = mutableListOf<TextView>()
 
     init {
         orientation = VERTICAL
@@ -137,7 +139,7 @@ class TextEditingView @JvmOverloads constructor(
         addView(LinearLayout(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
             setBackgroundColor(Color.parseColor("#1A1A1A"))
-            val abcBtn = TextView(context).apply {
+            abcBtn = TextView(context).apply {
                 layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
                 text = "ABC"
                 setTextColor(Color.WHITE)
@@ -178,7 +180,7 @@ class TextEditingView @JvmOverloads constructor(
     }
 
     private fun createKey(config: KeyConfig): TextView {
-        return TextView(context).apply {
+        val key = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
                 setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3))
             }
@@ -187,53 +189,82 @@ class TextEditingView @JvmOverloads constructor(
             textSize = config.textSize
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            background = createKeyBackground()
             isClickable = true
             isFocusable = true
+        }
 
-            setOnTouchListener(object : OnTouchListener {
-                private var longPressedSent = false
+        allKeys.add(key)
+        updateKeyBackground(key)
 
-                override fun onTouch(v: View, event: MotionEvent): Boolean {
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            onFeedbackRequested?.invoke()
-                            v.isPressed = true
-                            longPressedSent = false
+        key.setOnTouchListener(object : OnTouchListener {
+            private var longPressedSent = false
 
-                            if (config.repeatInterval != null) {
-                                onAction?.invoke(config.action)
-                                startRepeating(config.action, config.repeatInterval)
-                            } else if (config.longAction != null) {
-                                startLongPressCheck(config.longAction) { longPressedSent = true }
-                            }
-                        }
-                        MotionEvent.ACTION_UP -> {
-                            v.isPressed = false
-                            stopRepeating()
-                            if (!longPressedSent) {
-                                if (config.repeatInterval == null) {
-                                    onAction?.invoke(config.action)
-                                }
-                            }
-                        }
-                        MotionEvent.ACTION_CANCEL -> {
-                            v.isPressed = false
-                            stopRepeating()
+            override fun onTouch(v: View, event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        onFeedbackRequested?.invoke()
+                        v.isPressed = true
+                        longPressedSent = false
+
+                        if (config.repeatInterval != null) {
+                            onAction?.invoke(config.action)
+                            startRepeating(config.action, config.repeatInterval)
+                        } else if (config.longAction != null) {
+                            startLongPressCheck(config.longAction) { longPressedSent = true }
                         }
                     }
-                    return true
+                    MotionEvent.ACTION_UP -> {
+                        v.isPressed = false
+                        stopRepeating()
+                        if (!longPressedSent) {
+                            if (config.repeatInterval == null) {
+                                onAction?.invoke(config.action)
+                            }
+                        }
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        v.isPressed = false
+                        stopRepeating()
+                    }
                 }
-            })
-        }
+                return true
+            }
+        })
+        return key
     }
 
-    private fun createKeyBackground(backgroundColor: Int = Color.parseColor("#2D2D2D")): GradientDrawable {
-        return GradientDrawable().apply {
+    private fun updateKeyBackground(key: TextView) {
+        if (::selectKey.isInitialized && key == selectKey) return
+
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val pressedColorList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_pressed),
+                intArrayOf()
+            ),
+            intArrayOf(
+                pressedColor,
+                Color.parseColor("#2D2D2D") // Match the background color for TextEditingView
+            )
+        )
+        val shape = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = dpToPx(4).toFloat()
-            setColor(backgroundColor)
+            setColor(Color.WHITE)
         }
+        key.background = shape
+        key.backgroundTintList = pressedColorList
+    }
+
+    private fun updateAbcBtnBackground() {
+        if (!::abcBtn.isInitialized) return
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val ripple = android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(pressedColor),
+            null,
+            android.graphics.drawable.ColorDrawable(Color.WHITE)
+        )
+        abcBtn.background = ripple
     }
 
     private fun startRepeating(action: EditAction, interval: Long) {
@@ -276,6 +307,8 @@ class TextEditingView @JvmOverloads constructor(
     fun setAccentColor(color: Int) {
         this.accentColor = color
         updateSelectKeyVisuals()
+        allKeys.forEach { updateKeyBackground(it) }
+        updateAbcBtnBackground()
     }
 
     private fun updateSelectKeyVisuals() {
