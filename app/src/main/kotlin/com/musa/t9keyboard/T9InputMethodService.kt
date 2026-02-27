@@ -67,6 +67,7 @@ class T9InputMethodService : InputMethodService() {
         keyboardView.isXt9Mode = preferences.xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         keyboardView.setAccentColor(accentColor)
+        symbolsView.setAccentColor(accentColor)
         emojiPickerView.setAccentColor(accentColor)
         textEditingView.setAccentColor(accentColor)
     }

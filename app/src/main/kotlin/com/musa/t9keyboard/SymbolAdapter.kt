@@ -11,6 +11,19 @@ class SymbolAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val items = mutableListOf<SymbolItem>()
+    private var accentColor: Int = android.graphics.Color.parseColor("#00BFA5")
+    private var currentRipple: android.graphics.drawable.Drawable? = null
+
+    fun setAccentColor(color: Int) {
+        this.accentColor = color
+        val pressedColor = (color and 0x00FFFFFF) or (0x44 shl 24)
+        currentRipple = android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(pressedColor),
+            null,
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE)
+        )
+        notifyDataSetChanged()
+    }
 
     sealed class SymbolItem {
         data class Header(val title: String) : SymbolItem()
@@ -69,7 +82,7 @@ class SymbolAdapter(
         if (holder is HeaderViewHolder && item is SymbolItem.Header) {
             holder.bind(item)
         } else if (holder is RowViewHolder && item is SymbolItem.Row) {
-            holder.bind(item, onSymbolClick)
+            holder.bind(item, currentRipple, onSymbolClick)
         }
     }
 
@@ -92,16 +105,18 @@ class SymbolAdapter(
             view.findViewById(R.id.symbol_6)
         )
 
-        fun bind(row: SymbolItem.Row, onClick: (String) -> Unit) {
+        fun bind(row: SymbolItem.Row, ripple: android.graphics.drawable.Drawable?, onClick: (String) -> Unit) {
             row.symbols.forEachIndexed { index, symbol ->
                 val cell = cells[index]
                 if (symbol != null) {
                     cell.text = symbol
                     cell.visibility = View.VISIBLE
+                    cell.background = ripple?.constantState?.newDrawable()?.mutate()
                     cell.setOnClickListener { onClick(symbol) }
                 } else {
                     cell.text = ""
                     cell.visibility = View.INVISIBLE
+                    cell.background = null
                     cell.setOnClickListener(null)
                 }
             }

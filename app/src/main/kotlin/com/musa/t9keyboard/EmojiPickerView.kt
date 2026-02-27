@@ -40,8 +40,11 @@ class EmojiPickerView @JvmOverloads constructor(
     private lateinit var tabsRecycler: RecyclerView
     private lateinit var emojiRecycler: RecyclerView
     private var accentColor = Color.parseColor("#00BFA5")
+    private var currentRipple: android.graphics.drawable.Drawable? = null
     private lateinit var tabsAdapter: TabsAdapter
     private lateinit var emojiListAdapter: EmojiListAdapter
+    private lateinit var abcBtn: TextView
+    private lateinit var delBtn: TextView
 
     // Flat list of items for the main recycler
     sealed class ListItem {
@@ -160,7 +163,7 @@ class EmojiPickerView @JvmOverloads constructor(
             setBackgroundColor(Color.parseColor("#1A1A1A"))
         }
 
-        val abcBtn = TextView(context).apply {
+        abcBtn = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 3f)
             text = "ABC"
             setTextColor(Color.WHITE)
@@ -172,7 +175,7 @@ class EmojiPickerView @JvmOverloads constructor(
             setOnClickListener { onBackClickListener?.invoke() }
         }
 
-        val delBtn = TextView(context).apply {
+        delBtn = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
             text = "⌫"
             setTextColor(Color.parseColor("#FF5252"))
@@ -202,9 +205,26 @@ class EmojiPickerView @JvmOverloads constructor(
 
     fun setAccentColor(color: Int) {
         this.accentColor = color
+        val pressedColor = (color and 0x00FFFFFF) or (0x44 shl 24)
+        currentRipple = android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(pressedColor),
+            null,
+            android.graphics.drawable.ColorDrawable(Color.WHITE)
+        )
+
         if (::tabsAdapter.isInitialized) {
             tabsAdapter.notifyDataSetChanged()
         }
+        if (::emojiListAdapter.isInitialized) {
+            emojiListAdapter.notifyDataSetChanged()
+        }
+        updateBottomBarHighlights()
+    }
+
+    private fun updateBottomBarHighlights() {
+        if (!::abcBtn.isInitialized || !::delBtn.isInitialized) return
+        abcBtn.background = currentRipple?.constantState?.newDrawable()?.mutate()
+        delBtn.background = currentRipple?.constantState?.newDrawable()?.mutate()
     }
 
     // ---- TABS ADAPTER ----
@@ -306,6 +326,8 @@ class EmojiPickerView @JvmOverloads constructor(
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val ripple = currentRipple
+
             when (val item = items[position]) {
                 is ListItem.Header -> {
                     val hVH = holder as HeaderVH
@@ -320,10 +342,12 @@ class EmojiPickerView @JvmOverloads constructor(
                         if (i < item.emojis.size) {
                             cell.text = item.emojis[i]
                             cell.visibility = View.VISIBLE
+                            cell.background = ripple?.constantState?.newDrawable()?.mutate()
                             cell.setOnClickListener { onEmojiClick(item.emojis[i]) }
                         } else {
                             cell.text = ""
                             cell.visibility = View.INVISIBLE
+                            cell.background = null
                             cell.setOnClickListener(null)
                         }
                     }

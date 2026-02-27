@@ -290,16 +290,37 @@ class KeyboardView @JvmOverloads constructor(
         if (isNumMode) {
             updateKeyAccent(binding.key123, true)
         }
+        updateKeyBackgrounds()
+    }
+
+    private fun updateKeyBackgrounds() {
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val pressedColorList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_pressed),
+                intArrayOf(android.R.attr.state_activated),
+                intArrayOf()
+            ),
+            intArrayOf(
+                pressedColor,
+                accentColor,
+                android.graphics.Color.parseColor("#000000") // This is the default key background color in colors.xml
+            )
+        )
+
+        val keys = listOf(
+            binding.keyPunct, binding.keyAbc, binding.keyDef, binding.keyDel,
+            binding.keyGhi, binding.keyJkl, binding.keyMno, binding.keyEnter,
+            binding.keyPqrs, binding.keyTuv, binding.keyWxyz, binding.keyShift,
+            binding.keySym, binding.keySpace, binding.keyEmoji, binding.key123
+        )
+
+        keys.forEach { it.backgroundTintList = pressedColorList }
     }
 
     private fun updateKeyAccent(view: View, isActivated: Boolean) {
         view.isActivated = isActivated
-        if (isActivated) {
-            view.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
-            view.backgroundTintMode = android.graphics.PorterDuff.Mode.SRC_IN
-        } else {
-            view.backgroundTintList = null
-        }
+        // updateKeyBackgrounds will handle the tinting based on state_activated
     }
 
     fun setOnSuggestionClickListener(listener: (String) -> Unit) {
