@@ -483,8 +483,8 @@ class T9InputMethodService : InputMethodService() {
     private fun sendDownUpKeyEvents(keyCode: Int, meta: Int) {
         val ic = currentInputConnection ?: return
         val now = System.currentTimeMillis()
-        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta))
-        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta))
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
     }
 
     private fun showView(view: View) {
@@ -523,8 +523,12 @@ class T9InputMethodService : InputMethodService() {
         val selectionStart = et.selectionStart
         val selectionEnd = et.selectionEnd
 
-        if (isSelectionMode && movingPosition == -1) {
+        if (isSelectionMode && (movingPosition == -1 || selectionAnchor == -1)) {
+            selectionAnchor = selectionStart
             movingPosition = selectionEnd
+        } else if (!isSelectionMode) {
+            selectionAnchor = -1
+            movingPosition = -1
         }
 
         when (action) {
