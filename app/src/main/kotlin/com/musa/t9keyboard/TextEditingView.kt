@@ -236,7 +236,7 @@ class TextEditingView @JvmOverloads constructor(
     private fun updateKeyBackground(key: TextView) {
         if (::selectKey.isInitialized && key == selectKey) return
 
-        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
         val pressedColorList = android.content.res.ColorStateList(
             arrayOf(
                 intArrayOf(android.R.attr.state_pressed),
@@ -258,7 +258,7 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun updateAbcBtnBackground() {
         if (!::abcBtn.isInitialized) return
-        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
         val ripple = android.graphics.drawable.RippleDrawable(
             android.content.res.ColorStateList.valueOf(pressedColor),
             null,
