@@ -294,7 +294,7 @@ class KeyboardView @JvmOverloads constructor(
     }
 
     private fun updateKeyBackgrounds() {
-        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
         val pressedColorList = android.content.res.ColorStateList(
             arrayOf(
                 intArrayOf(android.R.attr.state_pressed),

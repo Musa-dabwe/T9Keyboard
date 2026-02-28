@@ -26,7 +26,7 @@ class SymbolsView @JvmOverloads constructor(
     }
 
     fun setAccentColor(color: Int) {
-        val pressedColor = (color and 0x00FFFFFF) or (0x44 shl 24)
+        val pressedColor = (color and 0x00FFFFFF) or (0x66 shl 24)
         val ripple = android.graphics.drawable.RippleDrawable(
             android.content.res.ColorStateList.valueOf(pressedColor),
             null,
