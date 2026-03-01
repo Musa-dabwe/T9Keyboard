@@ -95,7 +95,12 @@
             <TextView android:id="@+id/secondary_label_space" style="@style/KeySecondaryLabel" android:text="0" />
         </FrameLayout>
         <FrameLayout android:id="@+id/key_emoji" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_emoji" style="@style/KeyPrimaryLabel" android:text="EMOJI" />
+            <ImageView
+                android:id="@+id/label_emoji"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_emoji" />
             <ImageView
                 android:id="@+id/secondary_label_emoji"
                 android:layout_width="11sp"
