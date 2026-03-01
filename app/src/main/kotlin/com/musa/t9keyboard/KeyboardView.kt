@@ -290,6 +290,7 @@ class KeyboardView @JvmOverloads constructor(
         if (isNumMode) {
             updateKeyAccent(binding.key123, true)
         }
+        binding.labelEmoji.setColorFilter(color)
         updateKeyBackgrounds()
     }
 
@@ -332,7 +333,7 @@ class KeyboardView @JvmOverloads constructor(
             binding.labelAbc, binding.labelDef, binding.labelGhi, binding.labelJkl,
             binding.labelMno, binding.labelPqrs, binding.labelTuv, binding.labelWxyz,
             binding.labelPunct, binding.labelShift, binding.labelEnter,
-            binding.labelSpace, binding.labelSym, binding.label123, binding.labelEmoji
+            binding.labelSpace, binding.labelSym, binding.label123
         )
         primaryLabels.forEach { it.textSize = sizeSp }
     }
