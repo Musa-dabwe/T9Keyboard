@@ -70,7 +70,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showInfoDialog() {
-        val message = "Developer: Musathepoet\n© 2026\nTechnologies used: Kotlin, Python, AOSP Dictionary"
+        val message = "T9 Keyboard is a modern, lightweight input method built for Android by Musadabwe in /n©2026. Designed with speed and simplicity in mind, it brings back the familiarity of T9 predictive typing while adding smart word prediction powered by the AOSP dictionary. Built with Kotlin for the Android layer and Python for dictionary processing, T9 Keyboard is a passion project crafted from the ground up."
         AlertDialog.Builder(this)
             .setTitle("Keyboard Info")
             .setMessage(message)
@@ -96,7 +96,7 @@ class SettingsActivity : AppCompatActivity() {
         // Haptic intensity
         binding.boxHapticIntensity.text = preferences.hapticDuration.toString()
         binding.rowHapticIntensity.setOnClickListener {
-            showSliderDialog("Haptic Intensity (ms)", 0f, 50f, preferences.hapticDuration.toFloat()) { newValue ->
+            showSliderDialog("Haptic Intensity", 0f, 50f, preferences.hapticDuration.toFloat()) { newValue ->
                 preferences.hapticDuration = newValue.toInt()
                 binding.boxHapticIntensity.text = newValue.toInt().toString()
             }
@@ -121,7 +121,7 @@ class SettingsActivity : AppCompatActivity() {
         // Multi-tap timeout
         binding.boxTimeout.text = preferences.multiTapTimeout.toString()
         binding.rowTimeout.setOnClickListener {
-            showSliderDialog("Multi-tap timeout (ms)", 0f, 800f, preferences.multiTapTimeout.toFloat()) { newValue ->
+            showSliderDialog("Multi-tap timeout", 0f, 800f, preferences.multiTapTimeout.toFloat()) { newValue ->
                 preferences.multiTapTimeout = newValue.toLong()
                 binding.boxTimeout.text = newValue.toInt().toString()
             }
