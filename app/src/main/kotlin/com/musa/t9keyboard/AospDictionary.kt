@@ -60,6 +60,8 @@ object AospDictionary {
         "84489" to listOf("thirty", "ighty"),
         "2255" to listOf("ball", "call", "bill", "bell", "bull", "calk", "balk"),
         "7668" to listOf("pont", "root", "rout", "snot", "soot", "snou"),
+        "3473" to listOf("fire", "dire"),
+        "5478" to listOf("list", "jist"),
         "3225766" to listOf("Fackson"),
         "688383742" to listOf("Mutetesha"),
         "9677" to listOf("work", "worm", "worn", "worse", "worst", "wort", "yore")
