@@ -56,6 +56,7 @@ object AospDictionary {
         "273" to listOf("are", "ape", "age", "ace", "bre", "cre"),
         "9484" to listOf("with", "yogi"),
         "3676" to listOf("from", "eron"),
+        "397263" to listOf("expand"),
         "84373" to listOf("there", "tired", "three"),
         "84489" to listOf("thirty", "ighty"),
         "2255" to listOf("ball", "call", "bill", "bell", "bull", "calk", "balk"),
