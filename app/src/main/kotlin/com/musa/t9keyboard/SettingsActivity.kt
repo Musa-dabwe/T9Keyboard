@@ -225,7 +225,6 @@ class SettingsActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom)
-            binding.headerContainer.setPadding(16, systemBars.top + 16, 16, 16)
             insets
         }
     }
