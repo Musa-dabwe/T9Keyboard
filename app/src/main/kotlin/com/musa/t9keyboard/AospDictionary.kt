@@ -49,7 +49,7 @@ object AospDictionary {
         "4283" to listOf("have", "gave", "hate", "gate", "fate", "gave"),
         "9687" to listOf("your", "wots"),
         "4687" to listOf("govs", "hour"),
-        "6473" to listOf("mire", "ogre", "nigh"),
+        "6473" to listOf("ogre", "nigh"),
         "2669" to listOf("any", "bow", "cow", "boy", "box", "coy"),
         "86" to listOf("to", "un", "vo"),
         "468" to listOf("got", "hot", "hit", "gut", "hut", "iot"),
@@ -60,7 +60,9 @@ object AospDictionary {
         "84489" to listOf("thirty", "ighty"),
         "2255" to listOf("ball", "call", "bill", "bell", "bull", "calk", "balk"),
         "7668" to listOf("pont", "root", "rout", "snot", "soot", "snou"),
-        "9677" to listOf("wops", "yops", "work", "worm", "worn", "worse", "worst", "wort", "yore")
+        "3225766", to listOf("Fackson"),
+        ”688383742”, to listOf("Mutetesha"),
+        "9677" to listOf("work", "worm", "worn", "worse", "worst", "wort", "yore")
     )
 
     fun loadFromAssets(context: Context) {
