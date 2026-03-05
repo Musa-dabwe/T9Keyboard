@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import com.musa.t9keyboard.databinding.KeyboardViewBinding
+import com.musa.t9keyboard.utils.FontUtils
 
 class KeyboardView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -61,7 +62,28 @@ class KeyboardView @JvmOverloads constructor(
 
     init {
         setupKeys()
+        applyUbuntuFont()
         updateKeyLabels()
+    }
+
+    private fun applyUbuntuFont() {
+        val ubuntu = FontUtils.getUbuntu(context)
+        val allTextViews = listOf(
+            binding.labelAbc, binding.secondaryLabelAbc,
+            binding.labelDef, binding.secondaryLabelDef,
+            binding.labelGhi, binding.secondaryLabelGhi,
+            binding.labelJkl, binding.secondaryLabelJkl,
+            binding.labelMno, binding.secondaryLabelMno,
+            binding.labelPqrs, binding.secondaryLabelPqrs,
+            binding.labelTuv, binding.secondaryLabelTuv,
+            binding.labelWxyz, binding.secondaryLabelWxyz,
+            binding.labelPunct, binding.secondaryLabelPunct,
+            binding.labelShift, binding.labelDel, binding.labelEnter,
+            binding.labelSpace, binding.secondaryLabelSpace,
+            binding.labelSym, binding.secondaryLabelSym,
+            binding.label123, binding.secondaryLabel123
+        )
+        allTextViews.forEach { it.typeface = ubuntu }
     }
 
     private fun setupKeys() {

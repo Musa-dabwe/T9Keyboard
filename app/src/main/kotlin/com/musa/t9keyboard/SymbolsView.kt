@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.musa.t9keyboard.databinding.SymbolsViewBinding
+import com.musa.t9keyboard.utils.FontUtils
 
 class SymbolsView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -23,6 +24,13 @@ class SymbolsView @JvmOverloads constructor(
         }
         binding.btnBackToAbc.setOnClickListener { onBackClickListener?.invoke() }
         binding.btnSymbolDelete.setOnClickListener { onDeleteClickListener?.invoke() }
+        applyUbuntuFont()
+    }
+
+    private fun applyUbuntuFont() {
+        val ubuntu = FontUtils.getUbuntu(context)
+        binding.btnBackToAbc.typeface = ubuntu
+        binding.btnSymbolDelete.typeface = ubuntu
     }
 
     fun setAccentColor(color: Int) {

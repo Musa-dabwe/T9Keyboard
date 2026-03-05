@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.musa.t9keyboard.databinding.SuggestionBarBinding
+import com.musa.t9keyboard.utils.FontUtils
 
 import android.graphics.Color
 import android.view.View
@@ -24,6 +25,16 @@ class SuggestionBar @JvmOverloads constructor(
         binding.suggestion1.setOnClickListener { onSuggestionClickListener?.invoke(binding.suggestion1.text.toString()) }
         binding.suggestion2.setOnClickListener { onSuggestionClickListener?.invoke(binding.suggestion2.text.toString()) }
         binding.suggestion3.setOnClickListener { onSuggestionClickListener?.invoke(binding.suggestion3.text.toString()) }
+        applyUbuntuFont()
+    }
+
+    private fun applyUbuntuFont() {
+        val ubuntu = FontUtils.getUbuntu(context)
+        binding.suggestion1.typeface = ubuntu
+        binding.suggestion2.typeface = ubuntu
+        binding.suggestion3.typeface = ubuntu
+        binding.suggestionRaw.typeface = ubuntu
+        binding.xt9Indicator.typeface = ubuntu
     }
 
     fun setSuggestions(suggestions: List<String>, rawSequence: String? = null) {
