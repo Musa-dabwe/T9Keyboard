@@ -70,7 +70,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showInfoDialog() {
-        val message = "T9 Keyboard is a modern, lightweight input method built for Android by Musadabwe in /n©2026. Designed with speed and simplicity in mind, it brings back the familiarity of T9 predictive typing while adding smart word prediction powered by the AOSP dictionary. Built with Kotlin for the Android layer and Python for dictionary processing, T9 Keyboard is a passion project crafted from the ground up."
+        val message = "T9 Keyboard is a modern, lightweight input method built for Android by Musadabwe in /n© 2026n. Designed with speed and simplicity in mind, it brings back the familiarity of T9 predictive typing while adding smart word prediction powered by the AOSP dictionary. Built with Kotlin for the Android layer and Python for dictionary processing, T9 Keyboard is a passion project crafted from the ground up."
         AlertDialog.Builder(this)
             .setTitle("Keyboard Info")
             .setMessage(message)
