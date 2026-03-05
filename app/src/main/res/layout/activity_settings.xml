@@ -11,15 +11,44 @@
         android:background="@color/settings_background"
         app:elevation="0dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <RelativeLayout
+            android:id="@+id/header_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="?attr/actionBarSize"
-            app:navigationIcon="@drawable/ic_back"
-            app:title="T9 Keyboard Settings"
-            app:titleTextColor="@color/settings_text_primary"
-            app:menu="@menu/settings_menu" />
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/btn_back"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:padding="12dp"
+                android:src="@drawable/ic_back"
+                app:tint="@color/settings_text_primary" />
+
+            <TextView
+                android:id="@+id/txt_welcome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:text="Welcome to T9\nKeyboard"
+                android:textColor="@color/settings_text_primary"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/btn_info"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:padding="12dp"
+                android:src="@drawable/ic_info"
+                app:tint="@color/settings_text_primary" />
+
+        </RelativeLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -37,23 +66,13 @@
             android:paddingHorizontal="16dp">
 
             <!-- INPUT MODE -->
-            <TextView
-                android:id="@+id/header_input_mode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="INPUT MODE"
-                android:textColor="@color/accent_purple"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/settings_card_background"
-                app:cardCornerRadius="24dp"
+                app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -62,56 +81,61 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
+                    <TextView
+                        android:id="@+id/header_input_mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Input Mode"
+                        android:textColor="@color/accent_blue"
+                        android:textSize="14sp" />
+
                     <RelativeLayout
+                        android:id="@+id/row_xt9"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
                             android:layout_alignParentStart="true"
-                            android:layout_toStartOf="@id/check_xt9">
+                            android:layout_toStartOf="@id/toggle_xt9">
                             <TextView
+                                android:id="@+id/txt_xt9_title"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="XT9 Predictive Text"
                                 android:textColor="@color/settings_text_primary"
                                 android:textSize="16sp" />
                             <TextView
+                                android:id="@+id/txt_xt9_subtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Tap each key once — keyboard predicts the word"
+                                android:text="tap each key once - keyboard predicts the word"
                                 android:textColor="@color/settings_text_secondary"
                                 android:textSize="13sp" />
                         </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/check_xt9"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                        <ImageView
+                            android:id="@+id/toggle_xt9"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
                             android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true" />
+                            android:layout_centerVertical="true"
+                            android:src="@drawable/toggle_off" />
                     </RelativeLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- FEEDBACK & SOUND -->
-            <TextView
-                android:id="@+id/header_feedback"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="FEEDBACK &amp; SOUND"
-                android:textColor="@color/accent_purple"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/settings_card_background"
-                app:cardCornerRadius="24dp"
+                app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -120,173 +144,184 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <!-- Haptic feedback -->
+                    <TextView
+                        android:id="@+id/header_feedback"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Feedback &amp; Sound"
+                        android:textColor="@color/accent_blue"
+                        android:textSize="14sp" />
+
+                    <!-- Haptic Feedback -->
                     <RelativeLayout
+                        android:id="@+id/row_haptic"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_alignParentStart="true"
-                            android:layout_toStartOf="@id/check_haptic">
+                            android:orientation="vertical">
                             <TextView
+                                android:id="@+id/txt_haptic_title"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Haptic feedback"
+                                android:text="Haptic Feedback"
                                 android:textColor="@color/settings_text_primary"
                                 android:textSize="16sp" />
                             <TextView
+                                android:id="@+id/txt_haptic_subtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Vibrate on keypress"
+                                android:text="vibrate on key press"
                                 android:textColor="@color/settings_text_secondary"
                                 android:textSize="13sp" />
                         </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/check_haptic"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                        <ImageView
+                            android:id="@+id/toggle_haptic"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
                             android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true" />
+                            android:layout_centerVertical="true"
+                            android:src="@drawable/toggle_off" />
                     </RelativeLayout>
 
-                    <View android:layout_width="match_parent" android:layout_height="24dp" />
-
-                    <!-- Haptic intensity slider -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Haptic intensity (ms)"
-                        android:textColor="@color/settings_text_primary"
-                        android:textSize="16sp" />
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/seek_haptic_duration"
+                    <!-- Haptic Intensity -->
+                    <RelativeLayout
+                        android:id="@+id/row_haptic_intensity"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:valueFrom="0"
-                        android:valueTo="100" />
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0ms"
-                            android:textColor="@color/settings_text_secondary"
-                            android:textSize="12sp"
-                            android:layout_alignParentStart="true" />
-                        <TextView
-                            android:id="@+id/val_haptic_duration"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/settings_text_secondary"
-                            android:textSize="12sp"
-                            android:layout_centerHorizontal="true" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="100ms"
-                            android:textColor="@color/settings_text_secondary"
-                            android:textSize="12sp"
-                            android:layout_alignParentEnd="true" />
-                    </RelativeLayout>
-
-                    <View android:layout_width="match_parent" android:layout_height="24dp" />
-
-                    <!-- Key press sound -->
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_marginBottom="20dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_alignParentStart="true"
-                            android:layout_toStartOf="@id/check_sound">
+                            android:orientation="vertical">
                             <TextView
+                                android:id="@+id/txt_haptic_intensity_title"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Key press sound"
+                                android:text="Haptic Intensity (ms)"
                                 android:textColor="@color/settings_text_primary"
                                 android:textSize="16sp" />
                             <TextView
+                                android:id="@+id/txt_haptic_intensity_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0-50 ms"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/box_haptic_intensity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/value_box_background"
+                            android:minWidth="36dp"
+                            android:gravity="center"
+                            android:padding="4dp"
+                            android:text="30"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="14sp" />
+                    </RelativeLayout>
+
+                    <!-- Key Press Sound -->
+                    <RelativeLayout
+                        android:id="@+id/row_sound"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:id="@+id/txt_sound_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Key Press Sound"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:id="@+id/txt_sound_subtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Play sound when typing"
                                 android:textColor="@color/settings_text_secondary"
                                 android:textSize="13sp" />
                         </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/check_sound"
+                        <ImageView
+                            android:id="@+id/toggle_sound"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:src="@drawable/toggle_off" />
+                    </RelativeLayout>
+
+                    <!-- Sound Volume -->
+                    <RelativeLayout
+                        android:id="@+id/row_sound_volume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:id="@+id/txt_sound_volume_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sound Volume"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:id="@+id/txt_sound_volume_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0-100"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/box_sound_volume"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true" />
-                    </RelativeLayout>
-
-                    <View android:layout_width="match_parent" android:layout_height="24dp" />
-
-                    <!-- Sound volume slider -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sound volume (%)"
-                        android:textColor="@color/settings_text_primary"
-                        android:textSize="16sp" />
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/seek_sound_volume"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="0"
-                        android:valueTo="100" />
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0%"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/value_box_background"
+                            android:minWidth="36dp"
+                            android:gravity="center"
+                            android:padding="4dp"
+                            android:text="50"
                             android:textColor="@color/settings_text_secondary"
-                            android:textSize="12sp"
-                            android:layout_alignParentStart="true" />
-                        <TextView
-                            android:id="@+id/val_sound_volume"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/settings_text_secondary"
-                            android:textSize="12sp"
-                            android:layout_centerHorizontal="true" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="100%"
-                            android:textColor="@color/settings_text_secondary"
-                            android:textSize="12sp"
-                            android:layout_alignParentEnd="true" />
+                            android:textSize="14sp" />
                     </RelativeLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- LAYOUT & SIZING -->
-            <TextView
-                android:id="@+id/header_layout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="LAYOUT &amp; SIZING"
-                android:textColor="@color/accent_purple"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/settings_card_background"
-                app:cardCornerRadius="24dp"
+                app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -295,136 +330,233 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <!-- Multi-tap timeout -->
+                    <TextView
+                        android:id="@+id/header_layout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Layout &amp; Sizing"
+                        android:textColor="@color/accent_blue"
+                        android:textSize="14sp" />
+
+                    <!-- Multi-tap Timeout -->
                     <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Multi-tap timeout (ms)"
-                            android:textColor="@color/settings_text_primary"
-                            android:textSize="16sp"
-                            android:layout_alignParentStart="true" />
-                        <TextView
-                            android:id="@+id/val_timeout"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="600ms"
-                            android:textColor="@color/accent_purple"
-                            android:textSize="16sp"
-                            android:layout_alignParentEnd="true" />
-                    </RelativeLayout>
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/seek_timeout"
+                        android:id="@+id/row_timeout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:valueFrom="400"
-                        android:valueTo="1200" />
-
-                    <View android:layout_width="match_parent" android:layout_height="24dp" />
+                        android:layout_marginBottom="20dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:id="@+id/txt_timeout_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Multi-tap timeout"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:id="@+id/txt_timeout_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0-800 ms"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/box_timeout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/value_box_background"
+                            android:minWidth="36dp"
+                            android:gravity="center"
+                            android:padding="4dp"
+                            android:text="800"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="14sp" />
+                    </RelativeLayout>
 
                     <!-- Key label font size -->
                     <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Key label font size (sp)"
-                            android:textColor="@color/settings_text_primary"
-                            android:textSize="16sp"
-                            android:layout_alignParentStart="true" />
-                        <TextView
-                            android:id="@+id/val_key_font"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="18sp"
-                            android:textColor="@color/accent_purple"
-                            android:textSize="16sp"
-                            android:layout_alignParentEnd="true" />
-                    </RelativeLayout>
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/seek_key_font"
+                        android:id="@+id/row_key_font"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:valueFrom="10"
-                        android:valueTo="40" />
-
-                    <View android:layout_width="match_parent" android:layout_height="24dp" />
+                        android:layout_marginBottom="20dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:id="@+id/txt_key_font_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Key label font size"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:id="@+id/txt_key_font_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0-40 sp"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/box_key_font"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/value_box_background"
+                            android:minWidth="36dp"
+                            android:gravity="center"
+                            android:padding="4dp"
+                            android:text="25"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="14sp" />
+                    </RelativeLayout>
 
                     <!-- Suggestion font size -->
                     <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Suggestion font size (sp)"
-                            android:textColor="@color/settings_text_primary"
-                            android:textSize="16sp"
-                            android:layout_alignParentStart="true" />
-                        <TextView
-                            android:id="@+id/val_suggestion_font"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="16sp"
-                            android:textColor="@color/accent_purple"
-                            android:textSize="16sp"
-                            android:layout_alignParentEnd="true" />
-                    </RelativeLayout>
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/seek_suggestion_font"
+                        android:id="@+id/row_suggestion_font"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:valueFrom="10"
-                        android:valueTo="30" />
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <TextView
+                                android:id="@+id/txt_suggestion_font_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Suggestion Font Size"
+                                android:textColor="@color/settings_text_primary"
+                                android:textSize="16sp" />
+                            <TextView
+                                android:id="@+id/txt_suggestion_font_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0-30 sp"
+                                android:textColor="@color/settings_text_secondary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/box_suggestion_font"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:background="@drawable/value_box_background"
+                            android:minWidth="36dp"
+                            android:gravity="center"
+                            android:padding="4dp"
+                            android:text="15"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="14sp" />
+                    </RelativeLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ACCENT COLOR -->
-            <TextView
-                android:id="@+id/header_accent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="ACCENT COLOR"
-                android:textColor="@color/accent_purple"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
+            <!-- THEME -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/settings_card_background"
-                app:cardCornerRadius="24dp"
+                app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
-                    android:id="@+id/accent_colors_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingVertical="20dp"
-                    android:paddingHorizontal="8dp"
-                    android:gravity="center" />
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/header_theme"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Theme"
+                        android:textColor="@color/accent_blue"
+                        android:textSize="14sp" />
+
+                    <!-- Accent Color -->
+                    <TextView
+                        android:id="@+id/txt_accent_color_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Accent color"
+                        android:textColor="@color/settings_text_primary"
+                        android:textSize="16sp" />
+
+                    <LinearLayout
+                        android:id="@+id/accent_colors_layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="24dp"
+                        android:gravity="center_vertical" />
+
+                    <!-- Theme Selection -->
+                    <TextView
+                        android:id="@+id/txt_theme_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Theme"
+                        android:textColor="@color/settings_text_primary"
+                        android:textSize="16sp" />
+
+                    <LinearLayout
+                        android:id="@+id/spinner_theme"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:id="@+id/txt_selected_theme"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dark"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="14sp" />
+                        <ImageView
+                            android:id="@+id/img_dropdown"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_moon"
+                            android:rotation="180"
+                            app:tint="@color/settings_text_secondary"
+                            android:visibility="gone" /> <!-- Just a placeholder if I need an arrow -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ▼"
+                            android:textColor="@color/settings_text_secondary"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- DICTIONARY -->
-            <TextView
-                android:id="@+id/header_dictionary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="DICTIONARY"
-                android:textColor="@color/accent_purple"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_clear_dict"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -443,6 +575,7 @@
                 app:strokeColor="@color/accent_purple" />
 
             <TextView
+                android:id="@+id/txt_clear_dict_desc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"

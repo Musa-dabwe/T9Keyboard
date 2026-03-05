@@ -16,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.musa.t9keyboard.utils.FontUtils
 
 class TextEditingView @JvmOverloads constructor(
     context: Context,
@@ -77,13 +78,14 @@ class TextEditingView @JvmOverloads constructor(
     }
 
     private fun setupUI() {
+        val ubuntu = FontUtils.getUbuntu(context)
         // --- Header ---
         addView(TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(36))
             text = "TEXT EDITING"
             setTextColor(Color.parseColor("#AAAAAA"))
             textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = ubuntu
             gravity = Gravity.CENTER
             setAllCaps(true)
         })
@@ -144,7 +146,7 @@ class TextEditingView @JvmOverloads constructor(
                 text = "ABC"
                 setTextColor(Color.WHITE)
                 textSize = 18f
-                typeface = Typeface.DEFAULT_BOLD
+                typeface = ubuntu
                 gravity = Gravity.CENTER
                 isClickable = true
                 isFocusable = true
@@ -187,7 +189,7 @@ class TextEditingView @JvmOverloads constructor(
             text = config.label
             setTextColor(config.textColor)
             textSize = config.textSize
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = FontUtils.getUbuntu(context)
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
@@ -313,14 +315,15 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun updateSelectKeyVisuals() {
         selectKey.background = SelectKeyDrawable(isSelectionMode)
+        val ubuntu = FontUtils.getUbuntu(context)
         if (isSelectionMode) {
             val content = SpannableString("Select")
             content.setSpan(UnderlineSpan(), 0, content.length, 0)
             selectKey.text = content
-            selectKey.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            selectKey.typeface = ubuntu
         } else {
             selectKey.text = "Select"
-            selectKey.typeface = Typeface.DEFAULT_BOLD
+            selectKey.typeface = ubuntu
         }
     }
 

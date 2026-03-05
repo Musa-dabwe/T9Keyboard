@@ -3,10 +3,10 @@ package com.musa.t9keyboard
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -16,7 +16,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.musa.t9keyboard.databinding.ActivitySettingsBinding
+import com.musa.t9keyboard.utils.FontUtils
 import com.google.android.material.slider.Slider
+import android.widget.LinearLayout
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -54,33 +56,141 @@ class SettingsActivity : AppCompatActivity() {
         preferences = PreferencesManager(this)
         LearnedDictionary.load(this)
 
-        setupToolbar()
+        setupHeader()
         setupUI()
         setupAccentColorSelector()
+        applyUbuntuFont()
         applyAccentColor()
         handleInsets()
     }
 
-    private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+    private fun setupHeader() {
+        binding.btnBack.setOnClickListener { finish() }
+        binding.btnInfo.setOnClickListener { showInfoDialog() }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.settings_menu, menu)
-        return true
+    private fun showInfoDialog() {
+        val message = "Developer: Musathepoet\n© 2026\nTechnologies used: Kotlin, Python, AOSP Dictionary"
+        AlertDialog.Builder(this)
+            .setTitle("Keyboard Info")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.action_theme) {
-            showThemeDialog()
-            return true
+    private fun setupUI() {
+        // XT9 Predictive Text
+        updateToggle(binding.toggleXt9, preferences.xt9Enabled)
+        binding.rowXt9.setOnClickListener {
+            preferences.xt9Enabled = !preferences.xt9Enabled
+            updateToggle(binding.toggleXt9, preferences.xt9Enabled)
         }
-        return super.onOptionsItemSelected(item)
+
+        // Haptic feedback
+        updateToggle(binding.toggleHaptic, preferences.hapticEnabled)
+        binding.rowHaptic.setOnClickListener {
+            preferences.hapticEnabled = !preferences.hapticEnabled
+            updateToggle(binding.toggleHaptic, preferences.hapticEnabled)
+        }
+
+        // Haptic intensity
+        binding.boxHapticIntensity.text = preferences.hapticDuration.toString()
+        binding.rowHapticIntensity.setOnClickListener {
+            showSliderDialog("Haptic Intensity (ms)", 0f, 50f, preferences.hapticDuration.toFloat()) { newValue ->
+                preferences.hapticDuration = newValue.toInt()
+                binding.boxHapticIntensity.text = newValue.toInt().toString()
+            }
+        }
+
+        // Key press sound
+        updateToggle(binding.toggleSound, preferences.soundEnabled)
+        binding.rowSound.setOnClickListener {
+            preferences.soundEnabled = !preferences.soundEnabled
+            updateToggle(binding.toggleSound, preferences.soundEnabled)
+        }
+
+        // Sound volume
+        binding.boxSoundVolume.text = (preferences.soundVolume * 100).toInt().toString()
+        binding.rowSoundVolume.setOnClickListener {
+            showSliderDialog("Sound Volume", 0f, 100f, preferences.soundVolume * 100) { newValue ->
+                preferences.soundVolume = newValue / 100f
+                binding.boxSoundVolume.text = newValue.toInt().toString()
+            }
+        }
+
+        // Multi-tap timeout
+        binding.boxTimeout.text = preferences.multiTapTimeout.toString()
+        binding.rowTimeout.setOnClickListener {
+            showSliderDialog("Multi-tap timeout (ms)", 0f, 800f, preferences.multiTapTimeout.toFloat()) { newValue ->
+                preferences.multiTapTimeout = newValue.toLong()
+                binding.boxTimeout.text = newValue.toInt().toString()
+            }
+        }
+
+        // Key label font size
+        binding.boxKeyFont.text = preferences.keyFontSize.toString()
+        binding.rowKeyFont.setOnClickListener {
+            showSliderDialog("Key label font size (sp)", 0f, 40f, preferences.keyFontSize.toFloat()) { newValue ->
+                preferences.keyFontSize = newValue.toInt()
+                binding.boxKeyFont.text = newValue.toInt().toString()
+            }
+        }
+
+        // Suggestion font size
+        binding.boxSuggestionFont.text = preferences.suggestionFontSize.toString()
+        binding.rowSuggestionFont.setOnClickListener {
+            showSliderDialog("Suggestion Font Size (sp)", 0f, 30f, preferences.suggestionFontSize.toFloat()) { newValue ->
+                preferences.suggestionFontSize = newValue.toInt()
+                binding.boxSuggestionFont.text = newValue.toInt().toString()
+            }
+        }
+
+        // Theme selection
+        updateThemeText()
+        binding.spinnerTheme.setOnClickListener { showThemeDialog() }
+
+        // Clear dictionary
+        binding.btnClearDict.setOnClickListener {
+            LearnedDictionary.clear()
+            Toast.makeText(this, "Learned dictionary cleared", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateToggle(imageView: ImageView, isEnabled: Boolean) {
+        if (isEnabled) {
+            imageView.setImageResource(R.drawable.toggle_on)
+            imageView.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(this, accentColors[preferences.accentColorIndex]))
+        } else {
+            imageView.setImageResource(R.drawable.toggle_off)
+            imageView.imageTintList = ColorStateList.valueOf(Color.parseColor("#444444"))
+        }
+    }
+
+    private fun showSliderDialog(title: String, from: Float, to: Float, current: Float, onConfirm: (Float) -> Unit) {
+        val dialogView = View.inflate(this, R.layout.suggestion_bar, null) // Reusing suggestion_bar layout just to get a container
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 48, 48, 48)
+        }
+        val slider = Slider(this).apply {
+            valueFrom = from
+            valueTo = to
+            value = current.coerceIn(from, to)
+            thumbTintList = ColorStateList.valueOf(ContextCompat.getColor(this@SettingsActivity, accentColors[preferences.accentColorIndex]))
+            trackActiveTintList = thumbTintList
+        }
+        container.addView(slider)
+
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(container)
+            .setPositiveButton("Confirm") { _, _ -> onConfirm(slider.value) }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showThemeDialog() {
-        val options = arrayOf("Light", "Dark", "Follow System")
+        val options = arrayOf("Light", "Dark", "System Default")
         val checkedItem = preferences.theme // 0, 1, 2
 
         AlertDialog.Builder(this)
@@ -88,9 +198,18 @@ class SettingsActivity : AppCompatActivity() {
             .setSingleChoiceItems(options, checkedItem) { dialog, which ->
                 preferences.theme = which
                 applyTheme(which)
+                updateThemeText()
                 dialog.dismiss()
             }
             .show()
+    }
+
+    private fun updateThemeText() {
+        binding.txtSelectedTheme.text = when (preferences.theme) {
+            0 -> "Light"
+            1 -> "Dark"
+            else -> "System Default"
+        }
     }
 
     private fun applyTheme(themeValue: Int) {
@@ -106,82 +225,8 @@ class SettingsActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom)
-            binding.toolbar.setPadding(0, systemBars.top, 0, 0)
+            binding.headerContainer.setPadding(16, systemBars.top + 16, 16, 16)
             insets
-        }
-    }
-
-    private fun setupUI() {
-        // XT9 Predictive Text
-        binding.checkXt9.isChecked = preferences.xt9Enabled
-        binding.checkXt9.setOnCheckedChangeListener { _, isChecked ->
-            preferences.xt9Enabled = isChecked
-        }
-
-        // Haptic feedback
-        binding.checkHaptic.isChecked = preferences.hapticEnabled
-        binding.checkHaptic.setOnCheckedChangeListener { _, isChecked ->
-            preferences.hapticEnabled = isChecked
-        }
-
-        binding.seekHapticDuration.value = preferences.hapticDuration.toFloat().coerceIn(0f, 100f)
-        binding.valHapticDuration.text = "${preferences.hapticDuration}ms"
-        binding.seekHapticDuration.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                preferences.hapticDuration = value.toInt()
-                binding.valHapticDuration.text = "${value.toInt()}ms"
-            }
-        }
-
-        // Key press sound
-        binding.checkSound.isChecked = preferences.soundEnabled
-        binding.checkSound.setOnCheckedChangeListener { _, isChecked ->
-            preferences.soundEnabled = isChecked
-        }
-
-        binding.seekSoundVolume.value = (preferences.soundVolume * 100).coerceIn(0f, 100f)
-        binding.valSoundVolume.text = "${(preferences.soundVolume * 100).toInt()}%"
-        binding.seekSoundVolume.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                preferences.soundVolume = value / 100f
-                binding.valSoundVolume.text = "${value.toInt()}%"
-            }
-        }
-
-        // Multi-tap timeout
-        binding.seekTimeout.value = preferences.multiTapTimeout.toFloat().coerceIn(400f, 1200f)
-        binding.valTimeout.text = "${preferences.multiTapTimeout}ms"
-        binding.seekTimeout.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                preferences.multiTapTimeout = value.toLong()
-                binding.valTimeout.text = "${value.toInt()}ms"
-            }
-        }
-
-        // Key label font size
-        binding.seekKeyFont.value = preferences.keyFontSize.toFloat().coerceIn(10f, 40f)
-        binding.valKeyFont.text = "${preferences.keyFontSize}sp"
-        binding.seekKeyFont.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                preferences.keyFontSize = value.toInt()
-                binding.valKeyFont.text = "${value.toInt()}sp"
-            }
-        }
-
-        // Suggestion font size
-        binding.seekSuggestionFont.value = preferences.suggestionFontSize.toFloat().coerceIn(10f, 30f)
-        binding.valSuggestionFont.text = "${preferences.suggestionFontSize}sp"
-        binding.seekSuggestionFont.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                preferences.suggestionFontSize = value.toInt()
-                binding.valSuggestionFont.text = "${value.toInt()}sp"
-            }
-        }
-
-        // Clear dictionary
-        binding.btnClearDict.setOnClickListener {
-            LearnedDictionary.clear()
-            Toast.makeText(this, "Learned dictionary cleared", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -220,71 +265,65 @@ class SettingsActivity : AppCompatActivity() {
                 preferences.accentColorIndex = index
                 setupAccentColorSelector()
                 applyAccentColor()
+                updateToggles()
             }
 
             binding.accentColorsLayout.addView(frame)
         }
     }
 
+    private fun updateToggles() {
+        updateToggle(binding.toggleXt9, preferences.xt9Enabled)
+        updateToggle(binding.toggleHaptic, preferences.hapticEnabled)
+        updateToggle(binding.toggleSound, preferences.soundEnabled)
+    }
+
     private fun applyAccentColor() {
         val accentColor = ContextCompat.getColor(this, accentColors[preferences.accentColorIndex])
-        val colorStateList = ColorStateList.valueOf(accentColor)
 
-        // Headers
         binding.headerInputMode.setTextColor(accentColor)
         binding.headerFeedback.setTextColor(accentColor)
         binding.headerLayout.setTextColor(accentColor)
-        binding.headerAccent.setTextColor(accentColor)
-        binding.headerDictionary.setTextColor(accentColor)
+        binding.headerTheme.setTextColor(accentColor)
 
-        // Switches
-        binding.checkXt9.thumbTintList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(Color.WHITE, Color.LTGRAY)
-        )
-        binding.checkXt9.trackTintList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(accentColor, Color.parseColor("#444444"))
-        )
+        binding.btnClearDict.strokeColor = ColorStateList.valueOf(accentColor)
+    }
 
-        binding.checkHaptic.thumbTintList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(Color.WHITE, Color.LTGRAY)
+    private fun applyUbuntuFont() {
+        val ubuntu = FontUtils.getUbuntu(this)
+        val allViews = listOf(
+            binding.txtWelcome,
+            binding.headerInputMode,
+            binding.txtXt9Title,
+            binding.txtXt9Subtitle,
+            binding.headerFeedback,
+            binding.txtHapticTitle,
+            binding.txtHapticSubtitle,
+            binding.txtHapticIntensityTitle,
+            binding.txtHapticIntensitySubtitle,
+            binding.boxHapticIntensity,
+            binding.txtSoundTitle,
+            binding.txtSoundSubtitle,
+            binding.txtSoundVolumeTitle,
+            binding.txtSoundVolumeSubtitle,
+            binding.boxSoundVolume,
+            binding.headerLayout,
+            binding.txtTimeoutTitle,
+            binding.txtTimeoutSubtitle,
+            binding.boxTimeout,
+            binding.txtKeyFontTitle,
+            binding.txtKeyFontSubtitle,
+            binding.boxKeyFont,
+            binding.txtSuggestionFontTitle,
+            binding.txtSuggestionFontSubtitle,
+            binding.boxSuggestionFont,
+            binding.headerTheme,
+            binding.txtAccentColorTitle,
+            binding.txtThemeTitle,
+            binding.txtSelectedTheme,
+            binding.btnClearDict,
+            binding.txtClearDictDesc
         )
-        binding.checkHaptic.trackTintList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(accentColor, Color.parseColor("#444444"))
-        )
-
-        binding.checkSound.thumbTintList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(Color.WHITE, Color.LTGRAY)
-        )
-        binding.checkSound.trackTintList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(accentColor, Color.parseColor("#444444"))
-        )
-
-        // Sliders
-        val sliders = listOf(
-            binding.seekHapticDuration,
-            binding.seekSoundVolume,
-            binding.seekTimeout,
-            binding.seekKeyFont,
-            binding.seekSuggestionFont
-        )
-        sliders.forEach {
-            it.thumbTintList = colorStateList
-            it.trackActiveTintList = colorStateList
-            it.trackInactiveTintList = ColorStateList.valueOf(Color.parseColor("#444444"))
-        }
-
-        // Dynamic labels
-        binding.valTimeout.setTextColor(accentColor)
-        binding.valKeyFont.setTextColor(accentColor)
-        binding.valSuggestionFont.setTextColor(accentColor)
-
-        // Clear dictionary button
-        binding.btnClearDict.strokeColor = colorStateList
+        allViews.forEach { it.typeface = ubuntu }
     }
 }

@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.musa.t9keyboard.utils.FontUtils
 
 /**
  * GBoard-style emoji panel:
@@ -69,6 +70,7 @@ class EmojiPickerView @JvmOverloads constructor(
 
             buildFlatList()
             setupViews()
+        applyUbuntuFont()
             isInitialized = true
         } catch (e: Exception) {
             Log.e("EmojiPickerView", "Failed to initialize emoji picker: ${e.message}")
@@ -227,6 +229,12 @@ class EmojiPickerView @JvmOverloads constructor(
         delBtn.background = currentRipple?.constantState?.newDrawable()?.mutate()
     }
 
+    private fun applyUbuntuFont() {
+        val ubuntu = FontUtils.getUbuntu(context)
+        abcBtn.typeface = ubuntu
+        delBtn.typeface = ubuntu
+    }
+
     // ---- TABS ADAPTER ----
     inner class TabsAdapter(
         private val categories: List<EmojiData.EmojiCategory>,
@@ -258,6 +266,7 @@ class EmojiPickerView @JvmOverloads constructor(
         }
 
         override fun onBindViewHolder(holder: TabVH, position: Int) {
+            holder.tv.typeface = FontUtils.getUbuntu(context)
             holder.tv.text = categories[position].icon
             val isSelected = position == selectedIndex
             holder.tv.setBackgroundColor(
@@ -296,7 +305,7 @@ class EmojiPickerView @JvmOverloads constructor(
                         )
                         textSize = 11f
                         setTextColor(Color.parseColor("#888888"))
-                        setTypeface(null, Typeface.BOLD)
+                        typeface = FontUtils.getUbuntu(context)
                         setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(4))
                         gravity = Gravity.CENTER_VERTICAL
                     }
@@ -313,6 +322,7 @@ class EmojiPickerView @JvmOverloads constructor(
                     repeat(COLS) {
                         val cell = TextView(context).apply {
                             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                                typeface = FontUtils.getUbuntu(context)
                             textSize = 24f
                             gravity = Gravity.CENTER
                             isClickable = true

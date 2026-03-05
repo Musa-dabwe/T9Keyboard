@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.musa.t9keyboard.utils.FontUtils
 
 class SymbolAdapter(
     private val onSymbolClick: (String) -> Unit
@@ -90,6 +91,9 @@ class SymbolAdapter(
 
     class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val titleView: TextView = view.findViewById(R.id.section_title)
+        init {
+            titleView.typeface = FontUtils.getUbuntu(view.context)
+        }
         fun bind(header: SymbolItem.Header) {
             titleView.text = header.title
         }
@@ -104,6 +108,11 @@ class SymbolAdapter(
             view.findViewById(R.id.symbol_5),
             view.findViewById(R.id.symbol_6)
         )
+
+        init {
+            val ubuntu = FontUtils.getUbuntu(view.context)
+            cells.forEach { it.typeface = ubuntu }
+        }
 
         fun bind(row: SymbolItem.Row, ripple: android.graphics.drawable.Drawable?, onClick: (String) -> Unit) {
             row.symbols.forEachIndexed { index, symbol ->
