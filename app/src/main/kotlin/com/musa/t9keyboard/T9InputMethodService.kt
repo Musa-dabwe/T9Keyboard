@@ -13,11 +13,11 @@ import android.widget.Toast
 
 class T9InputMethodService : InputMethodService() {
 
-    private lateinit var container: FrameLayout
-    private lateinit var keyboardView: KeyboardView
-    private lateinit var symbolsView: SymbolsView
-    private lateinit var emojiPickerView: EmojiPickerView
-    private lateinit var textEditingView: TextEditingView
+    private var container: FrameLayout? = null
+    private var keyboardView: KeyboardView? = null
+    private var symbolsView: SymbolsView? = null
+    private var emojiPickerView: EmojiPickerView? = null
+    private var textEditingView: TextEditingView? = null
     private lateinit var preferences: PreferencesManager
     private val shiftManager = ShiftStateManager()
 
@@ -33,6 +33,7 @@ class T9InputMethodService : InputMethodService() {
     private var movingPosition = -1
     private var lastTapTime = 0L
     private var lastDigit = ' '
+    private var isWindowVisible = false
 
     private val accentColorResIds = listOf(
         R.color.accent_blue,
@@ -60,16 +61,23 @@ class T9InputMethodService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        android.util.Log.d("T9Lifecycle", "onStartInputView: restarting=$restarting")
         resetImeState(info, resetShift = false)
-        keyboardView.setMultiTapTimeout(preferences.multiTapTimeout)
-        keyboardView.setKeyFontSize(preferences.keyFontSize.toFloat())
-        keyboardView.setFontSize(preferences.suggestionFontSize.toFloat())
-        keyboardView.isXt9Mode = preferences.xt9Enabled
+
+        val kv = keyboardView ?: return
+        val sv = symbolsView ?: return
+        val epv = emojiPickerView ?: return
+        val tev = textEditingView ?: return
+
+        kv.setMultiTapTimeout(preferences.multiTapTimeout)
+        kv.setKeyFontSize(preferences.keyFontSize.toFloat())
+        kv.setFontSize(preferences.suggestionFontSize.toFloat())
+        kv.isXt9Mode = preferences.xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
-        keyboardView.setAccentColor(accentColor)
-        symbolsView.setAccentColor(accentColor)
-        emojiPickerView.setAccentColor(accentColor)
-        textEditingView.setAccentColor(accentColor)
+        kv.setAccentColor(accentColor)
+        sv.setAccentColor(accentColor)
+        epv.setAccentColor(accentColor)
+        tev.setAccentColor(accentColor)
     }
 
     override fun onFinishInput() {
@@ -78,72 +86,92 @@ class T9InputMethodService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
-        container = FrameLayout(this)
+        android.util.Log.d("T9Lifecycle", "onCreateInputView")
 
-        keyboardView = KeyboardView(this)
-        symbolsView = SymbolsView(this)
-        emojiPickerView = EmojiPickerView(this)
-        textEditingView = TextEditingView(this)
+        if (container == null) {
+            container = FrameLayout(this)
+        }
 
-        setupListeners()
+        if (keyboardView == null) {
+            keyboardView = KeyboardView(this)
+            symbolsView = SymbolsView(this)
+            emojiPickerView = EmojiPickerView(this)
+            textEditingView = TextEditingView(this)
+            setupListeners()
+        }
 
-        container.addView(keyboardView)
-        return container
+        val c = container!!
+        val kv = keyboardView!!
+
+        // Ensure the view is not already added to another parent or this container
+        (kv.parent as? android.view.ViewGroup)?.removeView(kv)
+        if (c.childCount == 0) {
+            c.addView(kv)
+        } else {
+            showView(kv)
+        }
+
+        return c
     }
 
     private fun setupListeners() {
-        keyboardView.onMultiTapListener = { char, tapCount, isFinished ->
+        val kv = keyboardView ?: return
+        val sv = symbolsView ?: return
+        val epv = emojiPickerView ?: return
+        val tev = textEditingView ?: return
+
+        kv.onMultiTapListener = { char, tapCount, isFinished ->
             handleMultiTap(char, tapCount, isFinished)
         }
 
-        keyboardView.onActionClickListener = { action ->
+        kv.onActionClickListener = { action ->
             handleAction(action)
         }
 
-        keyboardView.onFeedbackRequested = {
+        kv.onFeedbackRequested = {
             performFeedback()
         }
 
-        keyboardView.setOnSuggestionClickListener { suggestion ->
+        kv.setOnSuggestionClickListener { suggestion ->
             performFeedback()
             commitSuggestion(suggestion)
         }
 
-        symbolsView.onSymbolClickListener = { symbol ->
+        sv.onSymbolClickListener = { symbol ->
             commitTextWithFinalization(symbol)
         }
 
-        symbolsView.onBackClickListener = {
-            showView(keyboardView)
+        sv.onBackClickListener = {
+            keyboardView?.let { showView(it) }
         }
 
-        symbolsView.onDeleteClickListener = {
+        sv.onDeleteClickListener = {
             handleAction(KeyboardView.KeyboardAction.DEL)
         }
 
-        emojiPickerView.onEmojiClickListener = { emoji ->
+        epv.onEmojiClickListener = { emoji ->
             commitTextWithFinalization(emoji)
         }
 
-        emojiPickerView.onBackspaceClick = {
+        epv.onBackspaceClick = {
             handleAction(KeyboardView.KeyboardAction.DEL)
         }
 
-        emojiPickerView.onBackClickListener = {
-            showView(keyboardView)
+        epv.onBackClickListener = {
+            keyboardView?.let { showView(it) }
         }
 
-        textEditingView.onAction = { action ->
+        tev.onAction = { action ->
             handleEditAction(action)
         }
 
-        textEditingView.onAbcClick = {
+        tev.onAbcClick = {
             isSelectionMode = false
-            textEditingView.setSelectionMode(false)
-            showView(keyboardView)
+            tev.setSelectionMode(false)
+            keyboardView?.let { showView(it) }
         }
 
-        textEditingView.onFeedbackRequested = {
+        tev.onFeedbackRequested = {
             performFeedback()
         }
     }
@@ -218,9 +246,9 @@ class T9InputMethodService : InputMethodService() {
                 currentWordConstraints.clear()
 
                 shiftManager.consumeShift()
-                keyboardView.updateShiftState(shiftManager.currentState)
+                keyboardView?.updateShiftState(shiftManager.currentState)
             }
-            keyboardView.setSuggestions(emptyList())
+            keyboardView?.setSuggestions(emptyList())
         } else {
             // Cycling or first tap
             if (tapCount == 0) {
@@ -254,7 +282,7 @@ class T9InputMethodService : InputMethodService() {
                 ic.setComposingText(composingText, 1)
                 updateSuggestions()
                 shiftManager.consumeShift()
-                keyboardView.updateShiftState(shiftManager.currentState)
+                keyboardView?.updateShiftState(shiftManager.currentState)
             }
         } else {
             // cycling or new key tap
@@ -314,25 +342,23 @@ class T9InputMethodService : InputMethodService() {
             }
             KeyboardView.KeyboardAction.SHIFT -> {
                 shiftManager.toggle()
-                keyboardView.updateShiftState(shiftManager.currentState)
+                keyboardView?.updateShiftState(shiftManager.currentState)
             }
             KeyboardView.KeyboardAction.CAPS_LOCK -> {
                 shiftManager.onDoubleTap()
-                keyboardView.updateShiftState(shiftManager.currentState)
+                keyboardView?.updateShiftState(shiftManager.currentState)
             }
             KeyboardView.KeyboardAction.SYM -> {
-                showView(symbolsView)
+                symbolsView?.let { showView(it) }
             }
             KeyboardView.KeyboardAction.NUM -> {
-                keyboardView.toggleNumMode()
+                keyboardView?.toggleNumMode()
             }
             KeyboardView.KeyboardAction.EMOJI -> {
                 try {
-                    if (emojiPickerView.isInitialized) {
-                        emojiPickerView.resetScroll()
-                        showView(emojiPickerView)
-                    } else {
-                        android.util.Log.e("T9InputMethodService", "Emoji picker not initialized correctly")
+                    emojiPickerView?.let {
+                        it.resetScroll()
+                        showView(it)
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("T9InputMethodService", "Error showing emoji picker", e)
@@ -356,7 +382,7 @@ class T9InputMethodService : InputMethodService() {
                     commitCurrentComposing()
                 }
                 preferences.xt9Enabled = newState
-                keyboardView.isXt9Mode = newState
+                keyboardView?.isXt9Mode = newState
                 val status = if (newState) "On" else "Off"
                 Toast.makeText(this, "XT9 $status", Toast.LENGTH_SHORT).show()
             }
@@ -392,7 +418,7 @@ class T9InputMethodService : InputMethodService() {
             currentXt9Predictions = emptyList()
 
             shiftManager.consumeShift()
-            keyboardView.updateShiftState(shiftManager.currentState)
+            keyboardView?.updateShiftState(shiftManager.currentState)
         } else if (composingText.isNotEmpty()) {
             val word = composingText.toString()
             if (moveCursorToEnd) {
@@ -405,7 +431,7 @@ class T9InputMethodService : InputMethodService() {
             composingText.clear()
             currentWordConstraints.clear()
             shiftManager.consumeShift()
-            keyboardView.updateShiftState(shiftManager.currentState)
+            keyboardView?.updateShiftState(shiftManager.currentState)
         }
 
         if (committedWord == "i" && moveCursorToEnd) {
@@ -413,7 +439,7 @@ class T9InputMethodService : InputMethodService() {
             ic.commitText("I", 1)
             lastCommittedWord = "I"
         }
-        keyboardView.setSuggestions(emptyList())
+        keyboardView?.setSuggestions(emptyList())
         lastDigit = ' '
     }
 
@@ -428,7 +454,7 @@ class T9InputMethodService : InputMethodService() {
             ic.commitText(" ", 1)
         }
         shiftManager.consumeShift()
-        keyboardView.updateShiftState(shiftManager.currentState)
+        keyboardView?.updateShiftState(shiftManager.currentState)
     }
 
     private fun commitSuggestion(suggestion: String) {
@@ -455,13 +481,13 @@ class T9InputMethodService : InputMethodService() {
             currentWordConstraints.clear()
         }
         shiftManager.consumeShift()
-        keyboardView.updateShiftState(shiftManager.currentState)
+        keyboardView?.updateShiftState(shiftManager.currentState)
         updateNextWordSuggestions()
     }
 
     private fun updateSuggestions() {
         if (composingText.isEmpty() || composingText.all { !it.isLetter() }) {
-            keyboardView.setSuggestions(emptyList())
+            keyboardView?.setSuggestions(emptyList())
             return
         }
         val learned = LearnedDictionary.getSuggestions(currentWordConstraints)
@@ -470,7 +496,7 @@ class T9InputMethodService : InputMethodService() {
             .sortedByDescending { it.frequency }
             .map { it.word }
             .take(3)
-        keyboardView.setSuggestions(combined)
+        keyboardView?.setSuggestions(combined)
     }
 
     private fun updateNextWordSuggestions() {
@@ -478,7 +504,7 @@ class T9InputMethodService : InputMethodService() {
         val learned = LearnedDictionary.getNextWordSuggestions(word)
         val aosp = AospBigrams.getNextWordSuggestions(word)
         val combined = (learned + aosp).distinct().take(3)
-        keyboardView.setSuggestions(combined)
+        keyboardView?.setSuggestions(combined)
     }
 
     private fun sendDownUpKeyEvents(keyCode: Int, meta: Int) {
@@ -489,14 +515,29 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun showView(view: View) {
-        container.removeAllViews()
+        android.util.Log.d("T9Lifecycle", "showView: ${view.javaClass.simpleName}, isWindowVisible=$isWindowVisible")
+        val c = container ?: return
+
+        // Skip adding if it's already the only child
+        if (c.childCount == 1 && c.getChildAt(0) === view) {
+            return
+        }
+
+        // Suppress redundant view switches when window is not visible,
+        // but allow the first view to be added even if hidden.
+        if (!isWindowVisible && c.childCount > 0) {
+            android.util.Log.d("T9Lifecycle", "showView: Suppressed (window hidden)")
+            return
+        }
+
+        c.removeAllViews()
         if (view is EmojiPickerView || view is TextEditingView) {
             view.layoutParams = FrameLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 dpToPx(304)
             )
         }
-        container.addView(view)
+        c.addView(view)
         if (view is SymbolsView) {
             view.resetScroll()
         }
@@ -507,7 +548,7 @@ class T9InputMethodService : InputMethodService() {
 
     private fun showTextEditingPanel() {
         updateEditingSelectionState()
-        showView(textEditingView)
+        textEditingView?.let { showView(it) }
     }
 
     private fun handleEditAction(action: TextEditingView.EditAction) {
@@ -666,7 +707,7 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.SELECT -> {
                 isSelectionMode = !isSelectionMode
-                textEditingView.setSelectionMode(isSelectionMode)
+                textEditingView?.setSelectionMode(isSelectionMode)
                 if (isSelectionMode) {
                     selectionAnchor = selectionStart
                     movingPosition = selectionEnd
@@ -764,9 +805,7 @@ class T9InputMethodService : InputMethodService() {
         val ic = currentInputConnection ?: return
         val selectedText = ic.getSelectedText(0)
         val hasSelection = !selectedText.isNullOrEmpty()
-        if (::textEditingView.isInitialized) {
-            textEditingView.updateSelectionState(hasSelection)
-        }
+        textEditingView?.updateSelectionState(hasSelection)
     }
 
     override fun onUpdateSelection(
@@ -799,9 +838,21 @@ class T9InputMethodService : InputMethodService() {
             }
         }
 
-        if (::textEditingView.isInitialized && textEditingView.parent != null) {
+        if (textEditingView?.parent != null) {
             updateEditingSelectionState()
         }
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        android.util.Log.d("T9Lifecycle", "onWindowShown")
+        isWindowVisible = true
+    }
+
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        android.util.Log.d("T9Lifecycle", "onWindowHidden")
+        isWindowVisible = false
     }
 
     private fun dpToPx(dp: Int): Int =
@@ -830,7 +881,7 @@ class T9InputMethodService : InputMethodService() {
 
     private fun updateXt9Suggestions() {
         if (xt9DigitSequence.isEmpty()) {
-            keyboardView.setSuggestions(emptyList())
+            keyboardView?.setSuggestions(emptyList())
             return
         }
 
@@ -855,7 +906,7 @@ class T9InputMethodService : InputMethodService() {
         }
 
         val capitalizedPredictions = displayPredictions.map { applyShiftState(it) }
-        keyboardView.setSuggestions(capitalizedPredictions, xt9RawSequence.toString())
+        keyboardView?.setSuggestions(capitalizedPredictions, xt9RawSequence.toString())
 
         val activeCandidate = capitalizedPredictions[0]
         currentInputConnection?.setComposingText(activeCandidate, 1)
@@ -878,7 +929,7 @@ class T9InputMethodService : InputMethodService() {
             val lastTwo = textBefore.substring(textBefore.length - 2)
             if (lastTwo == ". " || lastTwo == "! " || lastTwo == "? ") {
                 shiftManager.setAutoShift(ShiftState.ONE_SHOT)
-                keyboardView.updateShiftState(shiftManager.currentState)
+                keyboardView?.updateShiftState(shiftManager.currentState)
             }
         }
     }
@@ -933,9 +984,7 @@ class T9InputMethodService : InputMethodService() {
         selectionAnchor = -1
         movingPosition = -1
         lastDigit = ' '
-        if (::textEditingView.isInitialized) {
-            textEditingView.setSelectionMode(false)
-        }
+        textEditingView?.setSelectionMode(false)
         composingText.setLength(0)
         currentWordConstraints.clear()
         xt9DigitSequence.setLength(0)
@@ -944,11 +993,11 @@ class T9InputMethodService : InputMethodService() {
         lastCommittedWord = null
 
         currentInputConnection?.finishComposingText()
-        if (::keyboardView.isInitialized) {
-            keyboardView.resetState()
-            keyboardView.setSuggestions(emptyList())
-            if (::container.isInitialized) {
-                showView(keyboardView)
+        keyboardView?.let {
+            it.resetState()
+            it.setSuggestions(emptyList())
+            container?.let { _ ->
+                showView(it)
             }
         }
 
@@ -978,8 +1027,6 @@ class T9InputMethodService : InputMethodService() {
                 }
             }
         }
-        if (::keyboardView.isInitialized) {
-            keyboardView.updateShiftState(shiftManager.currentState)
-        }
+        keyboardView?.updateShiftState(shiftManager.currentState)
     }
 }
