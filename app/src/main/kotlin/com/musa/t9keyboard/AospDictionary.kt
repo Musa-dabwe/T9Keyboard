@@ -1471,31 +1471,40 @@ object AospDictionary {
 
 
     fun loadFromAssets(context: Context) {
-        try {
-            t9Map.clear()
-            wordMap.clear()
-            val reader = BufferedReader(InputStreamReader(context.assets.open("en_us_words.bin")))
-            var line: String? = reader.readLine()
-            while (line != null) {
-                val parts = line.split("\t")
-                if (parts.size >= 2) {
-                    val stripped = parts[0]
-                    val freq = parts[1].toInt()
-                    val display = if (parts.size >= 3) parts[2] else ""
-                    val entry = WordEntry(stripped, freq, display)
-
-                    wordMap.getOrPut(stripped) { mutableListOf() }.add(entry)
-
-                    val digits = getT9Sequence(stripped)
-                    if (digits.isNotEmpty()) {
-                        t9Map.getOrPut(digits) { mutableListOf() }.add(entry)
-                    }
-                }
-                line = reader.readLine()
-            }
-            reader.close()
+        t9Map.clear()
+        wordMap.clear()
+        val reader = try {
+            BufferedReader(InputStreamReader(context.assets.open("en_us_words.bin")))
         } catch (e: Exception) {
-            Log.e("AospDictionary", "Error loading dictionary", e)
+            Log.e("AospDictionary", "Error opening dictionary", e)
+            return
+        }
+
+        reader.use { r ->
+            var line: String? = r.readLine()
+            while (line != null) {
+                try {
+                    val parts = line.split("\t")
+                    if (parts.size >= 2) {
+                        val stripped = parts[0]
+                        // Some lines have malformed frequency fields (e.g. "158 it's")
+                        val freqStr = parts[1].split(" ")[0]
+                        val freq = freqStr.toInt()
+                        val display = if (parts.size >= 3) parts[2] else ""
+                        val entry = WordEntry(stripped, freq, display)
+
+                        wordMap.getOrPut(stripped) { mutableListOf() }.add(entry)
+
+                        val digits = getT9Sequence(stripped)
+                        if (digits.isNotEmpty()) {
+                            t9Map.getOrPut(digits) { mutableListOf() }.add(entry)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w("AospDictionary", "Skipping malformed line: $line", e)
+                }
+                line = r.readLine()
+            }
         }
     }
 
@@ -1509,26 +1518,28 @@ object AospDictionary {
         return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
     }
 
+    fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
+        val entries = t9Map[t9sequence] ?: emptyList<WordEntry>()
+        val results = entries.map { WordSuggestion(it.word, it.frequency) }.toMutableList()
+
+        hardcodedWords[t9sequence]?.forEach { word ->
+            if (results.none { it.word.equals(word, ignoreCase = true) }) {
+                results.add(WordSuggestion(word, 0))
+            }
+        }
+
+        return results.sortedByDescending { it.frequency }
+            .distinctBy { it.word.lowercase() }
+    }
+
     fun getWordsStartingWith(prefix: String): List<WordSuggestion> {
         return t9Map.filterKeys { it.startsWith(prefix) }
             .flatMap { (_, entries) ->
                 entries.map { WordSuggestion(it.word, it.frequency) }
             }
             .sortedByDescending { it.frequency }
+            .distinctBy { it.word.lowercase() }
             .take(10)
-    }
-
-    fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
-        val entries = t9Map[t9sequence] ?: mutableListOf<WordEntry>()
-        val results = entries.map { WordSuggestion(it.word, it.frequency) }.toMutableList()
-
-        hardcodedWords[t9sequence]?.forEach { word ->
-            if (results.none { it.word == word }) {
-                results.add(WordSuggestion(word, 0))
-            }
-        }
-
-        return results.distinctBy { it.word }
     }
 
     fun getSuggestions(constraints: List<String>): List<WordSuggestion> {
