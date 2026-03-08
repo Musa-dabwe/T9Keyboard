@@ -885,17 +885,21 @@ class T9InputMethodService : InputMethodService() {
             return
         }
 
-        val learned = LearnedDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
-        val aosp = AospDictionary.getSuggestionsForSequence(xt9DigitSequence.toString())
+        val digitSeq = xt9DigitSequence.toString()
+        val learnedExact = LearnedDictionary.getSuggestionsForSequence(digitSeq)
+        val aospExact = AospDictionary.getSuggestionsForSequence(digitSeq)
 
-        var combined = (learned + aosp).sortedByDescending { it.frequency }
-            .distinctBy { it.word.lowercase() }
+        val combinedExact = (learnedExact + aospExact)
 
-        if (combined.isEmpty() && xt9DigitSequence.length >= 3) {
-            // Fallback to prefix completions
-            combined = AospDictionary.getWordsStartingWith(xt9DigitSequence.toString())
-                .sortedByDescending { it.frequency }
+        val prefixMatches = if (digitSeq.length >= 3) {
+            AospDictionary.getWordsStartingWith(digitSeq)
+        } else {
+            emptyList()
         }
+
+        val combined = (combinedExact + prefixMatches)
+            .sortedByDescending { it.frequency }
+            .distinctBy { it.word.lowercase() }
 
         currentXt9Predictions = combined.map { it.word }.take(3)
 
