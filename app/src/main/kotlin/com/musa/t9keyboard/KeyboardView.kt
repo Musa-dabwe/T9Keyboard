@@ -173,7 +173,7 @@ class KeyboardView @JvmOverloads constructor(
         binding.keySym.setOnLongClickListener {
             onFeedbackRequested?.invoke()
             performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-            onActionClickListener?.invoke(KeyboardAction.SWITCH_KEYBOARD)
+            onActionClickListener?.invoke(KeyboardAction.TOGGLE_XT9)
             true
         }
         binding.key123.setOnClickListener {
@@ -183,7 +183,7 @@ class KeyboardView @JvmOverloads constructor(
         binding.key123.setOnLongClickListener {
             onFeedbackRequested?.invoke()
             performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-            onActionClickListener?.invoke(KeyboardAction.TOGGLE_XT9)
+            onActionClickListener?.invoke(KeyboardAction.SWITCH_KEYBOARD)
             true
         }
         binding.keyEmoji.setOnClickListener {

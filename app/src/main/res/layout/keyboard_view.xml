@@ -53,9 +53,9 @@
             <TextView android:id="@+id/label_mno" style="@style/KeyPrimaryLabel" android:text="MNO" />
             <TextView android:id="@+id/secondary_label_mno" style="@style/KeySecondaryLabel" android:text="6" />
         </FrameLayout>
-        <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
-            <TextView android:id="@+id/secondary_label_123" style="@style/KeySecondaryLabel" android:text="XT9" />
+        <FrameLayout android:id="@+id/key_sym" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_sym" style="@style/KeyPrimaryLabel" android:text="SYM" />
+            <TextView android:id="@+id/secondary_label_sym" style="@style/KeySecondaryLabel" android:text="XT9" />
         </FrameLayout>
     </LinearLayout>
 
@@ -86,9 +86,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <FrameLayout android:id="@+id/key_sym" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_sym" style="@style/KeyPrimaryLabel" android:text="SYM" />
-            <TextView android:id="@+id/secondary_label_sym" style="@style/KeySecondaryLabel" android:text="⚙" />
+        <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
+            <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
+            <TextView android:id="@+id/secondary_label_123" style="@style/KeySecondaryLabel" android:text="⚙" />
         </FrameLayout>
         <FrameLayout android:id="@+id/key_space" style="@style/KeyboardKeyLayout">
             <TextView android:id="@+id/label_space" style="@style/KeyPrimaryLabel" android:text="SPACE" />
