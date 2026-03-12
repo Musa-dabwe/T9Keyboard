@@ -60,6 +60,7 @@ class TextEditingView @JvmOverloads constructor(
 
     private val handler = Handler(Looper.getMainLooper())
     private var repeatRunnable: Runnable? = null
+    private var deletionSpeed: Int = 100
 
     private lateinit var selectKey: TextView
     private lateinit var copyKey: TextView
@@ -208,9 +209,15 @@ class TextEditingView @JvmOverloads constructor(
                         v.isPressed = true
                         longPressedSent = false
 
-                        if (config.repeatInterval != null) {
+                        val effectiveRepeatInterval = if (config.action == EditAction.DELETE) {
+                            deletionSpeed.toLong()
+                        } else {
+                            config.repeatInterval
+                        }
+
+                        if (effectiveRepeatInterval != null) {
                             onAction?.invoke(config.action)
-                            startRepeating(config.action, config.repeatInterval)
+                            startRepeating(config.action, effectiveRepeatInterval)
                         } else if (config.longAction != null) {
                             startLongPressCheck(config.longAction) { longPressedSent = true }
                         }
@@ -311,6 +318,10 @@ class TextEditingView @JvmOverloads constructor(
         updateSelectKeyVisuals()
         allKeys.forEach { updateKeyBackground(it) }
         updateAbcBtnBackground()
+    }
+
+    fun setDeletionSpeed(speed: Int) {
+        this.deletionSpeed = speed
     }
 
     private fun updateSelectKeyVisuals() {

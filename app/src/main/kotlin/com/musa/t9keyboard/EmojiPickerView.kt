@@ -34,6 +34,11 @@ class EmojiPickerView @JvmOverloads constructor(
     var onEmojiClickListener: ((String) -> Unit)? = null
     var onBackspaceClick: (() -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
+    var onFeedbackRequested: (() -> Unit)? = null
+
+    private val delHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var delRunnable: Runnable? = null
+    private var deletionSpeed: Int = 100
 
     var isInitialized = false
         private set
@@ -174,7 +179,10 @@ class EmojiPickerView @JvmOverloads constructor(
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
-            setOnClickListener { onBackClickListener?.invoke() }
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                onBackClickListener?.invoke()
+            }
         }
 
         delBtn = TextView(context).apply {
@@ -185,7 +193,21 @@ class EmojiPickerView @JvmOverloads constructor(
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
-            setOnClickListener { onBackspaceClick?.invoke() }
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                onBackspaceClick?.invoke()
+            }
+            setOnLongClickListener {
+                onFeedbackRequested?.invoke()
+                startRepeatingDel()
+                true
+            }
+            setOnTouchListener { _, event ->
+                if (event.action == android.view.MotionEvent.ACTION_UP || event.action == android.view.MotionEvent.ACTION_CANCEL) {
+                    stopRepeatingDel()
+                }
+                false
+            }
         }
 
         bottomBar.addView(abcBtn)
@@ -203,6 +225,26 @@ class EmojiPickerView @JvmOverloads constructor(
     fun resetScroll() {
         emojiRecycler.scrollToPosition(0)
         tabsAdapter.setSelected(0)
+    }
+
+    private fun startRepeatingDel() {
+        stopRepeatingDel()
+        delRunnable = object : Runnable {
+            override fun run() {
+                onBackspaceClick?.invoke()
+                delHandler.postDelayed(this, deletionSpeed.toLong())
+            }
+        }
+        delHandler.postDelayed(delRunnable!!, 500)
+    }
+
+    private fun stopRepeatingDel() {
+        delRunnable?.let { delHandler.removeCallbacks(it) }
+        delRunnable = null
+    }
+
+    fun setDeletionSpeed(speed: Int) {
+        this.deletionSpeed = speed
     }
 
     fun setAccentColor(color: Int) {
