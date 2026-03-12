@@ -37,6 +37,7 @@ class T9InputMethodService : InputMethodService() {
     private var lastTapTime = 0L
     private var lastDigit = ' '
     private var isWindowVisible = false
+    private var contactPermissionGranted = false
 
     private val accentColorResIds = listOf(
         R.color.accent_blue,
@@ -74,6 +75,8 @@ class T9InputMethodService : InputMethodService() {
         super.onStartInputView(info, restarting)
         android.util.Log.d("T9Lifecycle", "onStartInputView: restarting=$restarting")
         resetImeState(info, resetShift = false)
+
+        contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
 
         val kv = keyboardView ?: return
         val sv = symbolsView ?: return
@@ -515,17 +518,16 @@ class T9InputMethodService : InputMethodService() {
         }
         val targetLength = composingText.length
         val learned = LearnedDictionary.getSuggestions(currentWordConstraints)
-        val contacts = if (preferences.contactSuggestionsEnabled) {
+        val contacts = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
             val seq = currentWordConstraints.map { if (it.length == 1 && it[0].isDigit()) it else getDigitForChar(it[0]).toString() }.joinToString("")
             ContactsDictionary.getSuggestionsForSequence(seq)
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
         } else emptyList()
         val aosp = AospDictionary.getSuggestions(currentWordConstraints)
 
-        val contactPrefixes = if (preferences.contactSuggestionsEnabled) {
+        val contactPrefixes = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
             val seq = currentWordConstraints.map { if (it.length == 1 && it[0].isDigit()) it else getDigitForChar(it[0]).toString() }.joinToString("")
             ContactsDictionary.getSuggestionsForPrefix(seq)
-                .filter { it.length > targetLength }
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
         } else emptyList()
 
@@ -902,7 +904,7 @@ class T9InputMethodService : InputMethodService() {
         android.util.Log.d("T9Lifecycle", "onWindowShown")
         isWindowVisible = true
 
-        if (preferences.contactSuggestionsEnabled && ContactsDictionary.isEmpty()) {
+        if (preferences.contactSuggestionsEnabled && !ContactsDictionary.isLoaded()) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
                 Thread { ContactsDictionary.load(this) }.start()
             }
@@ -950,7 +952,7 @@ class T9InputMethodService : InputMethodService() {
 
         // Get all candidates
         val learnedExact = LearnedDictionary.getSuggestionsForSequence(digitSeq)
-        val contactsExact = if (preferences.contactSuggestionsEnabled) {
+        val contactsExact = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
             ContactsDictionary.getSuggestionsForSequence(digitSeq)
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
         } else emptyList()
@@ -958,9 +960,8 @@ class T9InputMethodService : InputMethodService() {
 
         val learnedPrefix = LearnedDictionary.getSuggestions(currentWordConstraints.ifEmpty { digitSeq.map { it.toString() } })
             .filter { it.word.length > targetLength }
-        val contactsPrefix = if (preferences.contactSuggestionsEnabled) {
+        val contactsPrefix = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
             ContactsDictionary.getSuggestionsForPrefix(digitSeq)
-                .filter { it.length > targetLength }
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
         } else emptyList()
         val aospPrefix = AospDictionary.getWordsStartingWith(digitSeq)
