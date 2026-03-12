@@ -17,6 +17,7 @@ class PreferencesManager(context: Context) {
         const val KEY_THEME = "theme"
         const val KEY_ACCENT_COLOR = "accent_color"
         const val KEY_XT9_ENABLED = "xt9_enabled"
+        const val KEY_DELETION_SPEED = "deletion_speed"
     }
 
     var xt9Enabled: Boolean
@@ -58,4 +59,8 @@ class PreferencesManager(context: Context) {
     var suggestionFontSize: Int
         get() = prefs.getInt(KEY_SUGGESTION_FONT_SIZE, 16)
         set(value) = prefs.edit().putInt(KEY_SUGGESTION_FONT_SIZE, value).apply()
+
+    var deletionSpeed: Int
+        get() = prefs.getInt(KEY_DELETION_SPEED, 100)
+        set(value) = prefs.edit().putInt(KEY_DELETION_SPEED, value).apply()
 }

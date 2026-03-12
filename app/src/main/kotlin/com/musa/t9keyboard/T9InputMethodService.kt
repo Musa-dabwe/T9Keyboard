@@ -72,12 +72,16 @@ class T9InputMethodService : InputMethodService() {
         kv.setMultiTapTimeout(preferences.multiTapTimeout)
         kv.setKeyFontSize(preferences.keyFontSize.toFloat())
         kv.setFontSize(preferences.suggestionFontSize.toFloat())
+        kv.setDeletionSpeed(preferences.deletionSpeed)
         kv.isXt9Mode = preferences.xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         kv.setAccentColor(accentColor)
         sv.setAccentColor(accentColor)
+        sv.setDeletionSpeed(preferences.deletionSpeed)
         epv.setAccentColor(accentColor)
+        epv.setDeletionSpeed(preferences.deletionSpeed)
         tev.setAccentColor(accentColor)
+        tev.setDeletionSpeed(preferences.deletionSpeed)
     }
 
     override fun onFinishInput() {
@@ -149,6 +153,10 @@ class T9InputMethodService : InputMethodService() {
             handleAction(KeyboardView.KeyboardAction.DEL)
         }
 
+        sv.onFeedbackRequested = {
+            performFeedback()
+        }
+
         epv.onEmojiClickListener = { emoji ->
             commitTextWithFinalization(emoji)
         }
@@ -159,6 +167,10 @@ class T9InputMethodService : InputMethodService() {
 
         epv.onBackClickListener = {
             keyboardView?.let { showView(it) }
+        }
+
+        epv.onFeedbackRequested = {
+            performFeedback()
         }
 
         tev.onAction = { action ->
@@ -328,7 +340,7 @@ class T9InputMethodService : InputMethodService() {
                     if (!selectedText.isNullOrEmpty()) {
                         ic.commitText("", 1)
                     } else {
-                        ic.deleteSurroundingText(1, 0)
+                        sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL, 0)
                     }
                 }
             }

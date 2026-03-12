@@ -102,6 +102,15 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
+        // Delete speed
+        binding.boxDeleteSpeed.text = preferences.deletionSpeed.toString()
+        binding.rowDeleteSpeed.setOnClickListener {
+            showSliderDialog("Delete Speed", 0f, 100f, preferences.deletionSpeed.toFloat()) { newValue ->
+                preferences.deletionSpeed = newValue.toInt()
+                binding.boxDeleteSpeed.text = newValue.toInt().toString()
+            }
+        }
+
         // Key press sound
         updateToggle(binding.toggleSound, preferences.soundEnabled)
         binding.rowSound.setOnClickListener {
@@ -301,6 +310,9 @@ class SettingsActivity : AppCompatActivity() {
             binding.txtHapticIntensityTitle,
             binding.txtHapticIntensitySubtitle,
             binding.boxHapticIntensity,
+            binding.txtDeleteSpeedTitle,
+            binding.txtDeleteSpeedSubtitle,
+            binding.boxDeleteSpeed,
             binding.txtSoundTitle,
             binding.txtSoundSubtitle,
             binding.txtSoundVolumeTitle,
