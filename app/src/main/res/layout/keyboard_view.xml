@@ -100,7 +100,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
-                android:alpha="0.4"
+                android:alpha="0.9"
                 android:src="@drawable/ic_emoji" />
             <ImageView
                 android:id="@+id/secondary_label_emoji"
