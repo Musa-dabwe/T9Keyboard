@@ -6,6 +6,9 @@ import android.util.Log
 
 object ContactsDictionary {
     private val t9Map = mutableMapOf<String, MutableList<String>>()
+    private val prefixMap = mutableMapOf<String, MutableList<String>>()
+    private var isLoaded = false
+
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
         'd' to '3', 'e' to '3', 'f' to '3',
@@ -18,6 +21,7 @@ object ContactsDictionary {
     )
 
     fun load(context: Context) {
+        if (isLoaded) return
         clear()
         val cursor = context.contentResolver.query(
             ContactsContract.Contacts.CONTENT_URI,
@@ -42,12 +46,33 @@ object ContactsDictionary {
             }
         }
 
-        for (word in uniqueWords) {
+        val sortedWords = uniqueWords.sortedWith(
+            compareBy<String> { it.length }.thenBy(String.CASE_INSENSITIVE_ORDER, { it })
+        )
+
+        for (word in sortedWords) {
             val sequence = getT9Sequence(word)
             if (sequence.isNotEmpty()) {
+                // Exact match map
                 t9Map.getOrPut(sequence) { mutableListOf() }.add(word)
+
+                // Prefix match map
+                for (i in 1 until sequence.length) {
+                    val prefix = sequence.substring(0, i)
+                    val list = prefixMap.getOrPut(prefix) { mutableListOf() }
+                    if (list.size < 10) {
+                        list.add(word)
+                    }
+                }
+                // Also add full sequence to prefix map if it's not already there (though t9Map covers exact)
+                val fullPrefix = sequence
+                val fullList = prefixMap.getOrPut(fullPrefix) { mutableListOf() }
+                if (fullList.size < 10) {
+                    fullList.add(word)
+                }
             }
         }
+        isLoaded = true
         Log.d("ContactsDictionary", "Loaded ${uniqueWords.size} contact name tokens")
     }
 
@@ -80,20 +105,22 @@ object ContactsDictionary {
     }
 
     fun getSuggestionsForSequence(digitSeq: String): List<String> {
-        return t9Map[digitSeq]?.sortedWith(String.CASE_INSENSITIVE_ORDER) ?: emptyList()
+        return t9Map[digitSeq] ?: emptyList()
     }
 
     fun getSuggestionsForPrefix(digitSeq: String): List<String> {
-        return t9Map.filterKeys { it.startsWith(digitSeq) }
-            .flatMap { it.value }
-            .sortedWith(compareBy<String> { it.length }.thenBy(String.CASE_INSENSITIVE_ORDER, { it }))
+        return prefixMap[digitSeq] ?: emptyList()
     }
 
     fun isEmpty(): Boolean {
         return t9Map.isEmpty()
     }
 
+    fun isLoaded(): Boolean = isLoaded
+
     fun clear() {
         t9Map.clear()
+        prefixMap.clear()
+        isLoaded = false
     }
 }
