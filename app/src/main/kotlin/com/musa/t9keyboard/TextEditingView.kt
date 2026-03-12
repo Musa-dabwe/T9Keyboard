@@ -99,9 +99,9 @@ class TextEditingView @JvmOverloads constructor(
 
         // Row 1: Home, Up, End, Select All
         gridLayout.addView(createRow(listOf(
-            KeyConfig("|<", 20f, EditAction.HOME, EditAction.HOME_LONG),
+            KeyConfig("|<", 20f, EditAction.HOME, EditAction.HOME_LONG, iconResId = R.drawable.ic_arrow_alt_from_right),
             KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up),
-            KeyConfig(">|", 20f, EditAction.END, EditAction.END_LONG),
+            KeyConfig(">|", 20f, EditAction.END, EditAction.END_LONG, iconResId = R.drawable.ic_arrow_alt_from_left),
             KeyConfig("Select all", 14f, EditAction.SELECT_ALL)
         )))
 
