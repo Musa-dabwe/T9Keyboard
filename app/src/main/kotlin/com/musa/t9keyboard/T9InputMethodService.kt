@@ -38,6 +38,8 @@ class T9InputMethodService : InputMethodService() {
     private var lastDigit = ' '
     private var isWindowVisible = false
     private var contactPermissionGranted = false
+    private var contactSuggestionsEnabled = false
+    private var xt9Enabled = false
 
     private val accentColorResIds = listOf(
         R.color.accent_blue,
@@ -77,6 +79,8 @@ class T9InputMethodService : InputMethodService() {
         resetImeState(info, resetShift = false)
 
         contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        contactSuggestionsEnabled = preferences.contactSuggestionsEnabled
+        xt9Enabled = preferences.xt9Enabled
 
         val kv = keyboardView ?: return
         val sv = symbolsView ?: return
@@ -87,7 +91,7 @@ class T9InputMethodService : InputMethodService() {
         kv.setKeyFontSize(preferences.keyFontSize.toFloat())
         kv.setFontSize(preferences.suggestionFontSize.toFloat())
         kv.setDeletionSpeed(preferences.deletionSpeed)
-        kv.isXt9Mode = preferences.xt9Enabled
+        kv.isXt9Mode = xt9Enabled
         val accentColor = androidx.core.content.ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
         kv.setAccentColor(accentColor)
         sv.setAccentColor(accentColor)
@@ -252,7 +256,7 @@ class T9InputMethodService : InputMethodService() {
             lastDigit = '1'
         } else {
             lastDigit = digit
-            if (preferences.xt9Enabled) {
+            if (xt9Enabled) {
                 handleXt9Tap(char)
             } else {
                 handleLetterMultiTap(displayChar, char, tapCount, isFinished)
@@ -403,10 +407,11 @@ class T9InputMethodService : InputMethodService() {
                 imm.showInputMethodPicker()
             }
             KeyboardView.KeyboardAction.TOGGLE_XT9 -> {
-                val newState = !preferences.xt9Enabled
-                if (preferences.xt9Enabled && !newState) {
+                val newState = !xt9Enabled
+                if (xt9Enabled && !newState) {
                     commitCurrentComposing()
                 }
+                xt9Enabled = newState
                 preferences.xt9Enabled = newState
                 keyboardView?.isXt9Mode = newState
                 val status = if (newState) "On" else "Off"
@@ -425,7 +430,7 @@ class T9InputMethodService : InputMethodService() {
 
         var committedWord: String? = null
 
-        if (preferences.xt9Enabled && xt9DigitSequence.isNotEmpty()) {
+        if (xt9Enabled && xt9DigitSequence.isNotEmpty()) {
             val suggestions = currentXt9Predictions
             val wordToCommit = if (suggestions.isNotEmpty()) suggestions[0] else xt9RawSequence.toString()
             val finalWord = applyShiftState(wordToCommit)
@@ -485,7 +490,7 @@ class T9InputMethodService : InputMethodService() {
 
     private fun commitSuggestion(suggestion: String) {
         val ic = currentInputConnection ?: return
-        if (preferences.xt9Enabled) {
+        if (xt9Enabled) {
             // Find which suggestion was clicked to get the un-capitalized version for learning
             val originalWord = currentXt9Predictions.find { applyShiftState(it) == suggestion }
                 ?: if (applyShiftState(xt9RawSequence.toString()) == suggestion) xt9RawSequence.toString() else suggestion
@@ -518,36 +523,54 @@ class T9InputMethodService : InputMethodService() {
         }
         val targetLength = composingText.length
         val learned = LearnedDictionary.getSuggestions(currentWordConstraints)
-        val contacts = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
-            val seq = currentWordConstraints.map { if (it.length == 1 && it[0].isDigit()) it else getDigitForChar(it[0]).toString() }.joinToString("")
-            ContactsDictionary.getSuggestionsForSequence(seq)
-                .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-        } else emptyList()
         val aosp = AospDictionary.getSuggestions(currentWordConstraints)
 
-        val contactPrefixes = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
+        if (contactSuggestionsEnabled && contactPermissionGranted) {
             val seq = currentWordConstraints.map { if (it.length == 1 && it[0].isDigit()) it else getDigitForChar(it[0]).toString() }.joinToString("")
-            ContactsDictionary.getSuggestionsForPrefix(seq)
+            val contacts = ContactsDictionary.getSuggestionsForSequence(seq)
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-        } else emptyList()
+            val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq)
+                .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
 
-        val allCandidates = (learned + contacts + aosp + contactPrefixes).distinctBy { it.word.lowercase() }
+            val allCandidates = (learned + contacts + aosp + contactPrefixes).distinctBy { it.word.lowercase() }
 
-        val exactMatches = allCandidates.filter { it.word.length == targetLength }
-            .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learned.any { l -> l.word.equals(it.word, true) } }
-                .thenByDescending { contacts.any { c -> c.word.equals(it.word, true) } }
-                .thenByDescending { it.frequency })
+            val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
+            val contactsSet = (contacts + contactPrefixes).map { it.word.lowercase() }.toHashSet()
 
-        val longerMatches = allCandidates.filter { it.word.length > targetLength }
-            .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
-                .thenByDescending { learned.any { l -> l.word.equals(it.word, true) } }
-                .thenByDescending { contacts.any { c -> c.word.equals(it.word, true) } }
-                .thenByDescending { it.frequency })
+            val exactMatches = allCandidates.filter { it.word.length == targetLength }
+                .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { contactsSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
 
-        val combined = (exactMatches + longerMatches)
-            .map { it.word }
-            .take(3)
-        keyboardView?.setSuggestions(combined)
+            val longerMatches = allCandidates.filter { it.word.length > targetLength }
+                .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                    .thenByDescending { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { contactsSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
+
+            val combined = (exactMatches + longerMatches)
+                .map { it.word }
+                .take(3)
+            keyboardView?.setSuggestions(combined)
+        } else {
+            // Hot path for when contacts are disabled
+            val allCandidates = (learned + aosp).distinctBy { it.word.lowercase() }
+            val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
+
+            val exactMatches = allCandidates.filter { it.word.length == targetLength }
+                .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
+
+            val longerMatches = allCandidates.filter { it.word.length > targetLength }
+                .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                    .thenByDescending { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
+
+            val combined = (exactMatches + longerMatches)
+                .map { it.word }
+                .take(3)
+            keyboardView?.setSuggestions(combined)
+        }
     }
 
     private fun updateNextWordSuggestions() {
@@ -904,7 +927,7 @@ class T9InputMethodService : InputMethodService() {
         android.util.Log.d("T9Lifecycle", "onWindowShown")
         isWindowVisible = true
 
-        if (preferences.contactSuggestionsEnabled && !ContactsDictionary.isLoaded()) {
+        if (contactSuggestionsEnabled && !ContactsDictionary.isLoaded()) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
                 Thread { ContactsDictionary.load(this) }.start()
             }
@@ -952,43 +975,57 @@ class T9InputMethodService : InputMethodService() {
 
         // Get all candidates
         val learnedExact = LearnedDictionary.getSuggestionsForSequence(digitSeq)
-        val contactsExact = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
-            ContactsDictionary.getSuggestionsForSequence(digitSeq)
-                .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-        } else emptyList()
         val aospExact = AospDictionary.getSuggestionsForSequence(digitSeq)
-
         val learnedPrefix = LearnedDictionary.getSuggestions(currentWordConstraints.ifEmpty { digitSeq.map { it.toString() } })
             .filter { it.word.length > targetLength }
-        val contactsPrefix = if (preferences.contactSuggestionsEnabled && contactPermissionGranted) {
-            ContactsDictionary.getSuggestionsForPrefix(digitSeq)
-                .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-        } else emptyList()
         val aospPrefix = AospDictionary.getWordsStartingWith(digitSeq)
             .filter { it.word.length > targetLength }
 
-        val allCandidates = (learnedExact + contactsExact + aospExact + learnedPrefix + contactsPrefix + aospPrefix)
-            .distinctBy { it.word.lowercase() }
+        if (contactSuggestionsEnabled && contactPermissionGranted) {
+            val contactsExact = ContactsDictionary.getSuggestionsForSequence(digitSeq)
+                .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
+            val contactsPrefix = ContactsDictionary.getSuggestionsForPrefix(digitSeq)
+                .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
 
-        // Step 1: Separate into buckets
-        val exactMatches = allCandidates.filter { it.word.length == targetLength }
-            .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedExact.any { l -> l.word.equals(it.word, true) } }
-                .thenByDescending { contactsExact.any { c -> c.word.equals(it.word, true) } }
-                .thenByDescending { it.frequency })
+            val allCandidates = (learnedExact + contactsExact + aospExact + learnedPrefix + contactsPrefix + aospPrefix)
+                .distinctBy { it.word.lowercase() }
 
-        val longerMatches = allCandidates.filter { it.word.length > targetLength }
-            .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
-                .thenByDescending { (learnedPrefix).any { l -> l.word.equals(it.word, true) } }
-                .thenByDescending { (contactsPrefix).any { c -> c.word.equals(it.word, true) } }
-                .thenByDescending { it.frequency })
+            val learnedSet = (learnedExact + learnedPrefix).map { it.word.lowercase() }.toHashSet()
+            val contactsSet = (contactsExact + contactsPrefix).map { it.word.lowercase() }.toHashSet()
 
-        // Step 2: Build suggestion list
-        var finalSuggestions = (exactMatches + longerMatches).take(3)
+            // Step 1: Separate into buckets
+            val exactMatches = allCandidates.filter { it.word.length == targetLength }
+                .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { contactsSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
 
-        // Fallback to shortest available if no exact match exists (already handled by the sort order above,
-        // but if exactMatches is empty, longerMatches will be first).
+            val longerMatches = allCandidates.filter { it.word.length > targetLength }
+                .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                    .thenByDescending { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { contactsSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
 
-        currentXt9Predictions = finalSuggestions.map { it.word }
+            // Step 2: Build suggestion list
+            var finalSuggestions = (exactMatches + longerMatches).take(3)
+            currentXt9Predictions = finalSuggestions.map { it.word }
+        } else {
+            val allCandidates = (learnedExact + aospExact + learnedPrefix + aospPrefix)
+                .distinctBy { it.word.lowercase() }
+
+            val learnedSet = (learnedExact + learnedPrefix).map { it.word.lowercase() }.toHashSet()
+
+            val exactMatches = allCandidates.filter { it.word.length == targetLength }
+                .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
+
+            val longerMatches = allCandidates.filter { it.word.length > targetLength }
+                .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                    .thenByDescending { learnedSet.contains(it.word.lowercase()) }
+                    .thenByDescending { it.frequency })
+
+            var finalSuggestions = (exactMatches + longerMatches).take(3)
+            currentXt9Predictions = finalSuggestions.map { it.word }
+        }
 
         val displayPredictions = currentXt9Predictions.toMutableList()
 
