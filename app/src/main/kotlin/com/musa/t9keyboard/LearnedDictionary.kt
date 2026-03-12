@@ -109,6 +109,25 @@ object LearnedDictionary {
             if (it.length == 1 && it[0].isDigit()) it else (digitMap[it[0]] ?: ' ')
         }.joinToString("").trim()
 
+        if (digitSequence.length > 12) {
+             val results = mutableListOf<AospDictionary.WordSuggestion>()
+             t9Map[digitSequence]?.forEach { word ->
+                 var matches = true
+                 val stripped = word.lowercase().filter { it in 'a'..'z' }
+                 for (i in constraints.indices) {
+                     val constraint = constraints[i]
+                     if (constraint.length == 1 && !constraint[0].isDigit()) {
+                         if (stripped.length <= i || stripped[i] != constraint[0]) {
+                             matches = false
+                             break
+                         }
+                     }
+                 }
+                 if (matches) results.add(AospDictionary.WordSuggestion(word, 256 + (learnedWords[word] ?: 0)))
+             }
+             return results
+        }
+
         val potentialMatches = t9Map.filterKeys { it.startsWith(digitSequence) }
         val results = mutableListOf<AospDictionary.WordSuggestion>()
 

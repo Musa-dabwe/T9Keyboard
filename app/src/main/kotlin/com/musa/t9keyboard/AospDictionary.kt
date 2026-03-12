@@ -1533,6 +1533,7 @@ object AospDictionary {
     }
 
     fun getWordsStartingWith(prefix: String): List<WordSuggestion> {
+        if (prefix.length > 12) return emptyList()
         return t9Map.filterKeys { it.startsWith(prefix) }
             .flatMap { (_, entries) ->
                 entries.map { WordSuggestion(it.word, it.frequency) }
@@ -1547,6 +1548,25 @@ object AospDictionary {
         val digitSequence = constraints.map {
             if (it.length == 1 && it[0].isDigit()) it else (digitMap[it[0]] ?: ' ')
         }.joinToString("").trim()
+
+        // Optimization: if sequence is long, don't do prefix searching to avoid iterating keys
+        if (digitSequence.length > 12) {
+             val results = mutableListOf<WordSuggestion>()
+             t9Map[digitSequence]?.forEach { entry ->
+                 var matches = true
+                 for (i in constraints.indices) {
+                     val constraint = constraints[i]
+                     if (constraint.length == 1 && !constraint[0].isDigit()) {
+                         if (entry.stripped.length <= i || entry.stripped[i] != constraint[0]) {
+                             matches = false
+                             break
+                         }
+                     }
+                 }
+                 if (matches) results.add(WordSuggestion(entry.word, entry.frequency))
+             }
+             return results
+        }
 
         val potentialMatches = t9Map.filterKeys { it.startsWith(digitSequence) }
         val results = mutableListOf<WordSuggestion>()
