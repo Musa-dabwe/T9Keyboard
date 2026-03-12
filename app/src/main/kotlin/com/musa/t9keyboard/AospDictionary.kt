@@ -1539,7 +1539,6 @@ object AospDictionary {
             }
             .sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
-            .take(10)
     }
 
     fun getSuggestions(constraints: List<String>): List<WordSuggestion> {

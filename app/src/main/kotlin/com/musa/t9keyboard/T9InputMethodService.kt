@@ -490,10 +490,19 @@ class T9InputMethodService : InputMethodService() {
             keyboardView?.setSuggestions(emptyList())
             return
         }
+        val targetLength = composingText.length
         val learned = LearnedDictionary.getSuggestions(currentWordConstraints)
         val aosp = AospDictionary.getSuggestions(currentWordConstraints)
-        val combined = (learned + aosp).distinctBy { it.word }
+        val allCandidates = (learned + aosp).distinctBy { it.word.lowercase() }
+
+        val exactMatches = allCandidates.filter { it.word.length == targetLength }
             .sortedByDescending { it.frequency }
+
+        val longerMatches = allCandidates.filter { it.word.length > targetLength }
+            .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                .thenByDescending { it.frequency })
+
+        val combined = (exactMatches + longerMatches)
             .map { it.word }
             .take(3)
         keyboardView?.setSuggestions(combined)
@@ -886,34 +895,50 @@ class T9InputMethodService : InputMethodService() {
         }
 
         val digitSeq = xt9DigitSequence.toString()
+        val targetLength = digitSeq.length
+
+        // Get all candidates
         val learnedExact = LearnedDictionary.getSuggestionsForSequence(digitSeq)
         val aospExact = AospDictionary.getSuggestionsForSequence(digitSeq)
+        val learnedPrefix = LearnedDictionary.getSuggestions(currentWordConstraints.ifEmpty { digitSeq.map { it.toString() } })
+            .filter { it.word.length > targetLength }
+        val aospPrefix = AospDictionary.getWordsStartingWith(digitSeq)
+            .filter { it.word.length > targetLength }
 
-        val combinedExact = (learnedExact + aospExact)
-
-        val prefixMatches = if (digitSeq.length >= 3) {
-            AospDictionary.getWordsStartingWith(digitSeq)
-        } else {
-            emptyList()
-        }
-
-        val combined = (combinedExact + prefixMatches)
-            .sortedByDescending { it.frequency }
+        val allCandidates = (learnedExact + aospExact + learnedPrefix + aospPrefix)
             .distinctBy { it.word.lowercase() }
 
-        currentXt9Predictions = combined.map { it.word }.take(3)
+        // Step 1: Separate into buckets
+        val exactMatches = allCandidates.filter { it.word.length == targetLength }
+            .sortedByDescending { it.frequency }
+
+        val longerMatches = allCandidates.filter { it.word.length > targetLength }
+            .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                .thenByDescending { it.frequency })
+
+        // Step 2: Build suggestion list
+        var finalSuggestions = (exactMatches + longerMatches).take(3)
+
+        // Fallback to shortest available if no exact match exists (already handled by the sort order above,
+        // but if exactMatches is empty, longerMatches will be first).
+
+        currentXt9Predictions = finalSuggestions.map { it.word }
 
         val displayPredictions = currentXt9Predictions.toMutableList()
 
+        // Fallback to raw sequence ONLY if truly no matches exist
+        val rawFallback = xt9RawSequence.toString()
         if (displayPredictions.isEmpty()) {
-            displayPredictions.add(xt9RawSequence.toString())
+            displayPredictions.add(rawFallback)
         }
 
         val capitalizedPredictions = displayPredictions.map { applyShiftState(it) }
-        keyboardView?.setSuggestions(capitalizedPredictions, xt9RawSequence.toString())
+        keyboardView?.setSuggestions(capitalizedPredictions, if (currentXt9Predictions.isEmpty()) rawFallback else "")
 
-        val activeCandidate = capitalizedPredictions[0]
-        currentInputConnection?.setComposingText(activeCandidate, 1)
+        if (capitalizedPredictions.isNotEmpty()) {
+            val activeCandidate = capitalizedPredictions[0]
+            currentInputConnection?.setComposingText(activeCandidate, 1)
+        }
     }
 
     private fun applyShiftState(text: String): String {
