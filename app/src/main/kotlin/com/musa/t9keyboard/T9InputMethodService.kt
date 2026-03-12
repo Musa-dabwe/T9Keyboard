@@ -622,7 +622,11 @@ class T9InputMethodService : InputMethodService() {
                     ic.setSelection(currentPos, currentPos)
                 }
 
-                val textBefore = ic.getTextBeforeCursor(500, 0)?.toString() ?: ""
+                // Use et.text directly so position is always relative to movingPosition,
+                // not Android's reported cursor — which can be at the wrong end of a selection
+                val fetchFrom = maxOf(0, currentPos - 500)
+                val textBefore = et.text.substring(fetchFrom, currentPos)
+
                 var wordsFound = 0
                 var i = textBefore.length - 1
                 var lastWordStart = 0
@@ -654,7 +658,13 @@ class T9InputMethodService : InputMethodService() {
                     ic.setSelection(currentPos, currentPos)
                 }
 
-                val textAfter = ic.getTextAfterCursor(500, 0)?.toString() ?: ""
+                // Use et.text directly so position is always relative to movingPosition,
+                // not Android's reported cursor — which can be at the wrong end of a selection
+                val fetchFrom = minOf(currentPos, textLength)
+                val textAfter = if (fetchFrom < textLength)
+                    et.text.substring(fetchFrom, minOf(fetchFrom + 500, textLength))
+                else ""
+
                 var wordsFound = 0
                 var i = 0
                 var lastWordEnd = 0
@@ -669,7 +679,8 @@ class T9InputMethodService : InputMethodService() {
 
                 if (wordsFound < 8) lastWordEnd = textAfter.length
 
-                val newPos = currentPos + lastWordEnd
+                val newPos = minOf(currentPos + lastWordEnd, textLength)
+
                 if (isSelectionMode) {
                     movingPosition = newPos
                     ic.setSelection(selectionAnchor, movingPosition)
