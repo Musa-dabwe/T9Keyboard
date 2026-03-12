@@ -19,11 +19,18 @@ import com.musa.t9keyboard.databinding.ActivitySettingsBinding
 import com.musa.t9keyboard.utils.FontUtils
 import com.google.android.material.slider.Slider
 import android.widget.LinearLayout
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var preferences: PreferencesManager
+
+    companion object {
+        private const val PERMISSION_REQUEST_CONTACTS = 101
+    }
 
     private val accentColors = listOf(
         R.color.accent_blue,
@@ -158,6 +165,24 @@ class SettingsActivity : AppCompatActivity() {
         updateThemeText()
         binding.spinnerTheme.setOnClickListener { showThemeDialog() }
 
+        // Contact Suggestions
+        updateToggle(binding.toggleContacts, preferences.contactSuggestionsEnabled)
+        binding.rowContacts.setOnClickListener {
+            if (!preferences.contactSuggestionsEnabled) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_CONTACTS), PERMISSION_REQUEST_CONTACTS)
+                } else {
+                    preferences.contactSuggestionsEnabled = true
+                    updateToggle(binding.toggleContacts, true)
+                    Thread { ContactsDictionary.load(this) }.start()
+                }
+            } else {
+                preferences.contactSuggestionsEnabled = false
+                updateToggle(binding.toggleContacts, false)
+                ContactsDictionary.clear()
+            }
+        }
+
         // Clear dictionary
         binding.btnClearDict.setOnClickListener {
             LearnedDictionary.clear()
@@ -218,6 +243,22 @@ class SettingsActivity : AppCompatActivity() {
             0 -> "Light"
             1 -> "Dark"
             else -> "System Default"
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CONTACTS) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                preferences.contactSuggestionsEnabled = true
+                updateToggle(binding.toggleContacts, true)
+                Thread { ContactsDictionary.load(this) }.start()
+                Toast.makeText(this, "Contact suggestions enabled", Toast.LENGTH_SHORT).show()
+            } else {
+                preferences.contactSuggestionsEnabled = false
+                updateToggle(binding.toggleContacts, false)
+                Toast.makeText(this, "Permission denied — contact suggestions disabled", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -284,6 +325,7 @@ class SettingsActivity : AppCompatActivity() {
         updateToggle(binding.toggleXt9, preferences.xt9Enabled)
         updateToggle(binding.toggleHaptic, preferences.hapticEnabled)
         updateToggle(binding.toggleSound, preferences.soundEnabled)
+        updateToggle(binding.toggleContacts, preferences.contactSuggestionsEnabled)
     }
 
     private fun applyAccentColor() {
@@ -293,6 +335,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.headerFeedback.setTextColor(accentColor)
         binding.headerLayout.setTextColor(accentColor)
         binding.headerTheme.setTextColor(accentColor)
+        binding.headerIntegrations.setTextColor(accentColor)
 
         binding.btnClearDict.strokeColor = ColorStateList.valueOf(accentColor)
     }
@@ -329,6 +372,9 @@ class SettingsActivity : AppCompatActivity() {
             binding.txtSuggestionFontSubtitle,
             binding.boxSuggestionFont,
             binding.headerTheme,
+            binding.headerIntegrations,
+            binding.txtContactsTitle,
+            binding.txtContactsSubtitle,
             binding.txtAccentColorTitle,
             binding.txtThemeTitle,
             binding.txtSelectedTheme,

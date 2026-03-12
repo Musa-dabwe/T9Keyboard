@@ -18,7 +18,12 @@ class PreferencesManager(context: Context) {
         const val KEY_ACCENT_COLOR = "accent_color"
         const val KEY_XT9_ENABLED = "xt9_enabled"
         const val KEY_DELETION_SPEED = "deletion_speed"
+        const val KEY_CONTACT_SUGGESTIONS_ENABLED = "contact_suggestions_enabled"
     }
+
+    var contactSuggestionsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_CONTACT_SUGGESTIONS_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_CONTACT_SUGGESTIONS_ENABLED, value).apply()
 
     var xt9Enabled: Boolean
         get() = prefs.getBoolean(KEY_XT9_ENABLED, false)
