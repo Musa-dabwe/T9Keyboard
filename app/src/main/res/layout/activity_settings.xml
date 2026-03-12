@@ -607,6 +607,70 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- INTEGRATIONS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@color/settings_card_background"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:id="@+id/header_integrations"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:text="Integrations"
+                            android:textColor="@color/accent_blue"
+                            android:textSize="14sp" />
+
+                        <!-- Contact Suggestions -->
+                        <RelativeLayout
+                            android:id="@+id/row_contacts"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_alignParentStart="true"
+                                android:layout_toStartOf="@id/toggle_contacts">
+                                <TextView
+                                    android:id="@+id/txt_contacts_title"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Contact Suggestions"
+                                    android:textColor="@color/settings_text_primary"
+                                    android:textSize="16sp" />
+                                <TextView
+                                    android:id="@+id/txt_contacts_subtitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Suggest contact names while typing"
+                                    android:textColor="@color/settings_text_secondary"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+                            <ImageView
+                                android:id="@+id/toggle_contacts"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:src="@drawable/toggle_off" />
+                        </RelativeLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- DICTIONARY -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_clear_dict"
