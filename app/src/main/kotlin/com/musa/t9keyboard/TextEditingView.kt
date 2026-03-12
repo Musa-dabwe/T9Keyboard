@@ -100,16 +100,16 @@ class TextEditingView @JvmOverloads constructor(
         // Row 1: Home, Up, End, Select All
         gridLayout.addView(createRow(listOf(
             KeyConfig("|<", 20f, EditAction.HOME, EditAction.HOME_LONG),
-            KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100),
+            KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up),
             KeyConfig(">|", 20f, EditAction.END, EditAction.END_LONG),
             KeyConfig("Select all", 14f, EditAction.SELECT_ALL)
         )))
 
         // Row 2: Left, Select, Right, Copy
         val row2Configs = listOf(
-            KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100),
+            KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100, iconResId = R.drawable.ic_caret_left),
             KeyConfig("Select", 15f, EditAction.SELECT, longAction = EditAction.SELECT_WORD),
-            KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100),
+            KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100, iconResId = R.drawable.ic_caret_right),
             KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG)
         )
         val row2 = createRow(row2Configs)
@@ -120,7 +120,7 @@ class TextEditingView @JvmOverloads constructor(
         // Row 3: Select Left Word, Down, Select Right Word, Paste
         gridLayout.addView(createRow(listOf(
             KeyConfig("⇐", 22f, EditAction.SELECT_LEFT_WORD, longAction = EditAction.SELECT_LEFT_WORD_LONG),
-            KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100),
+            KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down),
             KeyConfig("⇒", 22f, EditAction.SELECT_RIGHT_WORD, longAction = EditAction.SELECT_RIGHT_WORD_LONG),
             KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)
         )))
@@ -169,7 +169,8 @@ class TextEditingView @JvmOverloads constructor(
         val action: EditAction,
         val longAction: EditAction? = null,
         val repeatInterval: Long? = null,
-        val textColor: Int = Color.WHITE
+        val textColor: Int = Color.WHITE,
+        val iconResId: Int? = null
     )
 
     private fun createRow(configs: List<KeyConfig>): LinearLayout {
@@ -187,7 +188,19 @@ class TextEditingView @JvmOverloads constructor(
             layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
                 setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3))
             }
-            text = config.label
+            if (config.iconResId != null) {
+                val drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, config.iconResId)
+                drawable?.let {
+                    it.setTint(config.textColor)
+                    it.setBounds(0, 0, dpToPx(24), dpToPx(24))
+                    val span = android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM)
+                    val spannable = android.text.SpannableString(" ")
+                    spannable.setSpan(span, 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    text = spannable
+                }
+            } else {
+                text = config.label
+            }
             setTextColor(config.textColor)
             textSize = config.textSize
             typeface = FontUtils.getUbuntu(context)
