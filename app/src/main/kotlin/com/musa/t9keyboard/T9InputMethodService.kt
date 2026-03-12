@@ -616,71 +616,65 @@ class T9InputMethodService : InputMethodService() {
                 }
             }
             TextEditingView.EditAction.UP -> {
-                val currentPos = if (isSelectionMode) movingPosition else selectionStart
-                if (currentPos > 0) {
-                    if (!isSelectionMode && selectionStart != selectionEnd) {
-                        ic.setSelection(selectionStart, selectionStart)
-                    }
-                    // Find the start of the current line
-                    val textBefore = et.text.substring(0, currentPos)
-                    val currentLineStart = textBefore.lastIndexOf('\n').let { if (it == -1) 0 else it + 1 }
-                    val colInLine = currentPos - currentLineStart
+                var currentPos = if (isSelectionMode) movingPosition else selectionStart
+                if (!isSelectionMode && selectionStart != selectionEnd) {
+                    currentPos = selectionStart
+                    ic.setSelection(currentPos, currentPos)
+                }
 
-                    if (currentLineStart == 0) {
-                        // Already on first line — go to position 0
-                        val newPos = 0
-                        if (isSelectionMode) {
-                            movingPosition = newPos
-                            ic.setSelection(selectionAnchor, movingPosition)
-                        } else {
-                            ic.setSelection(newPos, newPos)
-                        }
-                    } else {
-                        // Find the previous line
-                        val prevLineEnd = currentLineStart - 1
-                        val prevLineStart = et.text.substring(0, prevLineEnd).lastIndexOf('\n').let { if (it == -1) 0 else it + 1 }
-                        val prevLineLength = prevLineEnd - prevLineStart
-                        val newPos = prevLineStart + minOf(colInLine, prevLineLength)
-                        if (isSelectionMode) {
-                            movingPosition = newPos
-                            ic.setSelection(selectionAnchor, movingPosition)
-                        } else {
-                            ic.setSelection(newPos, newPos)
-                        }
-                    }
+                val textBefore = ic.getTextBeforeCursor(500, 0)?.toString() ?: ""
+                var wordsFound = 0
+                var i = textBefore.length - 1
+                var lastWordStart = 0
+
+                while (i >= 0 && wordsFound < 8) {
+                    while (i >= 0 && textBefore[i].isWhitespace()) i--
+                    if (i < 0) break
+                    while (i >= 0 && !textBefore[i].isWhitespace()) i--
+                    lastWordStart = i + 1
+                    wordsFound++
+                }
+
+                if (wordsFound < 8) lastWordStart = 0
+
+                val newPos = if (textBefore.isEmpty()) currentPos else currentPos - (textBefore.length - lastWordStart)
+                val finalPos = maxOf(0, newPos)
+
+                if (isSelectionMode) {
+                    movingPosition = finalPos
+                    ic.setSelection(selectionAnchor, movingPosition)
+                } else {
+                    ic.setSelection(finalPos, finalPos)
                 }
             }
             TextEditingView.EditAction.DOWN -> {
-                val currentPos = if (isSelectionMode) movingPosition else selectionEnd
-                if (currentPos < textLength) {
-                    if (!isSelectionMode && selectionStart != selectionEnd) {
-                        ic.setSelection(selectionEnd, selectionEnd)
-                    }
-                    val textBefore = et.text.substring(0, currentPos)
-                    val currentLineStart = textBefore.lastIndexOf('\n').let { if (it == -1) 0 else it + 1 }
-                    val colInLine = currentPos - currentLineStart
+                var currentPos = if (isSelectionMode) movingPosition else selectionEnd
+                if (!isSelectionMode && selectionStart != selectionEnd) {
+                    currentPos = selectionEnd
+                    ic.setSelection(currentPos, currentPos)
+                }
 
-                    val nextLineStart = et.text.indexOf('\n', currentPos).let { if (it == -1) textLength else it + 1 }
-                    if (nextLineStart >= textLength) {
-                        // Already on last line — go to end
-                        val newPos = textLength
-                        if (isSelectionMode) {
-                            movingPosition = newPos
-                            ic.setSelection(selectionAnchor, movingPosition)
-                        } else {
-                            ic.setSelection(newPos, newPos)
-                        }
-                    } else {
-                        val nextLineEnd = et.text.indexOf('\n', nextLineStart).let { if (it == -1) textLength else it }
-                        val nextLineLength = nextLineEnd - nextLineStart
-                        val newPos = nextLineStart + minOf(colInLine, nextLineLength)
-                        if (isSelectionMode) {
-                            movingPosition = newPos
-                            ic.setSelection(selectionAnchor, movingPosition)
-                        } else {
-                            ic.setSelection(newPos, newPos)
-                        }
-                    }
+                val textAfter = ic.getTextAfterCursor(500, 0)?.toString() ?: ""
+                var wordsFound = 0
+                var i = 0
+                var lastWordEnd = 0
+
+                while (i < textAfter.length && wordsFound < 8) {
+                    while (i < textAfter.length && textAfter[i].isWhitespace()) i++
+                    if (i >= textAfter.length) break
+                    while (i < textAfter.length && !textAfter[i].isWhitespace()) i++
+                    lastWordEnd = i
+                    wordsFound++
+                }
+
+                if (wordsFound < 8) lastWordEnd = textAfter.length
+
+                val newPos = currentPos + lastWordEnd
+                if (isSelectionMode) {
+                    movingPosition = newPos
+                    ic.setSelection(selectionAnchor, movingPosition)
+                } else {
+                    ic.setSelection(newPos, newPos)
                 }
             }
             TextEditingView.EditAction.LEFT -> {
