@@ -159,6 +159,10 @@ class T9InputMethodService : InputMethodService() {
             commitSuggestion(suggestion)
         }
 
+        kv.setOnToolbarActionClickListener { action ->
+            handleToolbarAction(action)
+        }
+
         sv.onSymbolClickListener = { symbol ->
             commitTextWithFinalization(symbol)
         }
@@ -407,16 +411,86 @@ class T9InputMethodService : InputMethodService() {
                 imm.showInputMethodPicker()
             }
             KeyboardView.KeyboardAction.TOGGLE_XT9 -> {
-                val newState = !xt9Enabled
-                if (xt9Enabled && !newState) {
-                    commitCurrentComposing()
-                }
-                xt9Enabled = newState
-                preferences.xt9Enabled = newState
-                keyboardView?.isXt9Mode = newState
-                val status = if (newState) "On" else "Off"
-                Toast.makeText(this, "XT9 $status", Toast.LENGTH_SHORT).show()
+                toggleXt9()
             }
+        }
+        updateToolbarVisibility()
+    }
+
+    private fun handleToolbarAction(action: SuggestionBar.ToolbarAction) {
+        performFeedback()
+        when (action) {
+            SuggestionBar.ToolbarAction.SETTINGS -> {
+                val intent = android.content.Intent(this, SettingsActivity::class.java)
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+            }
+            SuggestionBar.ToolbarAction.EDIT -> {
+                showTextEditingPanel()
+            }
+            SuggestionBar.ToolbarAction.LEFT -> {
+                sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_LEFT, 0)
+            }
+            SuggestionBar.ToolbarAction.RIGHT -> {
+                sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_RIGHT, 0)
+            }
+            SuggestionBar.ToolbarAction.TOGGLE_XT9 -> {
+                toggleXt9()
+            }
+        }
+    }
+
+    private fun toggleXt9() {
+        val newState = !xt9Enabled
+        if (xt9Enabled && !newState) {
+            commitCurrentComposing()
+        }
+        xt9Enabled = newState
+        preferences.xt9Enabled = newState
+        keyboardView?.isXt9Mode = newState
+        val message = if (newState) "XT9 mode on" else "Multi-tap mode on"
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateToolbarVisibility() {
+        val ic = currentInputConnection ?: return
+        val et = ic.getExtractedText(ExtractedTextRequest(), 0)
+
+        val isComposing = composingText.isNotEmpty() || xt9DigitSequence.isNotEmpty()
+        if (isComposing) {
+            keyboardView?.showSuggestions()
+            return
+        }
+
+        if (et == null || et.text.isEmpty()) {
+            keyboardView?.showToolbar()
+            return
+        }
+
+        val text = et.text.toString()
+        val selectionEnd = et.selectionEnd
+
+        if (selectionEnd == 0) {
+            keyboardView?.showToolbar()
+        } else if (selectionEnd > 0) {
+            val lastChar = text[selectionEnd - 1]
+            val isSentenceTerminator = lastChar == '.' || lastChar == '!' || lastChar == '?'
+
+            if (isSentenceTerminator) {
+                keyboardView?.showToolbar()
+            } else if (selectionEnd > 1) {
+                val prevChar = text[selectionEnd - 2]
+                val isSentenceTerminatorBeforeSpace = lastChar == ' ' && (prevChar == '.' || prevChar == '!' || prevChar == '?')
+                if (isSentenceTerminatorBeforeSpace) {
+                    keyboardView?.showToolbar()
+                } else {
+                    keyboardView?.showSuggestions()
+                }
+            } else {
+                keyboardView?.showSuggestions()
+            }
+        } else {
+            keyboardView?.showSuggestions()
         }
     }
 
@@ -472,6 +546,7 @@ class T9InputMethodService : InputMethodService() {
         }
         keyboardView?.setSuggestions(emptyList())
         lastDigit = ' '
+        updateToolbarVisibility()
     }
 
     private fun commitTextWithFinalization(text: String, addSpaceAfter: Boolean = false) {
@@ -519,11 +594,15 @@ class T9InputMethodService : InputMethodService() {
     private fun updateSuggestions() {
         if (composingText.isEmpty() || composingText.all { !it.isLetter() }) {
             keyboardView?.setSuggestions(emptyList())
+            updateToolbarVisibility()
             return
         }
+        keyboardView?.showSuggestions()
         val targetLength = composingText.length
+        val literalComposing = composingText.toString()
         val learned = LearnedDictionary.getSuggestions(currentWordConstraints)
         val aosp = AospDictionary.getSuggestions(currentWordConstraints)
+        val containing = AospDictionary.getWordsContaining(literalComposing)
 
         if (contactSuggestionsEnabled && contactPermissionGranted) {
             val seq = currentWordConstraints.map { if (it.length == 1 && it[0].isDigit()) it else getDigitForChar(it[0]).toString() }.joinToString("")
@@ -532,7 +611,7 @@ class T9InputMethodService : InputMethodService() {
             val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq)
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
 
-            val allCandidates = (learned + contacts + aosp + contactPrefixes).distinctBy { it.word.lowercase() }
+            val allCandidates = (learned + contacts + aosp + contactPrefixes + containing).distinctBy { it.word.lowercase() }
 
             val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
             val contactsSet = (contacts + contactPrefixes).map { it.word.lowercase() }.toHashSet()
@@ -548,13 +627,15 @@ class T9InputMethodService : InputMethodService() {
                     .thenByDescending { contactsSet.contains(it.word.lowercase()) }
                     .thenByDescending { it.frequency })
 
-            val combined = (exactMatches + longerMatches)
+            val anchored = if (exactMatches.isNotEmpty()) exactMatches[0].word else literalComposing
+            val others = (exactMatches.drop(if (exactMatches.isNotEmpty()) 1 else 0) + longerMatches)
                 .map { it.word }
-                .take(3)
-            keyboardView?.setSuggestions(combined)
+                .take(20)
+
+            keyboardView?.setSuggestions(others, anchored)
         } else {
             // Hot path for when contacts are disabled
-            val allCandidates = (learned + aosp).distinctBy { it.word.lowercase() }
+            val allCandidates = (learned + aosp + containing).distinctBy { it.word.lowercase() }
             val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
 
             val exactMatches = allCandidates.filter { it.word.length == targetLength }
@@ -566,10 +647,12 @@ class T9InputMethodService : InputMethodService() {
                     .thenByDescending { learnedSet.contains(it.word.lowercase()) }
                     .thenByDescending { it.frequency })
 
-            val combined = (exactMatches + longerMatches)
+            val anchored = if (exactMatches.isNotEmpty()) exactMatches[0].word else literalComposing
+            val others = (exactMatches.drop(if (exactMatches.isNotEmpty()) 1 else 0) + longerMatches)
                 .map { it.word }
-                .take(3)
-            keyboardView?.setSuggestions(combined)
+                .take(20)
+
+            keyboardView?.setSuggestions(others, anchored)
         }
     }
 
@@ -577,8 +660,13 @@ class T9InputMethodService : InputMethodService() {
         val word = lastCommittedWord ?: return
         val learned = LearnedDictionary.getNextWordSuggestions(word)
         val aosp = AospBigrams.getNextWordSuggestions(word)
-        val combined = (learned + aosp).distinct().take(3)
-        keyboardView?.setSuggestions(combined)
+        val combined = (learned + aosp).distinct().take(20)
+        if (combined.isNotEmpty()) {
+            keyboardView?.showSuggestions()
+            keyboardView?.setSuggestions(combined, null)
+        } else {
+            updateToolbarVisibility()
+        }
     }
 
     private fun sendDownUpKeyEvents(keyCode: Int, meta: Int) {
@@ -906,6 +994,8 @@ class T9InputMethodService : InputMethodService() {
             finalizeCurrentComposing(moveCursorToEnd = false)
         }
 
+        updateToolbarVisibility()
+
         if (isSelectionMode) {
             if (newSelStart == selectionAnchor) {
                 movingPosition = newSelEnd
@@ -967,8 +1057,10 @@ class T9InputMethodService : InputMethodService() {
     private fun updateXt9Suggestions() {
         if (xt9DigitSequence.isEmpty()) {
             keyboardView?.setSuggestions(emptyList())
+            updateToolbarVisibility()
             return
         }
+        keyboardView?.showSuggestions()
 
         val digitSeq = xt9DigitSequence.toString()
         val targetLength = digitSeq.length
@@ -980,6 +1072,7 @@ class T9InputMethodService : InputMethodService() {
             .filter { it.word.length > targetLength }
         val aospPrefix = AospDictionary.getWordsStartingWith(digitSeq)
             .filter { it.word.length > targetLength }
+        val containing = AospDictionary.getWordsContaining(xt9RawSequence.toString())
 
         if (contactSuggestionsEnabled && contactPermissionGranted) {
             val contactsExact = ContactsDictionary.getSuggestionsForSequence(digitSeq)
@@ -987,7 +1080,7 @@ class T9InputMethodService : InputMethodService() {
             val contactsPrefix = ContactsDictionary.getSuggestionsForPrefix(digitSeq)
                 .map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
 
-            val allCandidates = (learnedExact + contactsExact + aospExact + learnedPrefix + contactsPrefix + aospPrefix)
+            val allCandidates = (learnedExact + contactsExact + aospExact + learnedPrefix + contactsPrefix + aospPrefix + containing)
                 .distinctBy { it.word.lowercase() }
 
             val learnedSet = (learnedExact + learnedPrefix).map { it.word.lowercase() }.toHashSet()
@@ -1005,11 +1098,10 @@ class T9InputMethodService : InputMethodService() {
                     .thenByDescending { contactsSet.contains(it.word.lowercase()) }
                     .thenByDescending { it.frequency })
 
-            // Step 2: Build suggestion list
-            var finalSuggestions = (exactMatches + longerMatches).take(3)
-            currentXt9Predictions = finalSuggestions.map { it.word }
+            // Step 2: Build prediction list
+            currentXt9Predictions = (exactMatches + longerMatches).map { it.word }
         } else {
-            val allCandidates = (learnedExact + aospExact + learnedPrefix + aospPrefix)
+            val allCandidates = (learnedExact + aospExact + learnedPrefix + aospPrefix + containing)
                 .distinctBy { it.word.lowercase() }
 
             val learnedSet = (learnedExact + learnedPrefix).map { it.word.lowercase() }.toHashSet()
@@ -1023,8 +1115,7 @@ class T9InputMethodService : InputMethodService() {
                     .thenByDescending { learnedSet.contains(it.word.lowercase()) }
                     .thenByDescending { it.frequency })
 
-            var finalSuggestions = (exactMatches + longerMatches).take(3)
-            currentXt9Predictions = finalSuggestions.map { it.word }
+            currentXt9Predictions = (exactMatches + longerMatches).map { it.word }
         }
 
         val displayPredictions = currentXt9Predictions.toMutableList()
@@ -1036,11 +1127,17 @@ class T9InputMethodService : InputMethodService() {
         }
 
         val capitalizedPredictions = displayPredictions.map { applyShiftState(it) }
-        keyboardView?.setSuggestions(capitalizedPredictions, if (currentXt9Predictions.isEmpty()) rawFallback else "")
+
+        val anchored = if (capitalizedPredictions.isNotEmpty()) capitalizedPredictions[0] else applyShiftState(rawFallback)
+        val others = if (capitalizedPredictions.size > 1) capitalizedPredictions.drop(1).take(20) else emptyList<String>()
+
+        keyboardView?.setSuggestions(others, anchored)
 
         if (capitalizedPredictions.isNotEmpty()) {
             val activeCandidate = capitalizedPredictions[0]
             currentInputConnection?.setComposingText(activeCandidate, 1)
+        } else {
+            currentInputConnection?.setComposingText(applyShiftState(rawFallback), 1)
         }
     }
 
@@ -1132,6 +1229,7 @@ class T9InputMethodService : InputMethodService() {
                 showView(it)
             }
         }
+        updateToolbarVisibility()
 
         if (resetShift) {
             shiftManager.reset()

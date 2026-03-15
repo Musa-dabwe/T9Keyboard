@@ -12,6 +12,7 @@ object AospDictionary {
 
     private val t9Map = mutableMapOf<String, MutableList<WordEntry>>()
     private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
+    private val allWordEntries = mutableListOf<WordEntry>()
 
     data class WordSuggestion(val word: String, val frequency: Int)
 
@@ -1473,6 +1474,7 @@ object AospDictionary {
     fun loadFromAssets(context: Context) {
         t9Map.clear()
         wordMap.clear()
+        allWordEntries.clear()
         val reader = try {
             BufferedReader(InputStreamReader(context.assets.open("en_us_words.bin")))
         } catch (e: Exception) {
@@ -1494,6 +1496,7 @@ object AospDictionary {
                         val entry = WordEntry(stripped, freq, display)
 
                         wordMap.getOrPut(stripped) { mutableListOf() }.add(entry)
+                        allWordEntries.add(entry)
 
                         val digits = getT9Sequence(stripped)
                         if (digits.isNotEmpty()) {
@@ -1538,6 +1541,16 @@ object AospDictionary {
             .flatMap { (_, entries) ->
                 entries.map { WordSuggestion(it.word, it.frequency) }
             }
+            .sortedByDescending { it.frequency }
+            .distinctBy { it.word.lowercase() }
+    }
+
+    fun getWordsContaining(literal: String): List<WordSuggestion> {
+        if (literal.isEmpty()) return emptyList()
+        val lowerLiteral = literal.lowercase()
+        return allWordEntries
+            .filter { it.word.lowercase().contains(lowerLiteral) }
+            .map { WordSuggestion(it.word, it.frequency) }
             .sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
     }

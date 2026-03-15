@@ -191,12 +191,6 @@ class KeyboardView @JvmOverloads constructor(
             onFeedbackRequested?.invoke()
             onActionClickListener?.invoke(KeyboardAction.EMOJI)
         }
-        binding.keyEmoji.setOnLongClickListener {
-            onFeedbackRequested?.invoke()
-            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-            onActionClickListener?.invoke(KeyboardAction.SHOW_TEXT_EDITING)
-            true
-        }
     }
 
     private fun startRepeatingDel() {
@@ -306,8 +300,20 @@ class KeyboardView @JvmOverloads constructor(
         binding.suggestionBar.setFontSize(size)
     }
 
-    fun setSuggestions(suggestions: List<String>, rawSequence: String? = null) {
-        binding.suggestionBar.setSuggestions(suggestions, rawSequence)
+    fun setSuggestions(suggestions: List<String>, anchoredWord: String? = null) {
+        binding.suggestionBar.setSuggestions(suggestions, anchoredWord)
+    }
+
+    fun showToolbar() {
+        binding.suggestionBar.showToolbar()
+    }
+
+    fun showSuggestions() {
+        binding.suggestionBar.showSuggestions()
+    }
+
+    fun setOnToolbarActionClickListener(listener: (SuggestionBar.ToolbarAction) -> Unit) {
+        binding.suggestionBar.onToolbarActionClickListener = listener
     }
 
     fun setAccentColor(color: Int) {
