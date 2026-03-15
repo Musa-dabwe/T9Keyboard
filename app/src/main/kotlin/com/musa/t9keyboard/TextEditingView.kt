@@ -53,6 +53,9 @@ class TextEditingView @JvmOverloads constructor(
 
     var onAction: ((EditAction) -> Unit)? = null
     var onAbcClick: (() -> Unit)? = null
+    var on123Click: (() -> Unit)? = null
+    var onSymClick: (() -> Unit)? = null
+    var onEmojiClick: (() -> Unit)? = null
     var onFeedbackRequested: (() -> Unit)? = null
 
     private var isSelectionMode = false
@@ -65,7 +68,7 @@ class TextEditingView @JvmOverloads constructor(
     private lateinit var selectKey: TextView
     private lateinit var copyKey: TextView
     private lateinit var cutKey: TextView
-    private lateinit var abcBtn: TextView
+    private lateinit var emojiKey: TextView
     private var allKeys = mutableListOf<TextView>()
 
     init {
@@ -84,93 +87,78 @@ class TextEditingView @JvmOverloads constructor(
         addView(TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(36))
             text = "TEXT EDITING"
-            setTextColor(Color.parseColor("#AAAAAA"))
+            setTextColor(Color.parseColor("#888888"))
             textSize = 13f
             typeface = ubuntu
             gravity = Gravity.CENTER
             setAllCaps(true)
+            letterSpacing = 0.05f
         })
 
         val gridLayout = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
-            setPadding(dpToPx(6), 0, dpToPx(6), 0)
+            setPadding(dpToPx(6), 0, dpToPx(6), dpToPx(6))
         }
 
-        // Row 1: Home, Up, End, Select All
-        gridLayout.addView(createRow(listOf(
-            KeyConfig("|<", 20f, EditAction.HOME, EditAction.HOME_LONG, iconResId = R.drawable.ic_arrow_alt_from_right),
+        // Row 1: Undo, Up, Redo, Delete
+        val row1Configs = listOf(
+            KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300),
             KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up),
-            KeyConfig(">|", 20f, EditAction.END, EditAction.END_LONG, iconResId = R.drawable.ic_arrow_alt_from_left),
-            KeyConfig("Select all", 14f, EditAction.SELECT_ALL)
-        )))
+            KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300),
+            KeyConfig("⌫", 22f, EditAction.DELETE, repeatInterval = 100, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_backspace)
+        )
+        gridLayout.addView(createRow(row1Configs))
 
-        // Row 2: Left, Select, Right, Copy
+        // Row 2: Left, Select, Right, ABC
         val row2Configs = listOf(
             KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100, iconResId = R.drawable.ic_caret_left),
             KeyConfig("Select", 15f, EditAction.SELECT, longAction = EditAction.SELECT_WORD),
             KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100, iconResId = R.drawable.ic_caret_right),
-            KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG)
+            KeyConfig("ABC", 18f, onClick = { onAbcClick?.invoke() })
         )
         val row2 = createRow(row2Configs)
         selectKey = row2.getChildAt(1) as TextView
-        copyKey = row2.getChildAt(3) as TextView
         gridLayout.addView(row2)
 
-        // Row 3: Select Left Word, Down, Select Right Word, Paste
-        gridLayout.addView(createRow(listOf(
-            KeyConfig("⇐", 22f, EditAction.SELECT_LEFT_WORD, longAction = EditAction.SELECT_LEFT_WORD_LONG),
-            KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down),
-            KeyConfig("⇒", 22f, EditAction.SELECT_RIGHT_WORD, longAction = EditAction.SELECT_RIGHT_WORD_LONG),
-            KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)
-        )))
-
-        // Row 4: Cut, Undo, Redo, DEL
-        val row4Configs = listOf(
+        // Row 3: Cut, Down, Copy, Emoji
+        val row3Configs = listOf(
             KeyConfig("Cut", 16f, EditAction.CUT, longAction = EditAction.CUT_LONG),
-            KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300),
-            KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300),
-            KeyConfig("⌫", 22f, EditAction.DELETE, repeatInterval = 100, textColor = Color.parseColor("#FF5252"))
+            KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down),
+            KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG),
+            KeyConfig(" ", 22f, iconResId = R.drawable.ic_emoji, onClick = { onEmojiClick?.invoke() })
         )
-        val row4 = createRow(row4Configs)
-        cutKey = row4.getChildAt(0) as TextView
-        gridLayout.addView(row4)
+        val row3 = createRow(row3Configs)
+        cutKey = row3.getChildAt(0) as TextView
+        copyKey = row3.getChildAt(2) as TextView
+        emojiKey = row3.getChildAt(3) as TextView
+        gridLayout.addView(row3)
+
+        // Row 4: 123, Paste, Select All, SYM
+        val row4Configs = listOf(
+            KeyConfig("123", 18f, onClick = { on123Click?.invoke() }),
+            KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG),
+            KeyConfig("Select all", 14f, EditAction.SELECT_ALL),
+            KeyConfig("SYM", 18f, onClick = { onSymClick?.invoke() })
+        )
+        gridLayout.addView(createRow(row4Configs))
 
         addView(gridLayout)
 
-        // Bottom Bar: ABC
-        addView(LinearLayout(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
-            setBackgroundColor(Color.parseColor("#1A1A1A"))
-            abcBtn = TextView(context).apply {
-                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-                text = "ABC"
-                setTextColor(Color.WHITE)
-                textSize = 18f
-                typeface = ubuntu
-                gravity = Gravity.CENTER
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    onFeedbackRequested?.invoke()
-                    onAbcClick?.invoke()
-                }
-            }
-            addView(abcBtn)
-        })
-
         updateSelectKeyVisuals()
+        updateEmojiKeyTint()
         updateSelectionState(false)
     }
 
     private data class KeyConfig(
         val label: String,
         val textSize: Float,
-        val action: EditAction,
+        val action: EditAction? = null,
         val longAction: EditAction? = null,
         val repeatInterval: Long? = null,
         val textColor: Int = Color.WHITE,
-        val iconResId: Int? = null
+        val iconResId: Int? = null,
+        val onClick: (() -> Unit)? = null
     )
 
     private fun createRow(configs: List<KeyConfig>): LinearLayout {
@@ -228,19 +216,34 @@ class TextEditingView @JvmOverloads constructor(
                             config.repeatInterval
                         }
 
-                        if (effectiveRepeatInterval != null) {
-                            onAction?.invoke(config.action)
-                            startRepeating(config.action, effectiveRepeatInterval)
-                        } else if (config.longAction != null) {
-                            startLongPressCheck(config.longAction) { longPressedSent = true }
+                        if (config.action != null) {
+                            val effectiveRepeatInterval = if (config.action == EditAction.DELETE) {
+                                deletionSpeed.toLong()
+                            } else {
+                                config.repeatInterval
+                            }
+
+                            if (effectiveRepeatInterval != null) {
+                                onAction?.invoke(config.action)
+                                startRepeating(config.action, effectiveRepeatInterval)
+                            } else if (config.longAction != null) {
+                                startLongPressCheck(config.longAction) { longPressedSent = true }
+                            }
+                        } else if (config.onClick != null) {
+                            // No repeat for custom onClick
                         }
                     }
                     MotionEvent.ACTION_UP -> {
                         v.isPressed = false
                         stopRepeating()
                         if (!longPressedSent) {
-                            if (config.repeatInterval == null) {
-                                onAction?.invoke(config.action)
+                            if (config.action != null) {
+                                if (config.repeatInterval == null) {
+                                    onAction?.invoke(config.action)
+                                }
+                            } else if (config.onClick != null) {
+                                onFeedbackRequested?.invoke()
+                                config.onClick.invoke()
                             }
                         }
                     }
@@ -278,16 +281,6 @@ class TextEditingView @JvmOverloads constructor(
         key.backgroundTintList = pressedColorList
     }
 
-    private fun updateAbcBtnBackground() {
-        if (!::abcBtn.isInitialized) return
-        val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
-        val ripple = android.graphics.drawable.RippleDrawable(
-            android.content.res.ColorStateList.valueOf(pressedColor),
-            null,
-            android.graphics.drawable.ColorDrawable(Color.WHITE)
-        )
-        abcBtn.background = ripple
-    }
 
     private fun startRepeating(action: EditAction, interval: Long) {
         stopRepeating()
@@ -329,8 +322,21 @@ class TextEditingView @JvmOverloads constructor(
     fun setAccentColor(color: Int) {
         this.accentColor = color
         updateSelectKeyVisuals()
+        updateEmojiKeyTint()
         allKeys.forEach { updateKeyBackground(it) }
-        updateAbcBtnBackground()
+    }
+
+    private fun updateEmojiKeyTint() {
+        if (!::emojiKey.isInitialized) return
+        val drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, R.drawable.ic_emoji)
+        drawable?.let {
+            it.setTint(accentColor)
+            it.setBounds(0, 0, dpToPx(24), dpToPx(24))
+            val span = android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM)
+            val spannable = android.text.SpannableString(" ")
+            spannable.setSpan(span, 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            emojiKey.text = spannable
+        }
     }
 
     fun setDeletionSpeed(speed: Int) {
