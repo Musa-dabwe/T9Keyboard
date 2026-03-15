@@ -2,11 +2,12 @@ package com.musa.t9keyboard
 
 import android.content.Context
 import android.content.SharedPreferences
+import java.util.TreeMap
 
 object LearnedDictionary {
     private val learnedWords = mutableMapOf<String, Int>()
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
-    private val t9Map = mutableMapOf<String, MutableList<String>>()
+    private val t9Map = TreeMap<String, MutableList<String>>()
     private lateinit var prefs: SharedPreferences
 
     private val digitMap = mapOf(
@@ -20,6 +21,7 @@ object LearnedDictionary {
         'w' to '9', 'x' to '9', 'y' to '9', 'z' to '9'
     )
 
+    @Synchronized
     fun load(context: Context) {
         prefs = context.getSharedPreferences("learned_words", Context.MODE_PRIVATE)
         learnedWords.clear()
@@ -57,6 +59,7 @@ object LearnedDictionary {
         return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
     }
 
+    @Synchronized
     fun learnWord(word: String, previousWord: String? = null) {
         val lowerWord = word.lowercase().trim() // Keep punctuation for learning!
         if (lowerWord.isEmpty()) return
@@ -94,6 +97,7 @@ object LearnedDictionary {
         editor.apply()
     }
 
+    @Synchronized
     fun getSuggestionsForSequence(t9sequence: String): List<AospDictionary.WordSuggestion> {
         val words = t9Map[t9sequence] ?: return emptyList()
         return words.map { word ->
@@ -102,6 +106,7 @@ object LearnedDictionary {
         }
     }
 
+    @Synchronized
     fun getSuggestions(constraints: List<String>): List<AospDictionary.WordSuggestion> {
         if (constraints.isEmpty()) return emptyList()
 
@@ -128,10 +133,10 @@ object LearnedDictionary {
              return results
         }
 
-        val potentialMatches = t9Map.filterKeys { it.startsWith(digitSequence) }
+        val potentialMatches = t9Map.subMap(digitSequence, digitSequence + "\uFFFF")
         val results = mutableListOf<AospDictionary.WordSuggestion>()
 
-        for ((_, words) in potentialMatches) {
+        for (words in potentialMatches.values) {
             for (word in words) {
                 var matches = true
                 val stripped = word.lowercase().filter { it in 'a'..'z' }
@@ -152,6 +157,7 @@ object LearnedDictionary {
         return results
     }
 
+    @Synchronized
     fun getNextWordSuggestions(previousWord: String): List<String> {
         val lowerPrev = previousWord.lowercase().trim()
         val nextWords = nextWordMap[lowerPrev] ?: return emptyList()
@@ -161,10 +167,12 @@ object LearnedDictionary {
             .take(3)
     }
 
+    @Synchronized
     fun contains(word: String): Boolean {
         return learnedWords.containsKey(word.lowercase().trim())
     }
 
+    @Synchronized
     fun clear() {
         learnedWords.clear()
         nextWordMap.clear()

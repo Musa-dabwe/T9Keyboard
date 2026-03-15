@@ -9,9 +9,13 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.databinding.SuggestionBarBinding
 import com.musa.t9keyboard.utils.FontUtils
 
@@ -27,6 +31,8 @@ class SuggestionBar @JvmOverloads constructor(
     private var accentColor: Int = Color.parseColor("#BB86FC")
     private var suggestionFontSize: Float = 18f
     private var isXt9Mode: Boolean = false
+    private val ubuntuTypeface = FontUtils.getUbuntu(context)
+    private val suggestionAdapter = SuggestionAdapter()
 
     enum class ToolbarAction {
         SETTINGS, EDIT, TOGGLE_XT9
@@ -34,7 +40,13 @@ class SuggestionBar @JvmOverloads constructor(
 
     init {
         setupToolbar()
+        setupRecyclerView()
         applyUbuntuFont()
+    }
+
+    private fun setupRecyclerView() {
+        binding.suggestionRecyclerView.layoutManager = LinearLayoutManager(context, RecyclerView.HORIZONTAL, false)
+        binding.suggestionRecyclerView.adapter = suggestionAdapter
     }
 
     private fun setupToolbar() {
@@ -70,30 +82,7 @@ class SuggestionBar @JvmOverloads constructor(
     }
 
     fun setSuggestions(suggestions: List<String>, anchoredWord: String? = null) {
-        binding.suggestionContainer.removeAllViews()
-        val ubuntu = FontUtils.getUbuntu(context)
-
-        suggestions.forEach { suggestion ->
-            val tv = TextView(context).apply {
-                text = suggestion
-                textSize = suggestionFontSize
-                setTextColor(Color.WHITE)
-                typeface = ubuntu
-                gravity = Gravity.CENTER
-                setPadding(dpToPx(12), 0, dpToPx(12), 0)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.MATCH_PARENT
-                )
-                isClickable = true
-                isFocusable = true
-                val outValue = android.util.TypedValue()
-                context.theme.resolveAttribute(android.R.attr.selectableItemBackground, outValue, true)
-                setBackgroundResource(outValue.resourceId)
-                setOnClickListener { onSuggestionClickListener?.invoke(suggestion) }
-            }
-            binding.suggestionContainer.addView(tv)
-        }
+        suggestionAdapter.updateSuggestions(suggestions)
 
         if (anchoredWord != null) {
             binding.anchoredSuggestion.visibility = View.VISIBLE
@@ -142,4 +131,53 @@ class SuggestionBar @JvmOverloads constructor(
 
     private fun dpToPx(dp: Int): Int =
         (dp * resources.displayMetrics.density + 0.5f).toInt()
+
+    private inner class SuggestionAdapter : RecyclerView.Adapter<SuggestionAdapter.ViewHolder>() {
+        private var items = listOf<String>()
+
+        fun updateSuggestions(newItems: List<String>) {
+            val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+                override fun getOldListSize(): Int = items.size
+                override fun getNewListSize(): Int = newItems.size
+                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                    items[oldItemPosition] == newItems[newItemPosition]
+                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                    items[oldItemPosition] == newItems[newItemPosition]
+            })
+            items = newItems
+            diffResult.dispatchUpdatesTo(this)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val tv = TextView(context).apply {
+                textSize = suggestionFontSize
+                setTextColor(Color.WHITE)
+                typeface = ubuntuTypeface
+                gravity = Gravity.CENTER
+                setPadding(dpToPx(12), 0, dpToPx(12), 0)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                )
+                isClickable = true
+                isFocusable = true
+                val outValue = android.util.TypedValue()
+                context.theme.resolveAttribute(android.R.attr.selectableItemBackground, outValue, true)
+                setBackgroundResource(outValue.resourceId)
+            }
+            return ViewHolder(tv)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val suggestion = items[position]
+            (holder.itemView as TextView).apply {
+                text = suggestion
+                setOnClickListener { onSuggestionClickListener?.invoke(suggestion) }
+            }
+        }
+
+        override fun getItemCount(): Int = items.size
+
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    }
 }
