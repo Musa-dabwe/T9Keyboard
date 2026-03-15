@@ -74,11 +74,11 @@ class SuggestionBar @JvmOverloads constructor(
     }
 
     fun showToolbar() {
-        binding.toolbarEdit.visibility = View.VISIBLE
+        // Edit button is now permanently visible
     }
 
     fun showSuggestions() {
-        binding.toolbarEdit.visibility = View.GONE
+        // Edit button is now permanently visible
     }
 
     fun setSuggestions(suggestions: List<String>, anchoredWord: String? = null) {

@@ -72,7 +72,6 @@ class SymbolsView @JvmOverloads constructor(
     private fun applyUbuntuFont() {
         val ubuntu = FontUtils.getUbuntu(context)
         binding.btnBackToAbc.typeface = ubuntu
-        binding.btnSymbolDelete.typeface = ubuntu
     }
 
     fun setAccentColor(color: Int) {
@@ -84,6 +83,8 @@ class SymbolsView @JvmOverloads constructor(
         )
         binding.btnBackToAbc.background = ripple
         binding.btnSymbolDelete.background = ripple.constantState?.newDrawable()?.mutate()
+
+        binding.imgSymbolDelete.imageTintList = android.content.res.ColorStateList.valueOf(color)
 
         (binding.symbolRecyclerView.adapter as? SymbolAdapter)?.setAccentColor(color)
     }

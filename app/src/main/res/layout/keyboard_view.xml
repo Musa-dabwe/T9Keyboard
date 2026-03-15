@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -29,10 +30,13 @@
             <TextView android:id="@+id/secondary_label_def" style="@style/KeySecondaryLabel" android:text="3" />
         </FrameLayout>
         <FrameLayout android:id="@+id/key_del" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_del" style="@style/KeyPrimaryLabel"
-                android:text="⌫"
-                android:textColor="@color/delete_key_color"
-                android:textSize="22sp" />
+            <ImageView
+                android:id="@+id/label_del_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_delete"
+                app:tint="@color/delete_key_color" />
         </FrameLayout>
     </LinearLayout>
 

@@ -25,7 +25,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingHorizontal="16dp"
-                android:paddingTop="16dp">
+                android:paddingTop="21dp">
 
                 <ImageView
                     android:id="@+id/btn_back"
@@ -132,7 +132,7 @@
                                 android:layout_height="24dp"
                                 android:layout_alignParentEnd="true"
                                 android:layout_centerVertical="true"
-                                android:src="@drawable/toggle_off" />
+                                android:src="@drawable/ic_toggle_off" />
                         </RelativeLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -195,7 +195,7 @@
                                 android:layout_height="24dp"
                                 android:layout_alignParentEnd="true"
                                 android:layout_centerVertical="true"
-                                android:src="@drawable/toggle_off" />
+                                android:src="@drawable/ic_toggle_off" />
                         </RelativeLayout>
 
                         <!-- Haptic Intensity -->
@@ -318,7 +318,7 @@
                                 android:layout_height="24dp"
                                 android:layout_alignParentEnd="true"
                                 android:layout_centerVertical="true"
-                                android:src="@drawable/toggle_off" />
+                                android:src="@drawable/ic_toggle_off" />
                         </RelativeLayout>
 
                         <!-- Sound Volume -->
@@ -666,7 +666,7 @@
                                 android:layout_height="24dp"
                                 android:layout_alignParentEnd="true"
                                 android:layout_centerVertical="true"
-                                android:src="@drawable/toggle_off" />
+                                android:src="@drawable/ic_toggle_off" />
                         </RelativeLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

@@ -192,10 +192,10 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateToggle(imageView: ImageView, isEnabled: Boolean) {
         if (isEnabled) {
-            imageView.setImageResource(R.drawable.toggle_on)
+            imageView.setImageResource(R.drawable.ic_toggle_on)
             imageView.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(this, accentColors[preferences.accentColorIndex]))
         } else {
-            imageView.setImageResource(R.drawable.toggle_off)
+            imageView.setImageResource(R.drawable.ic_toggle_off)
             imageView.imageTintList = ColorStateList.valueOf(Color.parseColor("#444444"))
         }
     }

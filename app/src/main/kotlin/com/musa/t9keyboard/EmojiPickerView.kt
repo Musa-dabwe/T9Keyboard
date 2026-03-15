@@ -187,9 +187,15 @@ class EmojiPickerView @JvmOverloads constructor(
 
         delBtn = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
-            text = "⌫"
-            setTextColor(Color.parseColor("#FF5252"))
-            textSize = 22f
+            val drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, R.drawable.ic_delete)
+            drawable?.let {
+                it.setTint(Color.parseColor("#FF5252"))
+                it.setBounds(0, 0, dpToPx(24), dpToPx(24))
+                val span = android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM)
+                val spannable = android.text.SpannableString(" ")
+                spannable.setSpan(span, 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                text = spannable
+            }
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true

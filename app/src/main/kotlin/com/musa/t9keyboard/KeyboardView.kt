@@ -79,7 +79,7 @@ class KeyboardView @JvmOverloads constructor(
             binding.labelTuv, binding.secondaryLabelTuv,
             binding.labelWxyz, binding.secondaryLabelWxyz,
             binding.labelPunct, binding.secondaryLabelPunct,
-            binding.labelShift, binding.labelDel, binding.labelEnter,
+            binding.labelShift, binding.labelEnter,
             binding.labelSpace, binding.secondaryLabelSpace,
             binding.labelSym,
             binding.label123, binding.secondaryLabel123
@@ -318,6 +318,7 @@ class KeyboardView @JvmOverloads constructor(
             updateKeyAccent(binding.key123, true)
         }
         binding.labelEmoji.setColorFilter(color)
+        binding.labelDelIcon.imageTintList = android.content.res.ColorStateList.valueOf(color)
         updateKeyBackgrounds()
     }
 
