@@ -110,15 +110,17 @@ class T9InputMethodService : InputMethodService() {
     override fun onCreateInputView(): View {
         android.util.Log.d("T9Lifecycle", "onCreateInputView")
 
+        val themedContext = android.view.ContextThemeWrapper(this, R.style.AppTheme)
+
         if (container == null) {
-            container = FrameLayout(this)
+            container = FrameLayout(themedContext)
         }
 
         if (keyboardView == null) {
-            keyboardView = KeyboardView(this)
-            symbolsView = SymbolsView(this)
-            emojiPickerView = EmojiPickerView(this)
-            textEditingView = TextEditingView(this)
+            keyboardView = KeyboardView(themedContext)
+            symbolsView = SymbolsView(themedContext)
+            emojiPickerView = EmojiPickerView(themedContext)
+            textEditingView = TextEditingView(themedContext)
             setupListeners()
         }
 

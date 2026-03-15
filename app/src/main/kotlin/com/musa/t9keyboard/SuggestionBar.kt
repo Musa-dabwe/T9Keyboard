@@ -1,8 +1,10 @@
 package com.musa.t9keyboard
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -41,6 +43,20 @@ class SuggestionBar @JvmOverloads constructor(
         binding.toolbarLeft.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.LEFT) }
         binding.toolbarRight.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.RIGHT) }
         binding.toolbarXt9.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.TOGGLE_XT9) }
+
+        applyRipple(binding.toolbarSettings)
+        applyRipple(binding.toolbarEdit)
+        applyRipple(binding.toolbarLeft)
+        applyRipple(binding.toolbarRight)
+    }
+
+    private fun applyRipple(view: View) {
+        val rippleColor = ColorStateList.valueOf((Color.WHITE and 0x00FFFFFF) or (0x33 shl 24))
+        val ripple = RippleDrawable(rippleColor, null, GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.WHITE)
+        })
+        view.background = ripple
     }
 
     private fun applyUbuntuFont() {

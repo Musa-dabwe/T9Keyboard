@@ -24,7 +24,7 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_settings"
                 android:contentDescription="Settings"
-                android:background="?attr/selectableItemBackgroundBorderless" />
+                android:background="@android:color/transparent" />
 
             <ImageView
                 android:id="@+id/toolbar_edit"
@@ -33,7 +33,7 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_text_editor"
                 android:contentDescription="Edit"
-                android:background="?attr/selectableItemBackgroundBorderless" />
+                android:background="@android:color/transparent" />
 
             <Space
                 android:layout_width="0dp"
@@ -47,7 +47,7 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_caret_left"
                 android:contentDescription="Move Left"
-                android:background="?attr/selectableItemBackgroundBorderless" />
+                android:background="@android:color/transparent" />
 
             <ImageView
                 android:id="@+id/toolbar_right"
@@ -56,7 +56,7 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_caret_right"
                 android:contentDescription="Move Right"
-                android:background="?attr/selectableItemBackgroundBorderless" />
+                android:background="@android:color/transparent" />
 
             <Space
                 android:layout_width="16dp"
@@ -73,7 +73,7 @@
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:textColor="@color/key_text_color"
-                android:background="?attr/selectableItemBackground" />
+                android:background="@android:color/transparent" />
 
         </LinearLayout>
 
