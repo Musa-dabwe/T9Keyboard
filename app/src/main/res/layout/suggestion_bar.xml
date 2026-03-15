@@ -1,120 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ViewSwitcher xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/suggestionBarSwitcher"
-    android:layout_width="match_parent"
-    android:layout_height="48dp"
-    android:background="@color/suggestion_background">
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- View 0: Toolbar (Shown when input is empty or after sentence terminator) -->
-    <LinearLayout
-        android:id="@+id/toolbarLayout"
+    <ViewSwitcher
+        android:id="@+id/suggestionBarSwitcher"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
+        android:layout_height="48dp"
+        android:background="@color/suggestion_background">
 
-        <ImageView
-            android:id="@+id/toolbar_settings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_settings"
-            android:contentDescription="Settings"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <ImageView
-            android:id="@+id/toolbar_edit"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_text_editor"
-            android:contentDescription="Edit"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/toolbar_left"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_caret_left"
-            android:contentDescription="Move Left"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <ImageView
-            android:id="@+id/toolbar_right"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/ic_caret_right"
-            android:contentDescription="Move Right"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <Space
-            android:layout_width="16dp"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/toolbar_xt9"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:gravity="center"
-            android:text="xt9"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:textColor="@color/key_text_color"
-            android:background="?attr/selectableItemBackground" />
-
-    </LinearLayout>
-
-    <!-- View 1: Suggestion Strip (Shown when typing) -->
-    <LinearLayout
-        android:id="@+id/suggestionStripLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <HorizontalScrollView
-            android:id="@+id/suggestionScrollView"
-            android:layout_width="0dp"
+        <!-- View 0: Toolbar (Shown when input is empty or after sentence terminator) -->
+        <LinearLayout
+            android:id="@+id/toolbarLayout"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:scrollbars="none"
-            android:fillViewport="true">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
 
-            <LinearLayout
-                android:id="@+id/suggestionContainer"
+            <ImageView
+                android:id="@+id/toolbar_settings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_settings"
+                android:contentDescription="Settings"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+            <ImageView
+                android:id="@+id/toolbar_edit"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_text_editor"
+                android:contentDescription="Edit"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/toolbar_left"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_caret_left"
+                android:contentDescription="Move Left"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+            <ImageView
+                android:id="@+id/toolbar_right"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_caret_right"
+                android:contentDescription="Move Right"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+            <Space
+                android:layout_width="16dp"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/toolbar_xt9"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:gravity="center"
+                android:text="xt9"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="@color/key_text_color"
+                android:background="?attr/selectableItemBackground" />
+
+        </LinearLayout>
+
+        <!-- View 1: Suggestion Strip (Shown when typing) -->
+        <LinearLayout
+            android:id="@+id/suggestionStripLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <HorizontalScrollView
+                android:id="@+id/suggestionScrollView"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scrollbars="none"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:id="@+id/suggestionContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp" />
+            </HorizontalScrollView>
+
+            <TextView
+                android:id="@+id/anchoredSuggestion"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="4dp"
-                android:paddingEnd="4dp" />
-        </HorizontalScrollView>
+                android:minWidth="60dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:gravity="center"
+                android:textColor="@android:color/white"
+                android:textSize="22sp"
+                android:maxLines="1"
+                android:ellipsize="none"
+                android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/anchoredSuggestion"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:minWidth="60dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:gravity="center"
-            android:textColor="@android:color/white"
-            android:textSize="22sp"
-            android:maxLines="1"
-            android:ellipsize="none"
-            android:visibility="gone" />
+        </LinearLayout>
 
-    </LinearLayout>
+    </ViewSwitcher>
 
-</ViewSwitcher>
+</merge>

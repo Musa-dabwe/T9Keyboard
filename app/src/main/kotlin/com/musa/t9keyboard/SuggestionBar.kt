@@ -17,7 +17,7 @@ class SuggestionBar @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private val binding: SuggestionBarBinding = SuggestionBarBinding.inflate(LayoutInflater.from(context), this, true)
+    private val binding: SuggestionBarBinding = SuggestionBarBinding.inflate(LayoutInflater.from(context), this)
 
     var onSuggestionClickListener: ((String) -> Unit)? = null
     var onToolbarActionClickListener: ((ToolbarAction) -> Unit)? = null
