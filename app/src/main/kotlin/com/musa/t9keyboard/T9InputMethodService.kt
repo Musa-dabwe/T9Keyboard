@@ -430,12 +430,6 @@ class T9InputMethodService : InputMethodService() {
             SuggestionBar.ToolbarAction.EDIT -> {
                 showTextEditingPanel()
             }
-            SuggestionBar.ToolbarAction.LEFT -> {
-                sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_LEFT, 0)
-            }
-            SuggestionBar.ToolbarAction.RIGHT -> {
-                sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_RIGHT, 0)
-            }
             SuggestionBar.ToolbarAction.TOGGLE_XT9 -> {
                 toggleXt9()
             }
