@@ -4,13 +4,14 @@ import android.content.Context
 import android.util.Log
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.util.TreeMap
 
 object AospDictionary {
     data class WordEntry(val stripped: String, val frequency: Int, val display: String) {
         val word: String get() = if (display.isNotEmpty()) display else stripped
     }
 
-    private val t9Map = mutableMapOf<String, MutableList<WordEntry>>()
+    private val t9Map = TreeMap<String, MutableList<WordEntry>>()
     private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
     private val allWordEntries = mutableListOf<WordEntry>()
 
@@ -1471,6 +1472,7 @@ object AospDictionary {
     )
 
 
+    @Synchronized
     fun loadFromAssets(context: Context) {
         t9Map.clear()
         wordMap.clear()
@@ -1515,12 +1517,14 @@ object AospDictionary {
         return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
     }
 
+    @Synchronized
     fun contains(word: String): Boolean {
         val lower = word.lowercase().trim()
         val stripped = lower.filter { it in 'a'..'z' }
         return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
     }
 
+    @Synchronized
     fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
         val entries = t9Map[t9sequence] ?: emptyList<WordEntry>()
         val results = entries.map { WordSuggestion(it.word, it.frequency) }.toMutableList()
@@ -1535,26 +1539,33 @@ object AospDictionary {
             .distinctBy { it.word.lowercase() }
     }
 
+    @Synchronized
     fun getWordsStartingWith(prefix: String): List<WordSuggestion> {
         if (prefix.length > 12) return emptyList()
-        return t9Map.filterKeys { it.startsWith(prefix) }
-            .flatMap { (_, entries) ->
+        val potentialMatches = t9Map.subMap(prefix, prefix + "\uFFFF")
+        return potentialMatches.values
+            .flatMap { entries ->
                 entries.map { WordSuggestion(it.word, it.frequency) }
             }
             .sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
     }
 
+    @Synchronized
     fun getWordsContaining(literal: String): List<WordSuggestion> {
         if (literal.isEmpty()) return emptyList()
         val lowerLiteral = literal.lowercase()
         return allWordEntries
+            .asSequence()
             .filter { it.word.lowercase().contains(lowerLiteral) }
+            .take(30)
             .map { WordSuggestion(it.word, it.frequency) }
             .sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
+            .toList()
     }
 
+    @Synchronized
     fun getSuggestions(constraints: List<String>): List<WordSuggestion> {
         if (constraints.isEmpty()) return emptyList()
 
@@ -1581,10 +1592,10 @@ object AospDictionary {
              return results
         }
 
-        val potentialMatches = t9Map.filterKeys { it.startsWith(digitSequence) }
+        val potentialMatches = t9Map.subMap(digitSequence, digitSequence + "\uFFFF")
         val results = mutableListOf<WordSuggestion>()
 
-        for ((_, entries) in potentialMatches) {
+        for (entries in potentialMatches.values) {
             for (entry in entries) {
                 var matches = true
                 val word = entry.stripped

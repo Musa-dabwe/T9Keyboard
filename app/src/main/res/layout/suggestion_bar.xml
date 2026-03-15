@@ -52,23 +52,13 @@
             android:ellipsize="none"
             android:visibility="gone" />
 
-        <HorizontalScrollView
-            android:id="@+id/suggestionScrollView"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/suggestionRecyclerView"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:scrollbars="none"
-            android:fillViewport="true">
-
-            <LinearLayout
-                android:id="@+id/suggestionContainer"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="4dp"
-                android:paddingEnd="4dp" />
-        </HorizontalScrollView>
+            android:orientation="horizontal"
+            android:scrollbars="none" />
 
     </LinearLayout>
 
