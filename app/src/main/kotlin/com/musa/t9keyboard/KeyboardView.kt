@@ -317,8 +317,8 @@ class KeyboardView @JvmOverloads constructor(
         if (isNumMode) {
             updateKeyAccent(binding.key123, true)
         }
-        binding.labelEmoji.setColorFilter(color)
-        binding.labelDelIcon.imageTintList = android.content.res.ColorStateList.valueOf(color)
+        androidx.core.widget.ImageViewCompat.setImageTintList(binding.labelEmoji, android.content.res.ColorStateList.valueOf(color))
+        androidx.core.widget.ImageViewCompat.setImageTintList(binding.labelDelIcon, android.content.res.ColorStateList.valueOf(color))
         updateKeyBackgrounds()
     }
 

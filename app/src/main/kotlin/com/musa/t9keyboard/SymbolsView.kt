@@ -84,7 +84,7 @@ class SymbolsView @JvmOverloads constructor(
         binding.btnBackToAbc.background = ripple
         binding.btnSymbolDelete.background = ripple.constantState?.newDrawable()?.mutate()
 
-        binding.imgSymbolDelete.imageTintList = android.content.res.ColorStateList.valueOf(color)
+        androidx.core.widget.ImageViewCompat.setImageTintList(binding.btnSymbolDeleteIcon, android.content.res.ColorStateList.valueOf(color))
 
         (binding.symbolRecyclerView.adapter as? SymbolAdapter)?.setAccentColor(color)
     }
