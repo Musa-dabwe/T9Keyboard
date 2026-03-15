@@ -38,6 +38,20 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <TextView
+            android:id="@+id/anchoredSuggestion"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:minWidth="60dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:maxLines="1"
+            android:ellipsize="none"
+            android:visibility="gone" />
+
         <HorizontalScrollView
             android:id="@+id/suggestionScrollView"
             android:layout_width="0dp"
@@ -55,20 +69,6 @@
                 android:paddingStart="4dp"
                 android:paddingEnd="4dp" />
         </HorizontalScrollView>
-
-        <TextView
-            android:id="@+id/anchoredSuggestion"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:minWidth="60dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:gravity="center"
-            android:textColor="@android:color/white"
-            android:textSize="22sp"
-            android:maxLines="1"
-            android:ellipsize="none"
-            android:visibility="gone" />
 
     </LinearLayout>
 
