@@ -106,7 +106,7 @@ class TextEditingView @JvmOverloads constructor(
             KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300),
             KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up),
             KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300),
-            KeyConfig("⌫", 22f, EditAction.DELETE, repeatInterval = 100, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_backspace)
+            KeyConfig("⌫", 22f, EditAction.DELETE, repeatInterval = 100, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_delete)
         )
         gridLayout.addView(createRow(row1Configs))
 

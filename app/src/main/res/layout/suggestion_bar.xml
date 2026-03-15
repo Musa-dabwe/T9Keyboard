@@ -18,7 +18,7 @@
         android:contentDescription="Settings"
         android:background="@android:color/transparent" />
 
-    <!-- Toggleable Edit Button -->
+    <!-- Permanently visible Edit Button -->
     <ImageView
         android:id="@+id/toolbar_edit"
         android:layout_width="40dp"
@@ -26,7 +26,7 @@
         android:padding="8dp"
         android:src="@drawable/ic_text_editor"
         android:contentDescription="Edit"
-        android:visibility="gone"
+        android:visibility="visible"
         android:background="@android:color/transparent" />
 
     <!-- Suggestion Strip -->

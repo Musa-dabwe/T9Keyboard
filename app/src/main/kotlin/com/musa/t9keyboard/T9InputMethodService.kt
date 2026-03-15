@@ -477,45 +477,7 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun updateToolbarVisibility() {
-        val ic = currentInputConnection ?: return
-        val et = ic.getExtractedText(ExtractedTextRequest(), 0)
-
-        val isComposing = composingText.isNotEmpty() || xt9DigitSequence.isNotEmpty()
-        if (isComposing) {
-            keyboardView?.showSuggestions()
-            return
-        }
-
-        if (et == null || et.text.isEmpty()) {
-            keyboardView?.showToolbar()
-            return
-        }
-
-        val text = et.text.toString()
-        val selectionEnd = et.selectionEnd
-
-        if (selectionEnd == 0) {
-            keyboardView?.showToolbar()
-        } else if (selectionEnd > 0) {
-            val lastChar = text[selectionEnd - 1]
-            val isSentenceTerminator = lastChar == '.' || lastChar == '!' || lastChar == '?'
-
-            if (isSentenceTerminator) {
-                keyboardView?.showToolbar()
-            } else if (selectionEnd > 1) {
-                val prevChar = text[selectionEnd - 2]
-                val isSentenceTerminatorBeforeSpace = lastChar == ' ' && (prevChar == '.' || prevChar == '!' || prevChar == '?')
-                if (isSentenceTerminatorBeforeSpace) {
-                    keyboardView?.showToolbar()
-                } else {
-                    keyboardView?.showSuggestions()
-                }
-            } else {
-                keyboardView?.showSuggestions()
-            }
-        } else {
-            keyboardView?.showSuggestions()
-        }
+        // Edit button is now permanently visible
     }
 
     private fun commitCurrentComposing() {
@@ -621,7 +583,6 @@ class T9InputMethodService : InputMethodService() {
             updateToolbarVisibility()
             return
         }
-        keyboardView?.showSuggestions()
 
         val constraints = currentWordConstraints.toList()
         val targetLength = composingText.length
@@ -700,7 +661,6 @@ class T9InputMethodService : InputMethodService() {
                 (learned + aosp).distinct().take(20)
             }
             if (combined.isNotEmpty()) {
-                keyboardView?.showSuggestions()
                 keyboardView?.setSuggestions(combined, null)
             } else {
                 updateToolbarVisibility()
@@ -1099,7 +1059,6 @@ class T9InputMethodService : InputMethodService() {
             updateToolbarVisibility()
             return
         }
-        keyboardView?.showSuggestions()
 
         val digitSeq = xt9DigitSequence.toString()
         val targetLength = digitSeq.length
