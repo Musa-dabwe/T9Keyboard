@@ -222,6 +222,19 @@ class T9InputMethodService : InputMethodService() {
             keyboardView?.let { showView(it) }
         }
 
+        tev.on123Click = {
+            handleAction(KeyboardView.KeyboardAction.NUM)
+            keyboardView?.let { showView(it) }
+        }
+
+        tev.onSymClick = {
+            handleAction(KeyboardView.KeyboardAction.SYM)
+        }
+
+        tev.onEmojiClick = {
+            handleAction(KeyboardView.KeyboardAction.EMOJI)
+        }
+
         tev.onFeedbackRequested = {
             performFeedback()
         }
