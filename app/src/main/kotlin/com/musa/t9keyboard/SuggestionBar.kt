@@ -19,7 +19,7 @@ class SuggestionBar @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private val binding: SuggestionBarBinding = SuggestionBarBinding.inflate(LayoutInflater.from(context), this)
+    private val binding: SuggestionBarBinding = SuggestionBarBinding.inflate(LayoutInflater.from(context), this, true)
 
     var onSuggestionClickListener: ((String) -> Unit)? = null
     var onToolbarActionClickListener: ((ToolbarAction) -> Unit)? = null
@@ -29,7 +29,7 @@ class SuggestionBar @JvmOverloads constructor(
     private var isXt9Mode: Boolean = false
 
     enum class ToolbarAction {
-        SETTINGS, EDIT, LEFT, RIGHT, TOGGLE_XT9
+        SETTINGS, EDIT, TOGGLE_XT9
     }
 
     init {
@@ -40,14 +40,10 @@ class SuggestionBar @JvmOverloads constructor(
     private fun setupToolbar() {
         binding.toolbarSettings.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.SETTINGS) }
         binding.toolbarEdit.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.EDIT) }
-        binding.toolbarLeft.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.LEFT) }
-        binding.toolbarRight.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.RIGHT) }
         binding.toolbarXt9.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.TOGGLE_XT9) }
 
         applyRipple(binding.toolbarSettings)
         applyRipple(binding.toolbarEdit)
-        applyRipple(binding.toolbarLeft)
-        applyRipple(binding.toolbarRight)
     }
 
     private fun applyRipple(view: View) {
@@ -66,11 +62,11 @@ class SuggestionBar @JvmOverloads constructor(
     }
 
     fun showToolbar() {
-        binding.suggestionBarSwitcher.displayedChild = 0
+        binding.toolbarEdit.visibility = View.VISIBLE
     }
 
     fun showSuggestions() {
-        binding.suggestionBarSwitcher.displayedChild = 1
+        binding.toolbarEdit.visibility = View.GONE
     }
 
     fun setSuggestions(suggestions: List<String>, anchoredWord: String? = null) {
@@ -91,7 +87,9 @@ class SuggestionBar @JvmOverloads constructor(
                 )
                 isClickable = true
                 isFocusable = true
-                setBackgroundResource(android.R.attr.selectableItemBackground)
+                val outValue = android.util.TypedValue()
+                context.theme.resolveAttribute(android.R.attr.selectableItemBackground, outValue, true)
+                setBackgroundResource(outValue.resourceId)
                 setOnClickListener { onSuggestionClickListener?.invoke(suggestion) }
             }
             binding.suggestionContainer.addView(tv)
@@ -135,8 +133,6 @@ class SuggestionBar @JvmOverloads constructor(
         // Update toolbar icons tint
         binding.toolbarSettings.setColorFilter(Color.WHITE)
         binding.toolbarEdit.setColorFilter(Color.WHITE)
-        binding.toolbarLeft.setColorFilter(Color.WHITE)
-        binding.toolbarRight.setColorFilter(Color.WHITE)
     }
 
     fun setFontSize(sizeSp: Float) {
