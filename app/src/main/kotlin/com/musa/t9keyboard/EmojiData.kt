@@ -4,12 +4,12 @@ object EmojiData {
 
     // Main categories with their tab icons
     val categories = listOf(
-        EmojiCategory("Smileys & Emotion", "😀"),
-        EmojiCategory("People & Body", "👋"),
+        EmojiCategory("Smileys & Emotions", "😀"),
+        EmojiCategory("People", "👋"),
         EmojiCategory("Animals & Nature", "🐶"),
         EmojiCategory("Food & Drink", "🍎"),
         EmojiCategory("Travel & Places", "✈️"),
-        EmojiCategory("Activities", "⚽"),
+        EmojiCategory("Activities and Events", "⚽"),
         EmojiCategory("Objects", "💡"),
         EmojiCategory("Symbols", "❤️"),
         EmojiCategory("Flags", "🏳️"),
@@ -17,7 +17,7 @@ object EmojiData {
 
     // All emoji grouped by category -> subcategory -> list
     val emojiMap: Map<String, Map<String, List<String>>> = mapOf(
-        "Smileys & Emotion" to mapOf(
+        "Smileys & Emotions" to mapOf(
             "face-smiling" to listOf("😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "🫠", "😉", "😊", "😇"),
             "face-affection" to listOf("🥰", "😍", "🤩", "😘", "😗", "☺", "😚", "😙", "🥲"),
             "face-tongue" to listOf("😋", "😛", "😜", "🤪", "😝", "🤑"),
@@ -35,7 +35,7 @@ object EmojiData {
             "heart" to listOf("💌", "💘", "💝", "💖", "💗", "💓", "💞", "💕", "💟", "❣", "💔", "❤️‍🔥", "❤️‍🩹", "❤", "🩷", "🧡", "💛", "💚", "💙", "🩵", "💜", "🤎", "🖤", "🩶", "🤍"),
             "emotion" to listOf("💋", "💯", "💢", "🫯", "💥", "💫", "💦", "💨", "🕳", "💬", "👁️‍🗨️", "🗨", "🗯", "💭", "💤"),
         ),
-        "People & Body" to mapOf(
+        "People" to mapOf(
             "hand-fingers-open" to listOf("👋", "🤚", "🖐", "✋", "🖖", "🫱", "🫲", "🫳", "🫴", "🫷", "🫸"),
             "hand-fingers-partial" to listOf("👌", "🤌", "🤏", "✌", "🤞", "🫰", "🤟", "🤘", "🤙"),
             "hand-single-finger" to listOf("👈", "👉", "👆", "🖕", "👇", "☝", "🫵"),
@@ -85,7 +85,7 @@ object EmojiData {
             "time" to listOf("⌛", "⏳", "⌚", "⏰", "⏱", "⏲", "🕰", "🕛", "🕧", "🕐", "🕜", "🕑", "🕝", "🕒", "🕞", "🕓", "🕟", "🕔", "🕠", "🕕", "🕡", "🕖", "🕢", "🕗", "🕣", "🕘", "🕤", "🕙", "🕥", "🕚", "🕦"),
             "sky & weather" to listOf("🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "🌙", "🌚", "🌛", "🌜", "🌡", "☀", "🌝", "🌞", "🪐", "⭐", "🌟", "🌠", "🌌", "☁", "⛅", "⛈", "🌤", "🌥", "🌦", "🌧", "🌨", "🌩", "🌪", "🌫", "🌬", "🌀", "🌈", "🌂", "☂", "☔", "⛱", "⚡", "❄", "☃", "⛄", "☄", "🔥", "💧", "🌊"),
         ),
-        "Activities" to mapOf(
+        "Activities and Events" to mapOf(
             "event" to listOf("🎃", "🎄", "🎆", "🎇", "🧨", "✨", "🎈", "🎉", "🎊", "🎋", "🎍", "🎎", "🎏", "🎐", "🎑", "🧧", "🎀", "🎁", "🎗", "🎟", "🎫"),
             "award-medal" to listOf("🎖", "🏆", "🏅", "🥇", "🥈", "🥉"),
             "sport" to listOf("⚽", "⚾", "🥎", "🏀", "🏐", "🏈", "🏉", "🎾", "🥏", "🎳", "🏏", "🏑", "🏒", "🥍", "🏓", "🏸", "🥊", "🥋", "🥅", "⛳", "⛸", "🎣", "🤿", "🎽", "🎿", "🛷", "🥌"),
