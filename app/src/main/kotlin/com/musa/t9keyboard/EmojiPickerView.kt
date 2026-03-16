@@ -2,7 +2,6 @@ package com.musa.t9keyboard
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
@@ -14,7 +13,7 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.utils.FontUtils
-import androidx.core.content.res.ResourcesCompat
+import androidx.emoji2.widget.EmojiTextView
 
 /**
  * Redesigned Emoji panel:
@@ -56,10 +55,6 @@ class EmojiPickerView @JvmOverloads constructor(
     private lateinit var emojiAdapter: EmojiAdapter
     private val preferences = PreferencesManager(context)
     private var cachedEmojiSize: Float = 32f
-
-    private val emojiFont: Typeface? by lazy {
-        ResourcesCompat.getFont(context, R.font.noto_color_emoji)
-    }
 
     // Flat list of items for the recycler
     sealed class ListItem {
@@ -302,7 +297,7 @@ class EmojiPickerView @JvmOverloads constructor(
             val tv: TextView = itemView as TextView
         }
 
-        inner class EmojiVH(val tv: TextView) : RecyclerView.ViewHolder(tv)
+        inner class EmojiVH(val tv: View) : RecyclerView.ViewHolder(tv)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             return when (viewType) {
@@ -337,12 +332,16 @@ class EmojiPickerView @JvmOverloads constructor(
                     EmojiVH(tv)
                 }
                 else -> {
-                    val tv = TextView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            dpToPx(48)
-                        )
+                    val tv = EmojiTextView(context).apply {
+                        textSize = cachedEmojiSize
                         gravity = Gravity.CENTER
+                        setIncludeFontPadding(true)
+                        setLineSpacing(0f, 1.2f)
+                        layoutParams = RecyclerView.LayoutParams(
+                            (cachedEmojiSize * 2.5f).toInt(),
+                            RecyclerView.LayoutParams.WRAP_CONTENT
+                        )
+                        minimumHeight = dpToPx(48)
                         isClickable = true
                         isFocusable = true
                     }
@@ -359,16 +358,16 @@ class EmojiPickerView @JvmOverloads constructor(
                 }
                 is EmojiVH -> {
                     val vt = getItemViewType(position)
+                    val tv = holder.tv as TextView
                     if (vt == VIEW_TYPE_EMPTY_STATE) {
-                        holder.tv.text = (item as ListItem.Emoji).code
+                        tv.text = (item as ListItem.Emoji).code
                     } else {
                         val code = (item as ListItem.Emoji).code
-                        holder.tv.text = code
-                        holder.tv.typeface = emojiFont
-                        holder.tv.textSize = cachedEmojiSize
-                        holder.tv.setTextColor(Color.WHITE)
-                        holder.tv.background = currentRipple?.constantState?.newDrawable()?.mutate()
-                        holder.tv.setOnClickListener { onEmojiClick(code) }
+                        tv.text = code
+                        tv.textSize = cachedEmojiSize
+                        tv.setTextColor(Color.WHITE)
+                        tv.background = currentRipple?.constantState?.newDrawable()?.mutate()
+                        tv.setOnClickListener { onEmojiClick(code) }
                     }
                 }
             }
