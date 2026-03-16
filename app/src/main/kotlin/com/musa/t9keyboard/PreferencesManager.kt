@@ -19,7 +19,17 @@ class PreferencesManager(context: Context) {
         const val KEY_XT9_ENABLED = "xt9_enabled"
         const val KEY_DELETION_SPEED = "deletion_speed"
         const val KEY_CONTACT_SUGGESTIONS_ENABLED = "contact_suggestions_enabled"
+        const val KEY_EMOJI_SIZE = "emoji_size"
+        const val KEY_RECENT_EMOJIS = "recent_emojis"
     }
+
+    var emojiSize: Int
+        get() = prefs.getInt(KEY_EMOJI_SIZE, 32)
+        set(value) = prefs.edit().putInt(KEY_EMOJI_SIZE, value).apply()
+
+    var recentEmojis: String
+        get() = prefs.getString(KEY_RECENT_EMOJIS, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_RECENT_EMOJIS, value).apply()
 
     var contactSuggestionsEnabled: Boolean
         get() = prefs.getBoolean(KEY_CONTACT_SUGGESTIONS_ENABLED, false)

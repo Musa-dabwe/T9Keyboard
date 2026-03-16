@@ -165,6 +165,15 @@ class SettingsActivity : AppCompatActivity() {
         updateThemeText()
         binding.spinnerTheme.setOnClickListener { showThemeDialog() }
 
+        // Emoji Size
+        binding.boxEmojiSize.text = preferences.emojiSize.toString()
+        binding.rowEmojiSize.setOnClickListener {
+            showSliderDialog("Emoji Size (sp)", 16f, 40f, preferences.emojiSize.toFloat()) { newValue ->
+                preferences.emojiSize = newValue.toInt()
+                binding.boxEmojiSize.text = newValue.toInt().toString()
+            }
+        }
+
         // Contact Suggestions
         updateToggle(binding.toggleContacts, preferences.contactSuggestionsEnabled)
         binding.rowContacts.setOnClickListener {
@@ -336,6 +345,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.headerLayout.setTextColor(accentColor)
         binding.headerTheme.setTextColor(accentColor)
         binding.headerIntegrations.setTextColor(accentColor)
+        binding.headerEmoji.setTextColor(accentColor)
 
         binding.btnClearDict.strokeColor = ColorStateList.valueOf(accentColor)
     }
@@ -361,6 +371,10 @@ class SettingsActivity : AppCompatActivity() {
             binding.txtSoundVolumeTitle,
             binding.txtSoundVolumeSubtitle,
             binding.boxSoundVolume,
+            binding.headerEmoji,
+            binding.txtEmojiSizeTitle,
+            binding.txtEmojiSizeSubtitle,
+            binding.boxEmojiSize,
             binding.headerLayout,
             binding.txtTimeoutTitle,
             binding.txtTimeoutSubtitle,

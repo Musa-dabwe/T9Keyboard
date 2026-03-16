@@ -10,14 +10,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.recyclerview.widget.LinearLayoutManager
+import android.widget.ImageView
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.utils.FontUtils
+import androidx.core.content.res.ResourcesCompat
 
 /**
- * GBoard-style emoji panel:
- * - Category tabs row at top (scrollable horizontal strip)
- * - Vertical RecyclerView with section headers + emoji grid rows (8 per row)
+ * Redesigned Emoji panel:
+ * - Top bar: Back, [Flex Space], Search (visual only), Delete
+ * - Emoji body: Flat scrollable list with section headers (8 columns)
+ * - Noto Color Emoji font
+ * - Custom emoji size from settings
+ * - Recent Emojis persistence
  */
 class EmojiPickerView @JvmOverloads constructor(
     context: Context,
@@ -28,7 +33,9 @@ class EmojiPickerView @JvmOverloads constructor(
     companion object {
         const val COLS = 8
         const val VIEW_TYPE_HEADER = 0
-        const val VIEW_TYPE_EMOJI_ROW = 1
+        const val VIEW_TYPE_EMOJI = 1
+        const val VIEW_TYPE_EMPTY_STATE = 2
+        const val MAX_RECENT = 24
     }
 
     var onEmojiClickListener: ((String) -> Unit)? = null
@@ -43,23 +50,23 @@ class EmojiPickerView @JvmOverloads constructor(
     var isInitialized = false
         private set
 
-    private lateinit var tabsRecycler: RecyclerView
     private lateinit var emojiRecycler: RecyclerView
     private var accentColor = Color.parseColor("#00BFA5")
     private var currentRipple: android.graphics.drawable.Drawable? = null
-    private lateinit var tabsAdapter: TabsAdapter
-    private lateinit var emojiListAdapter: EmojiListAdapter
-    private lateinit var abcBtn: TextView
-    private lateinit var delBtn: TextView
+    private lateinit var emojiAdapter: EmojiAdapter
+    private val preferences = PreferencesManager(context)
+    private var cachedEmojiSize: Float = 32f
 
-    // Flat list of items for the main recycler
-    sealed class ListItem {
-        data class Header(val categoryName: String, val subcategoryName: String) : ListItem()
-        data class EmojiRow(val emojis: List<String>) : ListItem()
+    private val emojiFont: Typeface? by lazy {
+        ResourcesCompat.getFont(context, R.font.noto_color_emoji)
     }
 
-    // Map from category index to first item position in flat list
-    private val categoryPositions = mutableListOf<Int>()
+    // Flat list of items for the recycler
+    sealed class ListItem {
+        data class Header(val name: String) : ListItem()
+        data class Emoji(val code: String) : ListItem()
+    }
+
     private val flatList = mutableListOf<ListItem>()
 
     init {
@@ -67,15 +74,13 @@ class EmojiPickerView @JvmOverloads constructor(
             orientation = VERTICAL
             setBackgroundColor(Color.parseColor("#1A1A1A"))
 
-            // Lock to keyboard height — prevents full-screen takeover
+            // Lock to keyboard height
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 dpToPx(304)
             )
 
-            buildFlatList()
             setupViews()
-        applyUbuntuFont()
             isInitialized = true
         } catch (e: Exception) {
             Log.e("EmojiPickerView", "Failed to initialize emoji picker: ${e.message}")
@@ -85,98 +90,44 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun buildFlatList() {
         flatList.clear()
-        categoryPositions.clear()
 
-        EmojiData.categories.forEachIndexed { catIndex, cat ->
-            categoryPositions.add(flatList.size)
-            val subsMap = EmojiData.emojiMap[cat.name] ?: return@forEachIndexed
+        // 1. Recent Emoji
+        val recent = getRecentEmojis()
+        flatList.add(ListItem.Header("Recent Emoji"))
+        if (recent.isEmpty()) {
+            flatList.add(ListItem.Emoji("No recent emojis"))
+        } else {
+            recent.take(MAX_RECENT).forEach {
+                flatList.add(ListItem.Emoji(it))
+            }
+        }
 
-            subsMap.forEach { (subName, emojis) ->
-                flatList.add(ListItem.Header(cat.name, subName))
-                // Chunk emojis into rows of COLS
-                emojis.chunked(COLS).forEach { rowEmojis ->
-                    flatList.add(ListItem.EmojiRow(rowEmojis))
-                }
+        // 2. All other categories
+        EmojiData.categories.forEach { cat ->
+            flatList.add(ListItem.Header(cat.name))
+            EmojiData.emojiMap[cat.name]?.values?.flatten()?.distinct()?.forEach {
+                flatList.add(ListItem.Emoji(it))
             }
         }
     }
 
     private fun setupViews() {
-        // --- Top bar: Category tabs ---
+        removeAllViews()
+
+        // --- Top bar ---
         val topBar = LinearLayout(context).apply {
             orientation = HORIZONTAL
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(44))
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
             setBackgroundColor(Color.parseColor("#111111"))
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
 
-        tabsRecycler = RecyclerView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-            layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-            overScrollMode = View.OVER_SCROLL_NEVER
-        }
-        tabsAdapter = TabsAdapter(EmojiData.categories) { catIndex ->
-            scrollToCategory(catIndex)
-            tabsAdapter.setSelected(catIndex)
-        }
-        tabsAdapter.setSelected(0)
-        tabsRecycler.adapter = tabsAdapter
-
-        topBar.addView(tabsRecycler)
-        addView(topBar)
-
-        // --- Divider ---
-        addView(View(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 1)
-            setBackgroundColor(Color.parseColor("#333333"))
-        })
-
-        // --- Main emoji grid recycler ---
-        emojiRecycler = RecyclerView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
-            overScrollMode = View.OVER_SCROLL_NEVER
-            setBackgroundColor(Color.parseColor("#2B2B2B"))
-        }
-
-        emojiRecycler.layoutManager = LinearLayoutManager(context)
-        emojiListAdapter = EmojiListAdapter(flatList) { emoji ->
-            onEmojiClickListener?.invoke(emoji)
-        }
-        emojiRecycler.adapter = emojiListAdapter
-
-        // Sync tab highlight when scrolling
-        emojiRecycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                val lm = recyclerView.layoutManager as LinearLayoutManager
-                val firstVisible = lm.findFirstVisibleItemPosition()
-                if (firstVisible == RecyclerView.NO_POSITION) return
-
-                // Find which category we're in
-                var activeCat = 0
-                for (i in categoryPositions.indices) {
-                    if (firstVisible >= categoryPositions[i]) activeCat = i
-                    else break
-                }
-                tabsAdapter.setSelected(activeCat)
-            }
-        })
-
-        addView(emojiRecycler)
-
-        // --- Bottom bar: ABC and DEL ---
-        val bottomBar = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
-            setBackgroundColor(Color.parseColor("#1A1A1A"))
-        }
-
-        abcBtn = TextView(context).apply {
-            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 3f)
-            text = "ABC"
-            setTextColor(Color.WHITE)
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            gravity = Gravity.CENTER
+        val backBtn = ImageView(context).apply {
+            layoutParams = LayoutParams(dpToPx(48), dpToPx(48))
+            setImageResource(R.drawable.ic_arrow_small_left)
+            scaleType = ImageView.ScaleType.CENTER
+            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
             isClickable = true
             isFocusable = true
             setOnClickListener {
@@ -185,18 +136,28 @@ class EmojiPickerView @JvmOverloads constructor(
             }
         }
 
-        delBtn = TextView(context).apply {
-            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
-            val drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, R.drawable.ic_delete)
-            drawable?.let {
-                it.setTint(Color.parseColor("#FF5252"))
-                it.setBounds(0, 0, dpToPx(24), dpToPx(24))
-                val span = android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM)
-                val spannable = android.text.SpannableString(" ")
-                spannable.setSpan(span, 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                text = spannable
+        val flexSpace = View(context).apply {
+            layoutParams = LayoutParams(0, 1, 1f)
+        }
+
+        val searchBtn = ImageView(context).apply {
+            layoutParams = LayoutParams(dpToPx(48), dpToPx(48))
+            setImageResource(R.drawable.ic_search_heart)
+            scaleType = ImageView.ScaleType.CENTER
+            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                // No functionality for now
             }
-            gravity = Gravity.CENTER
+        }
+
+        val delBtn = ImageView(context).apply {
+            layoutParams = LayoutParams(dpToPx(48), dpToPx(48))
+            setImageResource(R.drawable.ic_delete)
+            scaleType = ImageView.ScaleType.CENTER
+            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
             isClickable = true
             isFocusable = true
             setOnClickListener {
@@ -216,21 +177,49 @@ class EmojiPickerView @JvmOverloads constructor(
             }
         }
 
-        bottomBar.addView(abcBtn)
-        bottomBar.addView(delBtn)
-        addView(bottomBar)
+        topBar.addView(backBtn)
+        topBar.addView(flexSpace)
+        topBar.addView(searchBtn)
+        topBar.addView(delBtn)
+        addView(topBar)
+
+        // --- Main emoji grid recycler ---
+        buildFlatList()
+        emojiRecycler = RecyclerView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
+            overScrollMode = View.OVER_SCROLL_NEVER
+            setBackgroundColor(Color.parseColor("#2B2B2B"))
+        }
+
+        cachedEmojiSize = preferences.emojiSize.toFloat()
+        val glm = GridLayoutManager(context, COLS)
+        glm.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                val vt = emojiAdapter.getItemViewType(position)
+                return if (vt == VIEW_TYPE_HEADER || vt == VIEW_TYPE_EMPTY_STATE) COLS else 1
+            }
+        }
+        emojiRecycler.layoutManager = glm
+
+        emojiAdapter = EmojiAdapter(flatList) { emoji ->
+            onEmojiClickListener?.invoke(emoji)
+            addToRecent(emoji)
+        }
+        emojiRecycler.adapter = emojiAdapter
+
+        addView(emojiRecycler)
+
+        updateButtonRipples(backBtn, searchBtn, delBtn)
     }
 
-    fun scrollToCategory(catIndex: Int) {
-        if (catIndex < categoryPositions.size) {
-            (emojiRecycler.layoutManager as LinearLayoutManager)
-                .scrollToPositionWithOffset(categoryPositions[catIndex], 0)
-        }
+    private fun updateButtonRipples(vararg views: View) {
+        views.forEach { it.background = currentRipple?.constantState?.newDrawable()?.mutate() }
     }
 
     fun resetScroll() {
+        buildFlatList()
+        emojiAdapter.notifyDataSetChanged()
         emojiRecycler.scrollToPosition(0)
-        tabsAdapter.setSelected(0)
     }
 
     private fun startRepeatingDel() {
@@ -262,86 +251,58 @@ class EmojiPickerView @JvmOverloads constructor(
             android.graphics.drawable.ColorDrawable(Color.WHITE)
         )
 
-        if (::tabsAdapter.isInitialized) {
-            tabsAdapter.notifyDataSetChanged()
-        }
-        if (::emojiListAdapter.isInitialized) {
-            emojiListAdapter.notifyDataSetChanged()
-        }
-        updateBottomBarHighlights()
-    }
-
-    private fun updateBottomBarHighlights() {
-        if (!::abcBtn.isInitialized || !::delBtn.isInitialized) return
-        abcBtn.background = currentRipple?.constantState?.newDrawable()?.mutate()
-        delBtn.background = currentRipple?.constantState?.newDrawable()?.mutate()
-    }
-
-    private fun applyUbuntuFont() {
-        val ubuntu = FontUtils.getUbuntu(context)
-        abcBtn.typeface = ubuntu
-        delBtn.typeface = ubuntu
-    }
-
-    // ---- TABS ADAPTER ----
-    inner class TabsAdapter(
-        private val categories: List<EmojiData.EmojiCategory>,
-        private val onTabClick: (Int) -> Unit
-    ) : RecyclerView.Adapter<TabsAdapter.TabVH>() {
-
-        private var selectedIndex = 0
-
-        fun setSelected(index: Int) {
-            if (selectedIndex == index) return
-            val old = selectedIndex
-            selectedIndex = index
-            notifyItemChanged(old)
-            notifyItemChanged(index)
-            tabsRecycler.scrollToPosition(index)
-        }
-
-        inner class TabVH(val tv: TextView) : RecyclerView.ViewHolder(tv)
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TabVH {
-            val tv = TextView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(dpToPx(48), dpToPx(44))
-                textSize = 22f
-                gravity = Gravity.CENTER
-                isClickable = true
-                isFocusable = true
+        // Refresh ripples in top bar
+        val topBar = getChildAt(0) as? LinearLayout
+        if (topBar != null) {
+            for (i in 0 until topBar.childCount) {
+                val v = topBar.getChildAt(i)
+                if (v is ImageView) {
+                    v.background = currentRipple?.constantState?.newDrawable()?.mutate()
+                }
             }
-            return TabVH(tv)
         }
 
-        override fun onBindViewHolder(holder: TabVH, position: Int) {
-            holder.tv.typeface = FontUtils.getUbuntu(context)
-            holder.tv.text = categories[position].icon
-            val isSelected = position == selectedIndex
-            holder.tv.setBackgroundColor(
-                if (isSelected) accentColor else Color.TRANSPARENT
-            )
-            holder.tv.setOnClickListener { onTabClick(position) }
+        if (::emojiAdapter.isInitialized) {
+            emojiAdapter.notifyDataSetChanged()
         }
-
-        override fun getItemCount() = categories.size
     }
 
-    // ---- EMOJI LIST ADAPTER ----
-    inner class EmojiListAdapter(
+    private fun getRecentEmojis(): List<String> {
+        val s = preferences.recentEmojis
+        if (s.isEmpty()) return emptyList()
+        return s.split(",")
+    }
+
+    private fun addToRecent(emoji: String) {
+        val recent = getRecentEmojis().toMutableList()
+        recent.remove(emoji)
+        recent.add(0, emoji)
+        if (recent.size > MAX_RECENT) {
+            recent.removeAt(recent.size - 1)
+        }
+        preferences.recentEmojis = recent.joinToString(",")
+    }
+
+    // ---- EMOJI ADAPTER ----
+    inner class EmojiAdapter(
         private val items: List<ListItem>,
         private val onEmojiClick: (String) -> Unit
     ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-        override fun getItemViewType(position: Int) = when (items[position]) {
-            is ListItem.Header -> VIEW_TYPE_HEADER
-            is ListItem.EmojiRow -> VIEW_TYPE_EMOJI_ROW
+        override fun getItemViewType(position: Int): Int {
+            val item = items[position]
+            return when {
+                item is ListItem.Header -> VIEW_TYPE_HEADER
+                item is ListItem.Emoji && item.code == "No recent emojis" -> VIEW_TYPE_EMPTY_STATE
+                else -> VIEW_TYPE_EMOJI
+            }
         }
 
         inner class HeaderVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val tv: TextView = itemView as TextView
         }
 
-        inner class EmojiRowVH(val row: LinearLayout) : RecyclerView.ViewHolder(row)
+        inner class EmojiVH(val tv: TextView) : RecyclerView.ViewHolder(tv)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             return when (viewType) {
@@ -354,60 +315,60 @@ class EmojiPickerView @JvmOverloads constructor(
                         textSize = 11f
                         setTextColor(Color.parseColor("#888888"))
                         typeface = FontUtils.getUbuntu(context)
-                        setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(4))
+                        setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(0))
                         gravity = Gravity.CENTER_VERTICAL
+                        isAllCaps = true
+                        letterSpacing = 0.05f
                     }
                     HeaderVH(tv)
                 }
+                VIEW_TYPE_EMPTY_STATE -> {
+                    val tv = TextView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            dpToPx(40)
+                        )
+                        textSize = 14f
+                        setTextColor(Color.GRAY)
+                        typeface = FontUtils.getUbuntu(context)
+                        setPadding(dpToPx(16), 0, 0, 0)
+                        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    }
+                    EmojiVH(tv)
+                }
                 else -> {
-                    val row = LinearLayout(context).apply {
+                    val tv = TextView(context).apply {
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             dpToPx(48)
                         )
-                        orientation = HORIZONTAL
+                        gravity = Gravity.CENTER
+                        isClickable = true
+                        isFocusable = true
                     }
-                    repeat(COLS) {
-                        val cell = TextView(context).apply {
-                            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
-                                typeface = FontUtils.getUbuntu(context)
-                            textSize = 24f
-                            gravity = Gravity.CENTER
-                            isClickable = true
-                            isFocusable = true
-                        }
-                        row.addView(cell)
-                    }
-                    EmojiRowVH(row)
+                    EmojiVH(tv)
                 }
             }
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val ripple = currentRipple
-
-            when (val item = items[position]) {
-                is ListItem.Header -> {
-                    val hVH = holder as HeaderVH
-                    hVH.tv.text = item.subcategoryName
-                        .replace('-', ' ')
-                        .uppercase()
+            val item = items[position]
+            when (holder) {
+                is HeaderVH -> {
+                    holder.tv.text = (item as ListItem.Header).name
                 }
-                is ListItem.EmojiRow -> {
-                    val rVH = holder as EmojiRowVH
-                    for (i in 0 until COLS) {
-                        val cell = rVH.row.getChildAt(i) as TextView
-                        if (i < item.emojis.size) {
-                            cell.text = item.emojis[i]
-                            cell.visibility = View.VISIBLE
-                            cell.background = ripple?.constantState?.newDrawable()?.mutate()
-                            cell.setOnClickListener { onEmojiClick(item.emojis[i]) }
-                        } else {
-                            cell.text = ""
-                            cell.visibility = View.INVISIBLE
-                            cell.background = null
-                            cell.setOnClickListener(null)
-                        }
+                is EmojiVH -> {
+                    val vt = getItemViewType(position)
+                    if (vt == VIEW_TYPE_EMPTY_STATE) {
+                        holder.tv.text = (item as ListItem.Emoji).code
+                    } else {
+                        val code = (item as ListItem.Emoji).code
+                        holder.tv.text = code
+                        holder.tv.typeface = emojiFont
+                        holder.tv.textSize = cachedEmojiSize
+                        holder.tv.setTextColor(Color.WHITE)
+                        holder.tv.background = currentRipple?.constantState?.newDrawable()?.mutate()
+                        holder.tv.setOnClickListener { onEmojiClick(code) }
                     }
                 }
             }
