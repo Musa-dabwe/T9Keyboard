@@ -13,6 +13,8 @@ import android.widget.Toast
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import androidx.emoji2.text.EmojiCompat
+import androidx.emoji2.text.DefaultEmojiCompatConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -80,6 +82,11 @@ class T9InputMethodService : InputMethodService() {
             } else {
                 preferences.contactSuggestionsEnabled = false
             }
+        }
+
+        val config = DefaultEmojiCompatConfig.create(this)
+        if (config != null) {
+            EmojiCompat.init(config)
         }
     }
 
