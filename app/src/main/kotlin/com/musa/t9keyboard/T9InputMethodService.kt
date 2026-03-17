@@ -675,7 +675,7 @@ class T9InputMethodService : InputMethodService() {
         }
     }
 
-    private fun sendDownUpKeyEvents(keyCode: Int, meta: Int) {
+    private fun sendDownUpKeyEvents(keyCode: Int, meta: Int = 0) {
         val ic = currentInputConnection ?: return
         val now = System.currentTimeMillis()
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
@@ -775,76 +775,23 @@ class T9InputMethodService : InputMethodService() {
                 }
             }
             TextEditingView.EditAction.UP -> {
-                var currentPos = if (isSelectionMode) movingPosition else selectionStart
-                if (!isSelectionMode && selectionStart != selectionEnd) {
-                    currentPos = selectionStart
-                    ic.setSelection(currentPos, currentPos)
-                }
-
-                // Use et.text directly so position is always relative to movingPosition,
-                // not Android's reported cursor — which can be at the wrong end of a selection
-                val fetchFrom = maxOf(0, currentPos - 500)
-                val textBefore = et.text.substring(fetchFrom, currentPos)
-
-                var wordsFound = 0
-                var i = textBefore.length - 1
-                var lastWordStart = 0
-
-                while (i >= 0 && wordsFound < 8) {
-                    while (i >= 0 && textBefore[i].isWhitespace()) i--
-                    if (i < 0) break
-                    while (i >= 0 && !textBefore[i].isWhitespace()) i--
-                    lastWordStart = i + 1
-                    wordsFound++
-                }
-
-                if (wordsFound < 8) lastWordStart = 0
-
-                val newPos = if (textBefore.isEmpty()) currentPos else currentPos - (textBefore.length - lastWordStart)
-                val finalPos = maxOf(0, newPos)
-
                 if (isSelectionMode) {
-                    movingPosition = finalPos
-                    ic.setSelection(selectionAnchor, movingPosition)
+                    val ic = currentInputConnection ?: return
+                    val now = System.currentTimeMillis()
+                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_UP, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
+                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_UP, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
                 } else {
-                    ic.setSelection(finalPos, finalPos)
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP)
                 }
             }
             TextEditingView.EditAction.DOWN -> {
-                var currentPos = if (isSelectionMode) movingPosition else selectionEnd
-                if (!isSelectionMode && selectionStart != selectionEnd) {
-                    currentPos = selectionEnd
-                    ic.setSelection(currentPos, currentPos)
-                }
-
-                // Use et.text directly so position is always relative to movingPosition,
-                // not Android's reported cursor — which can be at the wrong end of a selection
-                val fetchFrom = minOf(currentPos, textLength)
-                val textAfter = if (fetchFrom < textLength)
-                    et.text.substring(fetchFrom, minOf(fetchFrom + 500, textLength))
-                else ""
-
-                var wordsFound = 0
-                var i = 0
-                var lastWordEnd = 0
-
-                while (i < textAfter.length && wordsFound < 8) {
-                    while (i < textAfter.length && textAfter[i].isWhitespace()) i++
-                    if (i >= textAfter.length) break
-                    while (i < textAfter.length && !textAfter[i].isWhitespace()) i++
-                    lastWordEnd = i
-                    wordsFound++
-                }
-
-                if (wordsFound < 8) lastWordEnd = textAfter.length
-
-                val newPos = minOf(currentPos + lastWordEnd, textLength)
-
                 if (isSelectionMode) {
-                    movingPosition = newPos
-                    ic.setSelection(selectionAnchor, movingPosition)
+                    val ic = currentInputConnection ?: return
+                    val now = System.currentTimeMillis()
+                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
+                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
                 } else {
-                    ic.setSelection(newPos, newPos)
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN)
                 }
             }
             TextEditingView.EditAction.LEFT -> {
@@ -895,17 +842,25 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.COPY -> {
                 ic.performContextMenuAction(android.R.id.copy)
+                isSelectionMode = false
+                textEditingView?.setSelectionMode(false)
             }
             TextEditingView.EditAction.COPY_LONG -> {
                 ic.performContextMenuAction(android.R.id.copy)
                 Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
+                isSelectionMode = false
+                textEditingView?.setSelectionMode(false)
             }
             TextEditingView.EditAction.CUT -> {
                 ic.performContextMenuAction(android.R.id.cut)
+                isSelectionMode = false
+                textEditingView?.setSelectionMode(false)
             }
             TextEditingView.EditAction.CUT_LONG -> {
                 ic.performContextMenuAction(android.R.id.cut)
                 Toast.makeText(this, "Cut", Toast.LENGTH_SHORT).show()
+                isSelectionMode = false
+                textEditingView?.setSelectionMode(false)
             }
             TextEditingView.EditAction.PASTE -> {
                 ic.performContextMenuAction(android.R.id.paste)

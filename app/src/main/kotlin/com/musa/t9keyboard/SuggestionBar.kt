@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -120,8 +121,9 @@ class SuggestionBar @JvmOverloads constructor(
             binding.anchoredSuggestion.setBackgroundColor(color)
         }
         // Update toolbar icons tint
-        binding.toolbarSettings.setColorFilter(Color.WHITE)
-        binding.toolbarEdit.setColorFilter(Color.WHITE)
+        val tint = ColorStateList.valueOf(color)
+        ImageViewCompat.setImageTintList(binding.toolbarSettings, tint)
+        ImageViewCompat.setImageTintList(binding.toolbarEdit, tint)
     }
 
     fun setFontSize(sizeSp: Float) {

@@ -1,6 +1,7 @@
 package com.musa.t9keyboard
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.util.AttributeSet
 import android.util.Log
@@ -10,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
+import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.utils.FontUtils
@@ -246,13 +248,15 @@ class EmojiPickerView @JvmOverloads constructor(
             android.graphics.drawable.ColorDrawable(Color.WHITE)
         )
 
-        // Refresh ripples in top bar
+        // Refresh ripples in top bar and apply icon tint
         val topBar = getChildAt(0) as? LinearLayout
         if (topBar != null) {
+            val tint = ColorStateList.valueOf(color)
             for (i in 0 until topBar.childCount) {
                 val v = topBar.getChildAt(i)
                 if (v is ImageView) {
                     v.background = currentRipple?.constantState?.newDrawable()?.mutate()
+                    ImageViewCompat.setImageTintList(v, tint)
                 }
             }
         }
