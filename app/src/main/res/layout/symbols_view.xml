@@ -6,48 +6,50 @@
     android:orientation="vertical"
     android:background="@color/keyboard_background">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/symbol_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:overScrollMode="never"
-        android:scrollbars="none" />
-
     <LinearLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:orientation="horizontal"
-        android:background="@color/abc_button_background">
+        android:background="#111111"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
 
-        <Button
-            android:id="@+id/btn_back_to_abc"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="3"
-            android:text="ABC"
-            android:background="@android:color/transparent"
-            android:textColor="@color/key_text_color"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:padding="0dp"
-            android:textAllCaps="true" />
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_arrow_small_left"
+            android:scaleType="center"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true" />
 
-        <FrameLayout
-            android:id="@+id/btn_symbol_delete"
+        <View
             android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@android:color/transparent">
-            <ImageView
-                android:id="@+id/btnSymbolDeleteIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_delete"
-                app:tint="@color/delete_key_color" />
-        </FrameLayout>
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/btnDelete"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_delete"
+            android:scaleType="center"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:tint="@color/delete_key_color" />
     </LinearLayout>
+
+    <GridLayout
+        android:id="@+id/symbolGrid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:columnCount="8"
+        android:rowCount="5"
+        android:orientation="horizontal" />
+
 </LinearLayout>

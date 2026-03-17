@@ -1,10 +1,18 @@
 package com.musa.t9keyboard
 
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.widget.GridLayout
 import android.widget.LinearLayout
-import androidx.recyclerview.widget.LinearLayoutManager
+import android.widget.TextView
+import androidx.core.widget.ImageViewCompat
 import com.musa.t9keyboard.databinding.SymbolsViewBinding
 import com.musa.t9keyboard.utils.FontUtils
 
@@ -21,32 +29,78 @@ class SymbolsView @JvmOverloads constructor(
     private val delHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var delRunnable: Runnable? = null
     private var deletionSpeed: Int = 100
+    private var accentColor: Int = Color.parseColor("#00BFA5")
+
+    private val symbols = listOf(
+        ".", ",", "!", "?", ":", ";", "'", "\"",
+        "*", "(", ")", "#", "@", "&", "-", "_",
+        "$", "€", "<", ">", "{", "}", "[", "]",
+        "=", "/", "\\", "%", "|", "~", "©", "®",
+        "™", "`", "·", "°", "✓", "×", "÷", "§"
+    )
 
     init {
-        binding.symbolRecyclerView.layoutManager = LinearLayoutManager(context)
-        binding.symbolRecyclerView.adapter = SymbolAdapter { symbol ->
-            onSymbolClickListener?.invoke(symbol)
-        }
-        binding.btnBackToAbc.setOnClickListener {
+        orientation = VERTICAL
+        setupTopBar()
+        setupSymbolGrid()
+    }
+
+    private fun setupTopBar() {
+        binding.btnBack.setOnClickListener {
             onFeedbackRequested?.invoke()
             onBackClickListener?.invoke()
         }
-        binding.btnSymbolDelete.setOnClickListener {
+
+        binding.btnDelete.setOnClickListener {
             onFeedbackRequested?.invoke()
             onDeleteClickListener?.invoke()
         }
-        binding.btnSymbolDelete.setOnLongClickListener {
+
+        binding.btnDelete.setOnLongClickListener {
             onFeedbackRequested?.invoke()
             startRepeatingDel()
             true
         }
-        binding.btnSymbolDelete.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_UP || event.action == android.view.MotionEvent.ACTION_CANCEL) {
+
+        binding.btnDelete.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
                 stopRepeatingDel()
             }
             false
         }
-        applyUbuntuFont()
+    }
+
+    private fun setupSymbolGrid() {
+        binding.symbolGrid.removeAllViews()
+        val ubuntu = FontUtils.getUbuntu(context)
+
+        symbols.forEach { symbol ->
+            val tv = TextView(context).apply {
+                text = symbol
+                textSize = 18f
+                setTextColor(Color.WHITE)
+                typeface = ubuntu
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+
+                val params = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = 0
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    setGravity(Gravity.FILL)
+                    setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4))
+                }
+                layoutParams = params
+
+                setOnClickListener {
+                    onFeedbackRequested?.invoke()
+                    onSymbolClickListener?.invoke(symbol)
+                }
+            }
+            binding.symbolGrid.addView(tv)
+        }
     }
 
     private fun startRepeatingDel() {
@@ -69,27 +123,40 @@ class SymbolsView @JvmOverloads constructor(
         this.deletionSpeed = speed
     }
 
-    private fun applyUbuntuFont() {
-        val ubuntu = FontUtils.getUbuntu(context)
-        binding.btnBackToAbc.typeface = ubuntu
+    private fun createKeyRipple(isIcon: Boolean = false): RippleDrawable {
+        val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val content = if (isIcon) null else GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dpToPx(12).toFloat()
+            setColor(Color.BLACK)
+        }
+        val mask = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dpToPx(12).toFloat()
+            setColor(Color.WHITE)
+        }
+        return RippleDrawable(ColorStateList.valueOf(pressedColor), content, mask)
     }
 
     fun setAccentColor(color: Int) {
-        val pressedColor = (color and 0x00FFFFFF) or (0x66 shl 24)
-        val ripple = android.graphics.drawable.RippleDrawable(
-            android.content.res.ColorStateList.valueOf(pressedColor),
-            null,
-            android.graphics.drawable.ColorDrawable(android.graphics.Color.WHITE)
-        )
-        binding.btnBackToAbc.background = ripple
-        binding.btnSymbolDelete.background = ripple.constantState?.newDrawable()?.mutate()
+        this.accentColor = color
 
-        androidx.core.widget.ImageViewCompat.setImageTintList(binding.btnSymbolDeleteIcon, android.content.res.ColorStateList.valueOf(color))
+        binding.btnBack.background = createKeyRipple(isIcon = true)
+        binding.btnDelete.background = createKeyRipple(isIcon = true)
 
-        (binding.symbolRecyclerView.adapter as? SymbolAdapter)?.setAccentColor(color)
+        ImageViewCompat.setImageTintList(binding.btnDelete, ColorStateList.valueOf(color))
+        ImageViewCompat.setImageTintList(binding.btnBack, ColorStateList.valueOf(color))
+
+        for (i in 0 until binding.symbolGrid.childCount) {
+            val child = binding.symbolGrid.getChildAt(i)
+            child.background = createKeyRipple(isIcon = false)
+        }
     }
 
     fun resetScroll() {
-        binding.symbolRecyclerView.scrollToPosition(0)
+        // No scrolling in new design
     }
+
+    private fun dpToPx(dp: Int): Int =
+        (dp * resources.displayMetrics.density + 0.5f).toInt()
 }
