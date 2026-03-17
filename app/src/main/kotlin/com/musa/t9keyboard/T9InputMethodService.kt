@@ -72,9 +72,11 @@ class T9InputMethodService : InputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
-        AospDictionary.loadFromAssets(this)
+        serviceScope.launch {
+            AospDictionary.loadFromAssets(this@T9InputMethodService)
+            AospBigrams.loadFromAssets(this@T9InputMethodService)
+        }
         LearnedDictionary.load(this)
-        AospBigrams.loadFromAssets(this)
         preferences = PreferencesManager(this)
 
         if (preferences.contactSuggestionsEnabled) {
