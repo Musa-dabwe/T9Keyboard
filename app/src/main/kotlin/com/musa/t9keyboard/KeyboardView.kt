@@ -58,7 +58,7 @@ class KeyboardView @JvmOverloads constructor(
      * Enum defining standard keyboard actions.
      */
     enum class KeyboardAction {
-        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, EMOJI, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9, SHOW_TEXT_EDITING
+        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, COMMA, EMOJI, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9, SHOW_TEXT_EDITING
     }
 
     init {
@@ -82,7 +82,7 @@ class KeyboardView @JvmOverloads constructor(
             binding.labelShift, binding.labelEnter,
             binding.labelSpace, binding.secondaryLabelSpace,
             binding.labelSym,
-            binding.label123, binding.secondaryLabel123
+            binding.label123
         )
         allTextViews.forEach { it.typeface = ubuntu }
     }
@@ -119,13 +119,17 @@ class KeyboardView @JvmOverloads constructor(
 
         binding.keyShift.setOnClickListener {
             onFeedbackRequested?.invoke()
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastShiftTapTime < 300) {
-                onActionClickListener?.invoke(KeyboardAction.CAPS_LOCK)
+            if (isNumMode) {
+                onActionClickListener?.invoke(KeyboardAction.NUM)
             } else {
-                onActionClickListener?.invoke(KeyboardAction.SHIFT)
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastShiftTapTime < 300) {
+                    onActionClickListener?.invoke(KeyboardAction.CAPS_LOCK)
+                } else {
+                    onActionClickListener?.invoke(KeyboardAction.SHIFT)
+                }
+                lastShiftTapTime = currentTime
             }
-            lastShiftTapTime = currentTime
         }
         binding.keyDel.setOnClickListener {
             onFeedbackRequested?.invoke()
@@ -173,13 +177,11 @@ class KeyboardView @JvmOverloads constructor(
         }
         binding.key123.setOnClickListener {
             onFeedbackRequested?.invoke()
-            onActionClickListener?.invoke(KeyboardAction.NUM)
-        }
-        binding.key123.setOnLongClickListener {
-            onFeedbackRequested?.invoke()
-            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-            onActionClickListener?.invoke(KeyboardAction.SWITCH_KEYBOARD)
-            true
+            if (isNumMode) {
+                onActionClickListener?.invoke(KeyboardAction.COMMA)
+            } else {
+                onActionClickListener?.invoke(KeyboardAction.NUM)
+            }
         }
         binding.keyEmoji.setOnClickListener {
             onFeedbackRequested?.invoke()
@@ -278,7 +280,7 @@ class KeyboardView @JvmOverloads constructor(
         tapCount = 0
         stopRepeatingDel()
         isNumMode = false
-        updateKeyAccent(binding.key123, false)
+        updateKeyAccent(binding.keyShift, false)
         updateKeyLabels()
     }
 
@@ -315,7 +317,7 @@ class KeyboardView @JvmOverloads constructor(
         binding.suggestionBar.setAccentColor(color)
         updateShiftState(lastShiftState)
         if (isNumMode) {
-            updateKeyAccent(binding.key123, true)
+            updateKeyAccent(binding.keyShift, true)
         }
         androidx.core.widget.ImageViewCompat.setImageTintList(binding.labelEmoji, android.content.res.ColorStateList.valueOf(color))
         androidx.core.widget.ImageViewCompat.setImageTintList(binding.labelDelIcon, android.content.res.ColorStateList.valueOf(color))
@@ -368,18 +370,23 @@ class KeyboardView @JvmOverloads constructor(
 
     fun updateShiftState(state: ShiftState) {
         lastShiftState = state
-        updateKeyAccent(binding.keyShift, state != ShiftState.OFF)
-        binding.labelShift.text = when(state) {
-            ShiftState.OFF -> "SHIFT"
-            ShiftState.ONE_SHOT -> "SHIFT"
-            ShiftState.CAPS_LOCK -> "CAPS"
+        if (!isNumMode) {
+            updateKeyAccent(binding.keyShift, state != ShiftState.OFF)
+            binding.labelShift.text = when(state) {
+                ShiftState.OFF -> "SHIFT"
+                ShiftState.ONE_SHOT -> "SHIFT"
+                ShiftState.CAPS_LOCK -> "CAPS"
+            }
         }
     }
 
     fun toggleNumMode() {
         isNumMode = !isNumMode
         updateKeyLabels()
-        updateKeyAccent(binding.key123, isNumMode)
+        updateKeyAccent(binding.keyShift, isNumMode)
+        if (!isNumMode) {
+            updateShiftState(lastShiftState)
+        }
     }
 
     private fun updateKeyLabels() {
@@ -411,9 +418,12 @@ class KeyboardView @JvmOverloads constructor(
                 secondary.visibility = View.VISIBLE
             }
         }
-        binding.label123.text = if (isNumMode) "ABC" else "123"
-
-        val visibility = if (isNumMode) View.GONE else View.VISIBLE
-        binding.secondaryLabel123.visibility = visibility
+        if (isNumMode) {
+            binding.label123.text = ","
+            binding.labelShift.text = "ABC"
+        } else {
+            binding.label123.text = "123"
+            updateShiftState(lastShiftState)
+        }
     }
 }

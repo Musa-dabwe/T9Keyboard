@@ -428,6 +428,9 @@ class T9InputMethodService : InputMethodService() {
             KeyboardView.KeyboardAction.NUM -> {
                 keyboardView?.toggleNumMode()
             }
+            KeyboardView.KeyboardAction.COMMA -> {
+                ic.commitText(",", 1)
+            }
             KeyboardView.KeyboardAction.EMOJI -> {
                 try {
                     emojiPickerView?.let {

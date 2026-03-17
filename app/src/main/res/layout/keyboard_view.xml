@@ -91,7 +91,6 @@
         android:orientation="horizontal">
         <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
             <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
-            <TextView android:id="@+id/secondary_label_123" style="@style/KeySecondaryLabel" android:text="⚙" />
         </FrameLayout>
         <FrameLayout android:id="@+id/key_space" style="@style/KeyboardKeyLayout">
             <TextView android:id="@+id/label_space" style="@style/KeyPrimaryLabel" android:text="SPACE" />
