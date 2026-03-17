@@ -2,6 +2,7 @@ package com.musa.t9keyboard
 
 import android.content.Context
 import android.inputmethodservice.InputMethodService
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -677,7 +678,7 @@ class T9InputMethodService : InputMethodService() {
 
     private fun sendDownUpKeyEvents(keyCode: Int, meta: Int = 0) {
         val ic = currentInputConnection ?: return
-        val now = System.currentTimeMillis()
+        val now = SystemClock.uptimeMillis()
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
     }
@@ -776,20 +777,14 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.UP -> {
                 if (isSelectionMode) {
-                    val ic = currentInputConnection ?: return
-                    val now = System.currentTimeMillis()
-                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_UP, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
-                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_UP, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP)
                 }
             }
             TextEditingView.EditAction.DOWN -> {
                 if (isSelectionMode) {
-                    val ic = currentInputConnection ?: return
-                    val now = System.currentTimeMillis()
-                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
-                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN, 0, KeyEvent.META_SHIFT_ON, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
+                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN)
                 }
