@@ -777,7 +777,7 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.UP -> {
                 if (isSelectionMode) {
-                    val newPos = maxOf(0, movingPosition - 37)
+                    val newPos = maxOf(0, movingPosition - 26)
                     ic.setSelection(selectionAnchor, newPos)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP)
@@ -785,7 +785,7 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.DOWN -> {
                 if (isSelectionMode) {
-                    val newPos = minOf(textLength, movingPosition + 37)
+                    val newPos = minOf(textLength, movingPosition + 26)
                     ic.setSelection(selectionAnchor, newPos)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN)
