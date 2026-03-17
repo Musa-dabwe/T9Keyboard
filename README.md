@@ -1,7 +1,5 @@
 # T9 Keyboard
 
-An Android T9 input method with XT9 predictive text support.
+An Android T9 input method with XT9 predictive text support. An AOSP dictionary with over 280,000 (US) English words by Helium314. 
 
-## Dictionary Preprocessing
-
-The keyboard uses a processed version of the AOSP English (US) dictionary. The raw source files (`.combined` format) are not included in the repository and should be treated as local-only preprocessing inputs.
+2026©
