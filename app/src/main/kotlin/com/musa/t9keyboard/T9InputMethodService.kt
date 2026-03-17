@@ -777,14 +777,16 @@ class T9InputMethodService : InputMethodService() {
             }
             TextEditingView.EditAction.UP -> {
                 if (isSelectionMode) {
-                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)
+                    val newPos = maxOf(0, movingPosition - 37)
+                    ic.setSelection(selectionAnchor, newPos)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_UP)
                 }
             }
             TextEditingView.EditAction.DOWN -> {
                 if (isSelectionMode) {
-                    sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON)
+                    val newPos = minOf(textLength, movingPosition + 37)
+                    ic.setSelection(selectionAnchor, newPos)
                 } else {
                     sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_DOWN)
                 }
