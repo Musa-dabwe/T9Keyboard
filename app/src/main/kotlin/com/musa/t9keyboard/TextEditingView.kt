@@ -49,6 +49,7 @@ class TextEditingView @JvmOverloads constructor(
         object UNDO : EditAction()
         object REDO : EditAction()
         object DELETE : EditAction()
+        object ENTER : EditAction()
     }
 
     var onAction: ((EditAction) -> Unit)? = null
@@ -134,12 +135,12 @@ class TextEditingView @JvmOverloads constructor(
         emojiKey = row3.getChildAt(3) as TextView
         gridLayout.addView(row3)
 
-        // Row 4: 123, Paste, Select All, SYM
+        // Row 4: 123, Paste, Select All, Enter
         val row4Configs = listOf(
             KeyConfig("123", 18f, onClick = { on123Click?.invoke() }),
             KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG),
             KeyConfig("Select all", 14f, EditAction.SELECT_ALL),
-            KeyConfig("SYM", 18f, onClick = { onSymClick?.invoke() })
+            KeyConfig("Enter", 18f, EditAction.ENTER)
         )
         gridLayout.addView(createRow(row4Configs))
 
