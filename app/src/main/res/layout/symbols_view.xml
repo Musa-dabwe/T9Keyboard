@@ -16,6 +16,11 @@
         android:paddingStart="8dp"
         android:paddingEnd="8dp">
 
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
         <ImageView
             android:id="@+id/btnBack"
             android:layout_width="48dp"
@@ -25,22 +30,6 @@
             android:padding="12dp"
             android:clickable="true"
             android:focusable="true" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/btnDelete"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_delete"
-            android:scaleType="center"
-            android:padding="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:tint="@color/delete_key_color" />
     </LinearLayout>
 
     <GridLayout

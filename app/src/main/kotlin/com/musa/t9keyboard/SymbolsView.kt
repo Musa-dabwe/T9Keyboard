@@ -50,24 +50,6 @@ class SymbolsView @JvmOverloads constructor(
             onFeedbackRequested?.invoke()
             onBackClickListener?.invoke()
         }
-
-        binding.btnDelete.setOnClickListener {
-            onFeedbackRequested?.invoke()
-            onDeleteClickListener?.invoke()
-        }
-
-        binding.btnDelete.setOnLongClickListener {
-            onFeedbackRequested?.invoke()
-            startRepeatingDel()
-            true
-        }
-
-        binding.btnDelete.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-                stopRepeatingDel()
-            }
-            false
-        }
     }
 
     private fun setupSymbolGrid() {
@@ -142,9 +124,7 @@ class SymbolsView @JvmOverloads constructor(
         this.accentColor = color
 
         binding.btnBack.background = createKeyRipple(isIcon = true)
-        binding.btnDelete.background = createKeyRipple(isIcon = true)
 
-        ImageViewCompat.setImageTintList(binding.btnDelete, ColorStateList.valueOf(color))
         ImageViewCompat.setImageTintList(binding.btnBack, ColorStateList.valueOf(color))
 
         for (i in 0 until binding.symbolGrid.childCount) {

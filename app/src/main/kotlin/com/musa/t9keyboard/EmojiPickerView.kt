@@ -120,19 +120,6 @@ class EmojiPickerView @JvmOverloads constructor(
             setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
 
-        val backBtn = ImageView(context).apply {
-            layoutParams = LayoutParams(dpToPx(48), dpToPx(48))
-            setImageResource(R.drawable.ic_arrow_small_left)
-            scaleType = ImageView.ScaleType.CENTER
-            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
-            isClickable = true
-            isFocusable = true
-            setOnClickListener {
-                onFeedbackRequested?.invoke()
-                onBackClickListener?.invoke()
-            }
-        }
-
         val flexSpace = View(context).apply {
             layoutParams = LayoutParams(0, 1, 1f)
         }
@@ -150,34 +137,22 @@ class EmojiPickerView @JvmOverloads constructor(
             }
         }
 
-        val delBtn = ImageView(context).apply {
+        val backBtn = ImageView(context).apply {
             layoutParams = LayoutParams(dpToPx(48), dpToPx(48))
-            setImageResource(R.drawable.ic_delete)
+            setImageResource(R.drawable.ic_arrow_small_left)
             scaleType = ImageView.ScaleType.CENTER
             setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
             isClickable = true
             isFocusable = true
             setOnClickListener {
                 onFeedbackRequested?.invoke()
-                onBackspaceClick?.invoke()
-            }
-            setOnLongClickListener {
-                onFeedbackRequested?.invoke()
-                startRepeatingDel()
-                true
-            }
-            setOnTouchListener { _, event ->
-                if (event.action == android.view.MotionEvent.ACTION_UP || event.action == android.view.MotionEvent.ACTION_CANCEL) {
-                    stopRepeatingDel()
-                }
-                false
+                onBackClickListener?.invoke()
             }
         }
 
-        topBar.addView(backBtn)
         topBar.addView(flexSpace)
         topBar.addView(searchBtn)
-        topBar.addView(delBtn)
+        topBar.addView(backBtn)
         addView(topBar)
 
         // --- Main emoji grid recycler ---
@@ -206,7 +181,7 @@ class EmojiPickerView @JvmOverloads constructor(
 
         addView(emojiRecycler)
 
-        updateButtonRipples(backBtn, searchBtn, delBtn)
+        updateButtonRipples(searchBtn, backBtn)
     }
 
     private fun updateButtonRipples(vararg views: View) {
