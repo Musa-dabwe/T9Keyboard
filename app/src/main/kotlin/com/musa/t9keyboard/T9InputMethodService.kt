@@ -688,8 +688,8 @@ class T9InputMethodService : InputMethodService() {
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
     }
 
-    private fun showView(view: View) {
-        android.util.Log.d("T9Lifecycle", "showView: ${view.javaClass.simpleName}, isWindowVisible=$isWindowVisible")
+    private fun showView(view: View, force: Boolean = false) {
+        android.util.Log.d("T9Lifecycle", "showView: ${view.javaClass.simpleName}, isWindowVisible=$isWindowVisible, force=$force")
         val c = container ?: return
 
         // Skip adding if it's already the only child
@@ -699,7 +699,7 @@ class T9InputMethodService : InputMethodService() {
 
         // Suppress redundant view switches when window is not visible,
         // but allow the first view to be added even if hidden.
-        if (!isWindowVisible && c.childCount > 0) {
+        if (!force && !isWindowVisible && c.childCount > 0) {
             android.util.Log.d("T9Lifecycle", "showView: Suppressed (window hidden)")
             return
         }
@@ -1195,7 +1195,7 @@ class T9InputMethodService : InputMethodService() {
             it.resetState()
             it.setSuggestions(emptyList())
             container?.let { _ ->
-                showView(it)
+                showView(it, force = true)
             }
         }
         updateToolbarVisibility()
