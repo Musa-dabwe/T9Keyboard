@@ -905,6 +905,9 @@ class T9InputMethodService : InputMethodService() {
             TextEditingView.EditAction.DELETE -> {
                 handleAction(KeyboardView.KeyboardAction.DEL)
             }
+            TextEditingView.EditAction.ENTER -> {
+                handleAction(KeyboardView.KeyboardAction.ENTER)
+            }
         }
         updateEditingSelectionState()
     }
