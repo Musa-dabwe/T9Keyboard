@@ -67,9 +67,9 @@ class TextEditingView @JvmOverloads constructor(
     private var deletionSpeed: Int = 100
 
     private lateinit var selectKey: TextView
+    private lateinit var abcKey: TextView
     private lateinit var copyKey: TextView
     private lateinit var cutKey: TextView
-    private lateinit var emojiKey: TextView
     private var allKeys = mutableListOf<TextView>()
 
     init {
@@ -120,34 +120,32 @@ class TextEditingView @JvmOverloads constructor(
         )
         val row2 = createRow(row2Configs)
         selectKey = row2.getChildAt(1) as TextView
+        abcKey = row2.getChildAt(3) as TextView
         gridLayout.addView(row2)
 
-        // Row 3: Cut, Down, Copy, Emoji
+        // Row 3: Cut, Down, Copy, Paste
         val row3Configs = listOf(
             KeyConfig("Cut", 16f, EditAction.CUT, longAction = EditAction.CUT_LONG),
             KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down),
             KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG),
-            KeyConfig(" ", 22f, iconResId = R.drawable.ic_emoji, onClick = { onEmojiClick?.invoke() })
+            KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)
         )
         val row3 = createRow(row3Configs)
         cutKey = row3.getChildAt(0) as TextView
         copyKey = row3.getChildAt(2) as TextView
-        emojiKey = row3.getChildAt(3) as TextView
         gridLayout.addView(row3)
 
-        // Row 4: 123, Paste, Select All, Enter
+        // Row 4: 123, Select All (spanning 2), Enter
         val row4Configs = listOf(
             KeyConfig("123", 18f, onClick = { on123Click?.invoke() }),
-            KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG),
-            KeyConfig("Select all", 14f, EditAction.SELECT_ALL),
-            KeyConfig("Enter", 18f, EditAction.ENTER)
+            KeyConfig("Select all", 14f, EditAction.SELECT_ALL, weight = 2f),
+            KeyConfig("↩", 22f, EditAction.ENTER)
         )
         gridLayout.addView(createRow(row4Configs))
 
         addView(gridLayout)
 
         updateSelectKeyVisuals()
-        updateEmojiKeyTint()
         updateSelectionState(false)
     }
 
@@ -159,7 +157,8 @@ class TextEditingView @JvmOverloads constructor(
         val repeatInterval: Long? = null,
         val textColor: Int = Color.WHITE,
         val iconResId: Int? = null,
-        val onClick: (() -> Unit)? = null
+        val onClick: (() -> Unit)? = null,
+        val weight: Float = 1f
     )
 
     private fun createRow(configs: List<KeyConfig>): LinearLayout {
@@ -174,7 +173,7 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun createKey(config: KeyConfig): TextView {
         val key = TextView(context).apply {
-            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
+            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, config.weight).apply {
                 setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3))
             }
             if (config.iconResId != null) {
@@ -261,6 +260,10 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun updateKeyBackground(key: TextView) {
         if (::selectKey.isInitialized && key == selectKey) return
+        if (::abcKey.isInitialized && key == abcKey) {
+            key.background = SelectKeyDrawable(true)
+            return
+        }
 
         val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
         val pressedColorList = android.content.res.ColorStateList(
@@ -323,21 +326,7 @@ class TextEditingView @JvmOverloads constructor(
     fun setAccentColor(color: Int) {
         this.accentColor = color
         updateSelectKeyVisuals()
-        updateEmojiKeyTint()
         allKeys.forEach { updateKeyBackground(it) }
-    }
-
-    private fun updateEmojiKeyTint() {
-        if (!::emojiKey.isInitialized) return
-        val drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, R.drawable.ic_emoji)
-        drawable?.let {
-            it.setTint(accentColor)
-            it.setBounds(0, 0, dpToPx(24), dpToPx(24))
-            val span = android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM)
-            val spannable = android.text.SpannableString(" ")
-            spannable.setSpan(span, 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            emojiKey.text = spannable
-        }
     }
 
     fun setDeletionSpeed(speed: Int) {
