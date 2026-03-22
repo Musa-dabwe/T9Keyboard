@@ -49,6 +49,10 @@ class T9InputMethodService : InputMethodService() {
     private var contactPermissionGranted = false
     private var contactSuggestionsEnabled = false
     private var xt9Enabled = false
+    private lateinit var autocorrectEngine: AutocorrectEngine
+    private var lastAutocorrection: AutocorrectRecord? = null
+    private var autocorrectEnabled: Boolean = false
+    private var autocorrectSensitivity: Int = 1 // 0=Conservative, 1=Normal, 2=Aggressive
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var suggestionJob: Job? = null
@@ -77,6 +81,7 @@ class T9InputMethodService : InputMethodService() {
             AospBigrams.loadFromAssets(this@T9InputMethodService)
         }
         LearnedDictionary.load(this)
+        autocorrectEngine = AutocorrectEngine(AospDictionary.bkTree, LearnedDictionary)
         preferences = PreferencesManager(this)
 
         if (preferences.contactSuggestionsEnabled) {
@@ -106,6 +111,8 @@ class T9InputMethodService : InputMethodService() {
         contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
         contactSuggestionsEnabled = preferences.contactSuggestionsEnabled
         xt9Enabled = preferences.xt9Enabled
+        autocorrectEnabled = preferences.autocorrectEnabled
+        autocorrectSensitivity = preferences.autocorrectSensitivity
 
         val kv = keyboardView ?: return
         val sv = symbolsView ?: return
@@ -266,6 +273,7 @@ class T9InputMethodService : InputMethodService() {
      *    triggering a refresh of the Suggestion Bar.
      */
     private fun handleMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
+        lastAutocorrection = null
         lastTapTime = System.currentTimeMillis()
         val ic = currentInputConnection ?: return
         val digit = getDigitForChar(char)
@@ -313,7 +321,9 @@ class T9InputMethodService : InputMethodService() {
 
         if (isFinished) {
             // Finalize the punctuation immediately as requested
-            if (composingText.isNotEmpty()) {
+            if (xt9DigitSequence.isNotEmpty()) {
+                maybeAutocorrect(displayChar.toString())
+            } else if (composingText.isNotEmpty()) {
                 val textToCommit = composingText.toString()
                 ic.commitText(textToCommit, 1)
                 composingText.setLength(0)
@@ -377,9 +387,22 @@ class T9InputMethodService : InputMethodService() {
     }
 
     private fun handleAction(action: KeyboardView.KeyboardAction) {
+        if (action != KeyboardView.KeyboardAction.DEL) {
+            lastAutocorrection = null
+        }
         val ic = currentInputConnection ?: return
         when (action) {
             KeyboardView.KeyboardAction.DEL -> {
+                val record = lastAutocorrection
+                if (record != null) {
+                    lastAutocorrection = null
+                    ic.beginBatchEdit()
+                    ic.deleteSurroundingText(record.correction.length + record.trigger.length, 0)
+                    ic.commitText(record.original, 1)
+                    ic.endBatchEdit()
+                    return
+                }
+
                 if (preferences.xt9Enabled && xt9DigitSequence.isNotEmpty()) {
                     xt9DigitSequence.deleteCharAt(xt9DigitSequence.length - 1)
                     xt9RawSequence.deleteCharAt(xt9RawSequence.length - 1)
@@ -407,7 +430,11 @@ class T9InputMethodService : InputMethodService() {
                 }
             }
             KeyboardView.KeyboardAction.SPACE -> {
-                commitTextWithFinalization(" ")
+                if (xt9Enabled && xt9DigitSequence.isNotEmpty()) {
+                    maybeAutocorrect(" ")
+                } else {
+                    commitTextWithFinalization(" ")
+                }
                 updateNextWordSuggestions()
             }
             KeyboardView.KeyboardAction.ENTER -> {
@@ -1000,6 +1027,7 @@ class T9InputMethodService : InputMethodService() {
         (dp * resources.displayMetrics.density + 0.5f).toInt()
 
     private fun handleXt9Tap(char: Char) {
+        lastAutocorrection = null
         if (composingText.isNotEmpty()) {
             commitTextWithFinalization("")
         }
@@ -1018,6 +1046,47 @@ class T9InputMethodService : InputMethodService() {
         xt9DigitSequence.append(digit)
         xt9RawSequence.append(getFirstCharForDigit(digit))
         updateXt9Suggestions()
+    }
+
+    private fun maybeAutocorrect(trigger: String) {
+        if (!autocorrectEnabled || !xt9Enabled || !AospDictionary.isBKTreeReady) {
+            commitTextWithFinalization(trigger)
+            return
+        }
+
+        val typedWord = xt9RawSequence.toString()
+        if (typedWord.isBlank()) {
+            commitTextWithFinalization(trigger)
+            return
+        }
+
+        val bestPrediction = if (currentXt9Predictions.isNotEmpty()) currentXt9Predictions[0] else typedWord
+        val correction = autocorrectEngine.getCorrection(bestPrediction, autocorrectSensitivity)
+
+        if (correction == null) {
+            commitTextWithFinalization(trigger)
+            return
+        }
+
+        val ic = currentInputConnection ?: return
+        val finalCorrection = applyShiftState(correction)
+        lastAutocorrection = AutocorrectRecord(applyShiftState(bestPrediction), finalCorrection, trigger)
+
+        ic.beginBatchEdit()
+        ic.commitText(finalCorrection + trigger, 1)
+        ic.endBatchEdit()
+
+        xt9DigitSequence.setLength(0)
+        xt9RawSequence.setLength(0)
+        currentXt9Predictions = emptyList()
+        lastCommittedWord = correction
+
+        shiftManager.consumeShift()
+        keyboardView?.updateShiftState(shiftManager.currentState)
+        keyboardView?.setSuggestions(emptyList())
+        lastDigit = ' '
+
+        keyboardView?.showAutocorrectIndicator(finalCorrection)
     }
 
     private fun updateXt9Suggestions() {

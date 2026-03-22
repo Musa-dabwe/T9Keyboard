@@ -86,6 +86,30 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // Autocorrect
+        updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
+        binding.rowAutocorrectSensitivity.visibility = if (preferences.autocorrectEnabled) View.VISIBLE else View.GONE
+        binding.rowAutocorrect.setOnClickListener {
+            preferences.autocorrectEnabled = !preferences.autocorrectEnabled
+            updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
+            binding.rowAutocorrectSensitivity.visibility = if (preferences.autocorrectEnabled) View.VISIBLE else View.GONE
+        }
+
+        // Autocorrect Sensitivity
+        val sensitivityLabels = listOf("Conservative", "Normal", "Aggressive")
+        binding.boxAutocorrectSensitivity.text = sensitivityLabels[preferences.autocorrectSensitivity]
+        binding.rowAutocorrectSensitivity.setOnClickListener {
+            val options = sensitivityLabels.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle("Select Sensitivity")
+                .setSingleChoiceItems(options, preferences.autocorrectSensitivity) { dialog, which ->
+                    preferences.autocorrectSensitivity = which
+                    binding.boxAutocorrectSensitivity.text = sensitivityLabels[which]
+                    dialog.dismiss()
+                }
+                .show()
+        }
+
         // XT9 Predictive Text
         updateToggle(binding.toggleXt9, preferences.xt9Enabled)
         binding.rowXt9.setOnClickListener {
@@ -331,6 +355,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateToggles() {
+        updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
         updateToggle(binding.toggleXt9, preferences.xt9Enabled)
         updateToggle(binding.toggleHaptic, preferences.hapticEnabled)
         updateToggle(binding.toggleSound, preferences.soundEnabled)
@@ -340,6 +365,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun applyAccentColor() {
         val accentColor = ContextCompat.getColor(this, accentColors[preferences.accentColorIndex])
 
+        binding.headerTyping.setTextColor(accentColor)
         binding.headerInputMode.setTextColor(accentColor)
         binding.headerFeedback.setTextColor(accentColor)
         binding.headerLayout.setTextColor(accentColor)
@@ -354,6 +380,12 @@ class SettingsActivity : AppCompatActivity() {
         val ubuntu = FontUtils.getUbuntu(this)
         val allViews = listOf(
             binding.txtWelcome,
+            binding.headerTyping,
+            binding.txtAutocorrectTitle,
+            binding.txtAutocorrectSubtitle,
+            binding.txtAutocorrectSensitivityTitle,
+            binding.txtAutocorrectSensitivitySubtitle,
+            binding.boxAutocorrectSensitivity,
             binding.headerInputMode,
             binding.txtXt9Title,
             binding.txtXt9Subtitle,

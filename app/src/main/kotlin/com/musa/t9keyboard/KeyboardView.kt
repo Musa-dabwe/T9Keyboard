@@ -300,6 +300,10 @@ class KeyboardView @JvmOverloads constructor(
         binding.suggestionBar.setSuggestions(suggestions, anchoredWord)
     }
 
+    fun showAutocorrectIndicator(correctedWord: String) {
+        binding.suggestionBar.showAutocorrectIndicator(correctedWord)
+    }
+
     fun showToolbar() {
         binding.suggestionBar.showToolbar()
     }

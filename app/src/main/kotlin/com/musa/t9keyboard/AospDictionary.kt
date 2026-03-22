@@ -16,6 +16,9 @@ object AospDictionary {
     private val t9Map = TreeMap<String, MutableList<WordEntry>>()
     private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
     private val allWordEntries = mutableListOf<WordEntry>()
+    val bkTree = BKTree()
+    @Volatile
+    var isBKTreeReady = false
 
     data class WordSuggestion(val word: String, val frequency: Int)
 
@@ -76,6 +79,12 @@ object AospDictionary {
                 line = r.readLine()
             }
         }
+
+        // Build BK-Tree
+        allWordEntries.forEach { entry ->
+            bkTree.insert(entry.word, entry.frequency)
+        }
+        isBKTreeReady = true
     }
 
     private fun getT9Sequence(word: String): String {
@@ -88,6 +97,14 @@ object AospDictionary {
         val lower = word.lowercase().trim()
         val stripped = lower.filter { it in 'a'..'z' }
         return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
+    }
+
+    fun isValidWord(word: String): Boolean {
+        return if (isBKTreeReady) {
+            bkTree.search(word.lowercase(), 0).isNotEmpty()
+        } else {
+            contains(word)
+        }
     }
 
     @Synchronized
