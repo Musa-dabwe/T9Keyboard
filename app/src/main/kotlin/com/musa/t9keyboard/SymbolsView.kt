@@ -90,10 +90,10 @@ class SymbolsView @JvmOverloads constructor(
         delRunnable = object : Runnable {
             override fun run() {
                 onDeleteClickListener?.invoke()
-                delHandler.postDelayed(this, deletionSpeed.toLong())
+                delHandler.postDelayed(this, 200L)
             }
         }
-        delHandler.postDelayed(delRunnable!!, 500)
+        delHandler.postDelayed(delRunnable!!, 200L)
     }
 
     private fun stopRepeatingDel() {

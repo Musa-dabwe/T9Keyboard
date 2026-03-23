@@ -20,7 +20,9 @@ import com.musa.t9keyboard.utils.FontUtils
 import com.google.android.material.slider.Slider
 import android.widget.LinearLayout
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.view.inputmethod.InputMethodManager
 import androidx.core.app.ActivityCompat
 
 class SettingsActivity : AppCompatActivity() {
@@ -86,6 +88,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // Default Keyboard
+        binding.rowDefaultKeyboard.setOnClickListener {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showInputMethodPicker()
+        }
+
         // Autocorrect
         updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
         binding.rowAutocorrectSensitivity.visibility = if (preferences.autocorrectEnabled) View.VISIBLE else View.GONE
@@ -424,6 +432,8 @@ class SettingsActivity : AppCompatActivity() {
             binding.txtAccentColorTitle,
             binding.txtThemeTitle,
             binding.txtSelectedTheme,
+            binding.txtDefaultKeyboardTitle,
+            binding.txtDefaultKeyboardSubtitle,
             binding.btnClearDict,
             binding.txtClearDictDesc
         )
