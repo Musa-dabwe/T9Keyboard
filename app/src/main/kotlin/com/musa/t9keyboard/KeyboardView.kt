@@ -194,10 +194,10 @@ class KeyboardView @JvmOverloads constructor(
         delRunnable = object : Runnable {
             override fun run() {
                 onActionClickListener?.invoke(KeyboardAction.DEL)
-                delHandler.postDelayed(this, deletionSpeed.toLong())
+                delHandler.postDelayed(this, 200L)
             }
         }
-        delHandler.postDelayed(delRunnable!!, 500) // Initial delay
+        delHandler.postDelayed(delRunnable!!, 200L) // Initial delay
     }
 
     private fun stopRepeatingDel() {

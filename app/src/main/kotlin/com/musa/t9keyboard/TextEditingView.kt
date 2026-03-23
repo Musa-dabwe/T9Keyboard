@@ -288,13 +288,16 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun startRepeating(action: EditAction, interval: Long) {
         stopRepeating()
+        val effectiveInterval = if (action == EditAction.DELETE) 200L else interval
+        val initialDelay = if (action == EditAction.DELETE) 200L else 500L
+
         repeatRunnable = object : Runnable {
             override fun run() {
                 onAction?.invoke(action)
-                handler.postDelayed(this, interval)
+                handler.postDelayed(this, effectiveInterval)
             }
         }
-        handler.postDelayed(repeatRunnable!!, 500)
+        handler.postDelayed(repeatRunnable!!, initialDelay)
     }
 
     private fun startLongPressCheck(longAction: EditAction, onLongPressed: () -> Unit) {
