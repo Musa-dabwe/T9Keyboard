@@ -598,7 +598,7 @@ class T9InputMethodService : InputMethodService() {
 
             ic.commitText(suggestion, 1)
             ic.commitText(" ", 1)
-            LearnedDictionary.learnWord(originalWord, lastCommittedWord)
+            LearnedDictionary.learnWordStrong(originalWord, lastCommittedWord)
             lastCommittedWord = originalWord
             xt9DigitSequence.setLength(0)
             xt9RawSequence.setLength(0)
@@ -607,7 +607,7 @@ class T9InputMethodService : InputMethodService() {
             ic.setComposingText(suggestion, 1)
             ic.finishComposingText()
             ic.commitText(" ", 1)
-            LearnedDictionary.learnWord(suggestion, lastCommittedWord)
+            LearnedDictionary.learnWordStrong(suggestion, lastCommittedWord)
             lastCommittedWord = suggestion
             composingText.clear()
             currentWordConstraints.clear()
@@ -631,7 +631,7 @@ class T9InputMethodService : InputMethodService() {
         suggestionJob?.cancel()
         suggestionJob = serviceScope.launch {
             val result = withContext(Dispatchers.Default) {
-                val learned = LearnedDictionary.getSuggestions(constraints)
+                val learned = LearnedDictionary.getSuggestions(constraints, lastCommittedWord)
                 val aosp = AospDictionary.getSuggestions(constraints)
                 val containing = if (targetLength >= 2) AospDictionary.getWordsContaining(literalComposing) else emptyList()
 
@@ -1079,6 +1079,8 @@ class T9InputMethodService : InputMethodService() {
         xt9DigitSequence.setLength(0)
         xt9RawSequence.setLength(0)
         currentXt9Predictions = emptyList()
+
+        LearnedDictionary.learnWordStrong(correction, lastCommittedWord)
         lastCommittedWord = correction
 
         shiftManager.consumeShift()
@@ -1105,10 +1107,12 @@ class T9InputMethodService : InputMethodService() {
         suggestionJob = serviceScope.launch {
             val predictions = withContext(Dispatchers.Default) {
                 // Get all candidates
-                val learnedExact = LearnedDictionary.getSuggestionsForSequence(digitSeq)
+                val xt9Constraints = constraints.ifEmpty { digitSeq.map { it.toString() } }
+                val learnedAll = LearnedDictionary.getSuggestions(xt9Constraints, lastCommittedWord)
+                val learnedExact = learnedAll.filter { it.word.length == targetLength }
+                val learnedPrefix = learnedAll.filter { it.word.length > targetLength }
+
                 val aospExact = AospDictionary.getSuggestionsForSequence(digitSeq)
-                val learnedPrefix = LearnedDictionary.getSuggestions(constraints.ifEmpty { digitSeq.map { it.toString() } })
-                    .filter { it.word.length > targetLength }
                 val aospPrefix = AospDictionary.getWordsStartingWith(digitSeq)
                     .filter { it.word.length > targetLength }
                 val containing = if (targetLength >= 2) AospDictionary.getWordsContaining(rawSequence) else emptyList()

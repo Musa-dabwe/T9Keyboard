@@ -10,6 +10,9 @@ class AutocorrectEngine(private val bkTree: BKTree,
      * Sensitivity: 0 (Conservative), 1 (Normal), 2 (Aggressive)
      */
     fun getCorrection(typedWord: String, sensitivity: Int): String? {
+        // Rule: Autocorrect immunity for learned words
+        if (learnedDictionary.isValidWord(typedWord)) return null
+
         val lowerTyped = typedWord.lowercase()
 
         // Rule: Word length ≥ 4
@@ -19,9 +22,6 @@ class AutocorrectEngine(private val bkTree: BKTree,
         // Check exact match in BKTree (distance 0)
         val exactMatchAosp = bkTree.search(lowerTyped, 0).isNotEmpty()
         if (exactMatchAosp) return null
-
-        // Check exact match in LearnedDictionary
-        if (learnedDictionary.contains(lowerTyped)) return null
 
         // Rule: Word is not all-caps
         if (typedWord.isNotEmpty() && typedWord.all { it.isUpperCase() }) return null
