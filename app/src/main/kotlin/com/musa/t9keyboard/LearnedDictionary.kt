@@ -2,12 +2,11 @@ package com.musa.t9keyboard
 
 import android.content.Context
 import android.content.SharedPreferences
-import java.util.TreeMap
 
 object LearnedDictionary {
     private val learnedWords = mutableMapOf<String, Int>()
+    private val lastTypedMap = mutableMapOf<String, Long>()
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
-    private val t9Map = TreeMap<String, MutableList<String>>()
     private lateinit var prefs: SharedPreferences
 
     private val digitMap = mapOf(
@@ -25,15 +24,24 @@ object LearnedDictionary {
     fun load(context: Context) {
         prefs = context.getSharedPreferences("learned_words", Context.MODE_PRIVATE)
         learnedWords.clear()
+        lastTypedMap.clear()
         nextWordMap.clear()
-        t9Map.clear()
 
+        val now = System.currentTimeMillis()
         prefs.all.forEach { (key, value) ->
             if (key.startsWith("freq_")) {
                 val word = key.substring(5)
                 val freq = value as Int
                 learnedWords[word] = freq
-                addToT9Map(word)
+
+                // Load or initialize last typed timestamp
+                val timestamp = prefs.getLong("last_typed_$word", -1L)
+                if (timestamp == -1L) {
+                    lastTypedMap[word] = now
+                    prefs.edit().putLong("last_typed_$word", now).apply()
+                } else {
+                    lastTypedMap[word] = timestamp
+                }
             } else if (key.startsWith("next_")) {
                 val parts = key.substring(5).split("__")
                 if (parts.size == 2) {
@@ -43,44 +51,84 @@ object LearnedDictionary {
                 }
             }
         }
+        cleanup()
     }
 
-    private fun addToT9Map(word: String) {
-        val sequence = getT9Sequence(word)
-        if (sequence.isNotEmpty()) {
-            val list = t9Map.getOrPut(sequence) { mutableListOf() }
-            if (!list.contains(word)) {
-                list.add(word)
-            }
+    private fun recencyMultiplier(word: String): Float {
+        val lastTyped = lastTypedMap[word] ?: return 0.25f
+        val daysSince = (System.currentTimeMillis() - lastTyped) / 86_400_000L
+        return when {
+            daysSince <= 7   -> 1.0f
+            daysSince <= 30  -> 0.75f
+            daysSince <= 90  -> 0.5f
+            else             -> 0.25f
         }
     }
 
-    private fun getT9Sequence(word: String): String {
-        return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
+    private fun cleanup() {
+        val now = System.currentTimeMillis()
+        val ninetyDays = 90L * 86_400_000L
+        val toRemove = learnedWords.keys.filter { word ->
+            val freq = learnedWords[word] ?: 0
+            val lastTyped = lastTypedMap[word] ?: 0L
+            freq == 1 && (now - lastTyped) > ninetyDays
+        }
+        toRemove.forEach { word ->
+            learnedWords.remove(word)
+            lastTypedMap.remove(word)
+            nextWordMap.entries.forEach { it.value.remove(word) }
+        }
+        if (toRemove.isNotEmpty()) {
+            val editor = prefs.edit()
+            toRemove.forEach { word ->
+                editor.remove("freq_$word")
+                editor.remove("last_typed_$word")
+            }
+            editor.apply()
+        }
     }
 
     @Synchronized
     fun learnWord(word: String, previousWord: String? = null) {
-        val lowerWord = word.lowercase().trim() // Keep punctuation for learning!
+        val lowerWord = word.lowercase().trim()
         if (lowerWord.isEmpty()) return
 
         val newFreq = (learnedWords[lowerWord] ?: 0) + 1
         learnedWords[lowerWord] = newFreq
 
-        // Add to T9 map if it's the first time
-        if (newFreq == 1) {
-            addToT9Map(lowerWord)
-        }
+        val now = System.currentTimeMillis()
+        lastTypedMap[lowerWord] = now
+        prefs.edit().putLong("last_typed_$lowerWord", now).apply()
 
         if (previousWord != null) {
             val lowerPrev = previousWord.lowercase().trim()
             if (lowerPrev.isNotEmpty()) {
                 val nextMap = nextWordMap.getOrPut(lowerPrev) { mutableMapOf() }
                 nextMap[lowerWord] = (nextMap[lowerWord] ?: 0) + 1
+
+                if (nextWordMap.size > 5000) {
+                    val evictKey = nextWordMap.minByOrNull { entry ->
+                        entry.value.values.sum()
+                    }?.key
+                    if (evictKey != null) {
+                        nextWordMap.remove(evictKey)
+                        val editor = prefs.edit()
+                        prefs.all.keys.filter { it.startsWith("next_${evictKey}__") }.forEach {
+                            editor.remove(it)
+                        }
+                        editor.apply()
+                    }
+                }
             }
         }
 
         save()
+    }
+
+    @Synchronized
+    fun learnWordStrong(word: String, previousWord: String?) {
+        learnWord(word, previousWord)
+        learnWord(word, previousWord)
     }
 
     private fun save() {
@@ -98,48 +146,25 @@ object LearnedDictionary {
     }
 
     @Synchronized
-    fun getSuggestionsForSequence(t9sequence: String): List<AospDictionary.WordSuggestion> {
-        val words = t9Map[t9sequence] ?: return emptyList()
-        return words.map { word ->
-            // Frequency 256 + learned frequency for tie-breaking
-            AospDictionary.WordSuggestion(word, 256 + (learnedWords[word] ?: 0))
-        }
-    }
-
-    @Synchronized
-    fun getSuggestions(constraints: List<String>): List<AospDictionary.WordSuggestion> {
+    fun getSuggestions(constraints: List<String>, previousWord: String? = null): List<AospDictionary.WordSuggestion> {
         if (constraints.isEmpty()) return emptyList()
 
         val digitSequence = constraints.map {
             if (it.length == 1 && it[0].isDigit()) it else (digitMap[it[0]] ?: ' ')
         }.joinToString("").trim()
 
-        if (digitSequence.length > 12) {
-             val results = mutableListOf<AospDictionary.WordSuggestion>()
-             t9Map[digitSequence]?.forEach { word ->
-                 var matches = true
-                 val stripped = word.lowercase().filter { it in 'a'..'z' }
-                 for (i in constraints.indices) {
-                     val constraint = constraints[i]
-                     if (constraint.length == 1 && !constraint[0].isDigit()) {
-                         if (stripped.length <= i || stripped[i] != constraint[0]) {
-                             matches = false
-                             break
-                         }
-                     }
-                 }
-                 if (matches) results.add(AospDictionary.WordSuggestion(word, 256 + (learnedWords[word] ?: 0)))
-             }
-             return results
-        }
+        val bigramBoosts = if (previousWord != null) {
+            nextWordMap[previousWord.lowercase().trim()] ?: emptyMap()
+        } else emptyMap()
 
-        val potentialMatches = t9Map.subMap(digitSequence, digitSequence + "\uFFFF")
-        val results = mutableListOf<AospDictionary.WordSuggestion>()
+        val candidates = mutableListOf<AospDictionary.WordSuggestion>()
 
-        for (words in potentialMatches.values) {
-            for (word in words) {
+        // Match learned words against the digit sequence constraints
+        learnedWords.forEach { (word, freq) ->
+            val wordT9 = getT9Sequence(word)
+            if (wordT9.startsWith(digitSequence)) {
                 var matches = true
-                val stripped = word.lowercase().filter { it in 'a'..'z' }
+                val stripped = word.filter { it in 'a'..'z' }
                 for (i in constraints.indices) {
                     val constraint = constraints[i]
                     if (constraint.length == 1 && !constraint[0].isDigit()) {
@@ -149,12 +174,25 @@ object LearnedDictionary {
                         }
                     }
                 }
+
                 if (matches) {
-                    results.add(AospDictionary.WordSuggestion(word, 256 + (learnedWords[word] ?: 0)))
+                    val aospBaseFreq = AospDictionary.getWordFrequency(word)
+                    val decayedBoost = (256 + freq) * recencyMultiplier(word)
+                    val finalFreq = aospBaseFreq + decayedBoost.toInt()
+                    candidates.add(AospDictionary.WordSuggestion(word, finalFreq))
                 }
             }
         }
-        return results
+
+        return candidates.map { suggestion ->
+            val bigramFreq = bigramBoosts[suggestion.word.lowercase()] ?: 0
+            val boostedFreq = suggestion.frequency + (bigramFreq * 3)
+            suggestion.copy(frequency = boostedFreq)
+        }.sortedByDescending { it.frequency }
+    }
+
+    private fun getT9Sequence(word: String): String {
+        return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
     }
 
     @Synchronized
@@ -180,8 +218,8 @@ object LearnedDictionary {
     @Synchronized
     fun clear() {
         learnedWords.clear()
+        lastTypedMap.clear()
         nextWordMap.clear()
-        t9Map.clear()
         if (::prefs.isInitialized) {
             prefs.edit().clear().apply()
         }

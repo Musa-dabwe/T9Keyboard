@@ -92,6 +92,14 @@ object AospDictionary {
     }
 
     @Synchronized
+    fun getWordFrequency(word: String): Int {
+        if (t9Map.isEmpty()) return 0
+        val lower = word.lowercase().trim()
+        val stripped = lower.filter { it in 'a'..'z' }
+        return wordMap[stripped]?.find { it.word.lowercase() == lower }?.frequency ?: 0
+    }
+
+    @Synchronized
     fun contains(word: String): Boolean {
         if (t9Map.isEmpty()) return false
         val lower = word.lowercase().trim()
