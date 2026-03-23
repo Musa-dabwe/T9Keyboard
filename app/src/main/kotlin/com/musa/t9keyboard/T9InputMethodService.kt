@@ -407,7 +407,8 @@ class T9InputMethodService : InputMethodService() {
                     xt9DigitSequence.deleteCharAt(xt9DigitSequence.length - 1)
                     xt9RawSequence.deleteCharAt(xt9RawSequence.length - 1)
                     if (xt9DigitSequence.isEmpty()) {
-                        ic.finishComposingText()
+                        ic.setComposingText("", 1)
+                        ic.deleteSurroundingText(1, 0)
                     }
                     updateXt9Suggestions()
                 } else if (!preferences.xt9Enabled && composingText.isNotEmpty()) {
@@ -1093,6 +1094,7 @@ class T9InputMethodService : InputMethodService() {
 
     private fun updateXt9Suggestions() {
         if (xt9DigitSequence.isEmpty()) {
+            currentInputConnection?.setComposingText("", 1)
             keyboardView?.setSuggestions(emptyList())
             updateToolbarVisibility()
             return
