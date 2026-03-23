@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.view.Gravity
@@ -34,6 +36,8 @@ class SuggestionBar @JvmOverloads constructor(
     private var isXt9Mode: Boolean = false
     private val ubuntuTypeface = FontUtils.getUbuntu(context)
     private val suggestionAdapter = SuggestionAdapter()
+    private val handler = Handler(Looper.getMainLooper())
+    private var revertRunnable: Runnable? = null
 
     enum class ToolbarAction {
         SETTINGS, EDIT, TOGGLE_XT9
@@ -83,6 +87,9 @@ class SuggestionBar @JvmOverloads constructor(
     }
 
     fun setSuggestions(suggestions: List<String>, anchoredWord: String? = null) {
+        revertRunnable?.let { handler.removeCallbacks(it) }
+        revertRunnable = null
+
         suggestionAdapter.updateSuggestions(suggestions)
 
         if (anchoredWord != null) {
@@ -90,9 +97,27 @@ class SuggestionBar @JvmOverloads constructor(
             binding.anchoredSuggestion.text = anchoredWord
             binding.anchoredSuggestion.setBackgroundColor(accentColor)
             binding.anchoredSuggestion.setOnClickListener { onSuggestionClickListener?.invoke(anchoredWord) }
+            binding.anchoredSuggestion.paintFlags = binding.anchoredSuggestion.paintFlags and android.graphics.Paint.UNDERLINE_TEXT_FLAG.inv()
         } else {
             binding.anchoredSuggestion.visibility = View.GONE
         }
+    }
+
+    fun showAutocorrectIndicator(correctedWord: String) {
+        revertRunnable?.let { handler.removeCallbacks(it) }
+
+        binding.anchoredSuggestion.visibility = View.VISIBLE
+        binding.anchoredSuggestion.text = correctedWord
+        val alphaAccent = (accentColor and 0x00FFFFFF) or (0xB3 shl 24) // ~70% opacity
+        binding.anchoredSuggestion.setBackgroundColor(alphaAccent)
+        binding.anchoredSuggestion.paintFlags = binding.anchoredSuggestion.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
+        binding.anchoredSuggestion.setOnClickListener { onSuggestionClickListener?.invoke(correctedWord) }
+
+        revertRunnable = Runnable {
+            binding.anchoredSuggestion.visibility = View.GONE
+            revertRunnable = null
+        }
+        handler.postDelayed(revertRunnable!!, 1500)
     }
 
     fun setXt9Mode(enabled: Boolean) {

@@ -21,7 +21,17 @@ class PreferencesManager(context: Context) {
         const val KEY_CONTACT_SUGGESTIONS_ENABLED = "contact_suggestions_enabled"
         const val KEY_EMOJI_SIZE = "emoji_size"
         const val KEY_RECENT_EMOJIS = "recent_emojis"
+        const val KEY_AUTOCORRECT_ENABLED = "autocorrect_enabled"
+        const val KEY_AUTOCORRECT_SENSITIVITY = "autocorrect_sensitivity"
     }
+
+    var autocorrectEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTOCORRECT_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_AUTOCORRECT_ENABLED, value).apply()
+
+    var autocorrectSensitivity: Int
+        get() = prefs.getInt(KEY_AUTOCORRECT_SENSITIVITY, 1)
+        set(value) = prefs.edit().putInt(KEY_AUTOCORRECT_SENSITIVITY, value).apply()
 
     var emojiSize: Int
         get() = prefs.getInt(KEY_EMOJI_SIZE, 32)

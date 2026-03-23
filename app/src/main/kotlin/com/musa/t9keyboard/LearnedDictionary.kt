@@ -173,6 +173,11 @@ object LearnedDictionary {
     }
 
     @Synchronized
+    fun isValidWord(word: String): Boolean {
+        return contains(word)
+    }
+
+    @Synchronized
     fun clear() {
         learnedWords.clear()
         nextWordMap.clear()
