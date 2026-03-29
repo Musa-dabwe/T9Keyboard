@@ -32,6 +32,8 @@ class KeyboardView @JvmOverloads constructor(
     private var tapCount: Int = 0
     private var multiTapTimeout: Long = 800L
     private var deletionSpeed: Int = 100
+    private val repeatInterval: Long
+        get() = maxOf(30L, 200L - (deletionSpeed * 1.5).toLong())
     private var lastShiftTapTime: Long = 0
     private var isNumMode = false
     private var accentColor: Int = android.graphics.Color.parseColor("#00BFA5")
@@ -191,13 +193,14 @@ class KeyboardView @JvmOverloads constructor(
 
     private fun startRepeatingDel() {
         stopRepeatingDel()
+        val interval = repeatInterval
         delRunnable = object : Runnable {
             override fun run() {
                 onActionClickListener?.invoke(KeyboardAction.DEL)
-                delHandler.postDelayed(this, 200L)
+                delHandler.postDelayed(this, interval)
             }
         }
-        delHandler.postDelayed(delRunnable!!, 200L) // Initial delay
+        delHandler.postDelayed(delRunnable!!, 150L) // Initial delay
     }
 
     private fun stopRepeatingDel() {

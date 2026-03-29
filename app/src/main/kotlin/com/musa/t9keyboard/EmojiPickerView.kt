@@ -47,6 +47,8 @@ class EmojiPickerView @JvmOverloads constructor(
     private val delHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var delRunnable: Runnable? = null
     private var deletionSpeed: Int = 100
+    private val repeatInterval: Long
+        get() = maxOf(30L, 200L - (deletionSpeed * 1.5).toLong())
 
     var isInitialized = false
         private set
@@ -196,13 +198,14 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun startRepeatingDel() {
         stopRepeatingDel()
+        val interval = repeatInterval
         delRunnable = object : Runnable {
             override fun run() {
                 onBackspaceClick?.invoke()
-                delHandler.postDelayed(this, 200L)
+                delHandler.postDelayed(this, interval)
             }
         }
-        delHandler.postDelayed(delRunnable!!, 200L)
+        delHandler.postDelayed(delRunnable!!, 150L)
     }
 
     private fun stopRepeatingDel() {
