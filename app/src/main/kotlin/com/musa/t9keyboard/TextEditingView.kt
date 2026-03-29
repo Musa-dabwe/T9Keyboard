@@ -65,6 +65,8 @@ class TextEditingView @JvmOverloads constructor(
     private val handler = Handler(Looper.getMainLooper())
     private var repeatRunnable: Runnable? = null
     private var deletionSpeed: Int = 100
+    private val deleteRepeatInterval: Long
+        get() = maxOf(30L, 200L - (deletionSpeed * 1.5).toLong())
 
     private lateinit var selectKey: TextView
     private lateinit var abcKey: TextView
@@ -288,8 +290,8 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun startRepeating(action: EditAction, interval: Long) {
         stopRepeating()
-        val effectiveInterval = if (action == EditAction.DELETE) 200L else interval
-        val initialDelay = if (action == EditAction.DELETE) 200L else 500L
+        val effectiveInterval = if (action == EditAction.DELETE) deleteRepeatInterval else interval
+        val initialDelay = if (action == EditAction.DELETE) 150L else 500L
 
         repeatRunnable = object : Runnable {
             override fun run() {
