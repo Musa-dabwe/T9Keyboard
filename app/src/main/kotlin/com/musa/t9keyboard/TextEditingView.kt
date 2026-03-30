@@ -77,10 +77,6 @@ class TextEditingView @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         setBackgroundColor(Color.parseColor("#1A1A1A"))
-        layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dpToPx(304)
-        )
         setupUI()
     }
 

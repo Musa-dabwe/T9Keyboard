@@ -73,12 +73,6 @@ class EmojiPickerView @JvmOverloads constructor(
             orientation = VERTICAL
             setBackgroundColor(Color.parseColor("#1A1A1A"))
 
-            // Lock to keyboard height
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dpToPx(304)
-            )
-
             setupViews()
             isInitialized = true
         } catch (e: Exception) {
