@@ -14,7 +14,7 @@ class ShiftStateManager {
         wasShiftSetManually = true
         currentState = when (currentState) {
             ShiftState.OFF -> ShiftState.ONE_SHOT
-            ShiftState.ONE_SHOT -> ShiftState.CAPS_LOCK
+            ShiftState.ONE_SHOT -> ShiftState.OFF
             ShiftState.CAPS_LOCK -> ShiftState.OFF
         }
     }

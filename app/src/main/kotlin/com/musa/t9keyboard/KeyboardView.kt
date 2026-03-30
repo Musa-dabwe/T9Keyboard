@@ -416,35 +416,20 @@ class KeyboardView @JvmOverloads constructor(
 
         digitKeys.forEachIndexed { index, (primary, secondary, digit) ->
             if (isNumMode) {
-                if (primary.text != digit) {
-                    primary.text = digit
-                    primary.textSize = 22f
-                }
-                if (secondary.visibility != View.GONE) {
-                    secondary.visibility = View.GONE
-                }
+                primary.text = digit
+                primary.textSize = 22f
+                secondary.visibility = View.GONE
             } else {
-                val label = letterLabels[index]
-                if (primary.text != label) {
-                    primary.text = label
-                    primary.textSize = 18f
-                }
-                if (secondary.visibility != View.VISIBLE) {
-                    secondary.visibility = View.VISIBLE
-                }
+                primary.text = letterLabels[index]
+                primary.textSize = 18f
+                secondary.visibility = View.VISIBLE
             }
         }
         if (isNumMode) {
-            if (binding.label123.text != ",") {
-                binding.label123.text = ","
-            }
-            if (binding.labelShift.text != "ABC") {
-                binding.labelShift.text = "ABC"
-            }
+            binding.label123.text = ","
+            binding.labelShift.text = "ABC"
         } else {
-            if (binding.label123.text != "123") {
-                binding.label123.text = "123"
-            }
+            binding.label123.text = "123"
             updateShiftState(lastShiftState)
         }
     }

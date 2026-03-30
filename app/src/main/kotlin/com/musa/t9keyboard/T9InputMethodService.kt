@@ -98,17 +98,6 @@ class T9InputMethodService : InputMethodService() {
         }
     }
 
-    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
-        super.onConfigurationChanged(newConfig)
-        // Recalculate and re-apply height on orientation change
-        container?.let { c ->
-            if (c.childCount > 0) {
-                val currentView = c.getChildAt(0)
-                applyDynamicHeight(currentView)
-            }
-        }
-    }
-
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         resetImeState(attribute, resetShift = true)
@@ -173,7 +162,6 @@ class T9InputMethodService : InputMethodService() {
         // Ensure the view is not already added to another parent or this container
         (kv.parent as? android.view.ViewGroup)?.removeView(kv)
         if (c.childCount == 0) {
-            applyDynamicHeight(kv)
             c.addView(kv)
         } else {
             showView(kv)
@@ -728,27 +716,12 @@ class T9InputMethodService : InputMethodService() {
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
     }
 
-    private fun applyDynamicHeight(view: View) {
-        val displayMetrics = resources.displayMetrics
-        val isPortrait = displayMetrics.heightPixels > displayMetrics.widthPixels
-        val targetPercentage = if (isPortrait) 0.35f else 0.50f
-        val targetHeight = (displayMetrics.heightPixels * targetPercentage).toInt()
-
-        android.util.Log.d("T9Lifecycle", "Applying dynamic height: $targetHeight (isPortrait=$isPortrait)")
-
-        view.layoutParams = FrameLayout.LayoutParams(
-            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-            targetHeight
-        )
-    }
-
     private fun showView(view: View, force: Boolean = false) {
         android.util.Log.d("T9Lifecycle", "showView: ${view.javaClass.simpleName}, isWindowVisible=$isWindowVisible, force=$force")
         val c = container ?: return
 
         // Skip adding if it's already the only child
         if (c.childCount == 1 && c.getChildAt(0) === view) {
-            applyDynamicHeight(view)
             return
         }
 
@@ -760,7 +733,12 @@ class T9InputMethodService : InputMethodService() {
         }
 
         c.removeAllViews()
-        applyDynamicHeight(view)
+        if (view is EmojiPickerView || view is TextEditingView) {
+            view.layoutParams = FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                dpToPx(304)
+            )
+        }
         c.addView(view)
         if (view is SymbolsView) {
             view.resetScroll()
