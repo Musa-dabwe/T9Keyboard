@@ -162,10 +162,14 @@ class T9InputMethodService : InputMethodService() {
 
                     android.util.Log.d("T9Lifecycle", "Applying new height from insets: $newHeight")
 
+                    // Force the container to the calculated height
+                    view.updateLayoutParams { height = newHeight }
+
                     // Apply to all keyboard views
                     listOf(keyboardView, symbolsView, emojiPickerView, textEditingView).forEach {
                         it?.updateLayoutParams { height = newHeight }
                     }
+                    symbolsView?.refreshSymbolGrid()
                     insets
                 }
             }
@@ -174,7 +178,7 @@ class T9InputMethodService : InputMethodService() {
         if (keyboardView == null) {
             val lp = FrameLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
             )
             keyboardView = KeyboardView(themedContext).apply { layoutParams = lp }
             symbolsView = SymbolsView(themedContext).apply { layoutParams = lp }
