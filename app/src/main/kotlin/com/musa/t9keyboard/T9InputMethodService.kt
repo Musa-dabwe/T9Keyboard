@@ -14,6 +14,8 @@ import android.widget.Toast
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.emoji2.text.EmojiCompat
 import androidx.emoji2.text.DefaultEmojiCompatConfig
 import kotlinx.coroutines.CoroutineScope
@@ -157,6 +159,18 @@ class T9InputMethodService : InputMethodService() {
 
         if (container == null) {
             container = FrameLayout(themedContext)
+            container?.let { c ->
+                ViewCompat.setOnApplyWindowInsetsListener(c) { view, insets ->
+                    val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+                    view.setPadding(0, 0, 0, navBarInsets.bottom)
+
+                    // Recalculate and re-apply height when insets change
+                    if (c.childCount > 0) {
+                        applyDynamicHeight(c.getChildAt(0), insets)
+                    }
+                    insets
+                }
+            }
         }
 
         if (keyboardView == null) {
@@ -728,13 +742,18 @@ class T9InputMethodService : InputMethodService() {
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
     }
 
-    private fun applyDynamicHeight(view: View) {
+    private fun applyDynamicHeight(view: View, insets: WindowInsetsCompat? = null) {
         val displayMetrics = resources.displayMetrics
         val isPortrait = displayMetrics.heightPixels > displayMetrics.widthPixels
-        val targetPercentage = if (isPortrait) 0.35f else 0.50f
-        val targetHeight = (displayMetrics.heightPixels * targetPercentage).toInt()
 
-        android.util.Log.d("T9Lifecycle", "Applying dynamic height: $targetHeight (isPortrait=$isPortrait)")
+        val actualInsets = insets ?: ViewCompat.getRootWindowInsets(container!!)
+        val systemBarHeight = actualInsets?.getInsets(WindowInsetsCompat.Type.systemBars())?.let { it.top + it.bottom } ?: 0
+        val availableHeight = displayMetrics.heightPixels - systemBarHeight
+
+        val targetPercentage = if (isPortrait) 0.35f else 0.50f
+        val targetHeight = (availableHeight * targetPercentage).toInt()
+
+        android.util.Log.d("T9Lifecycle", "Applying dynamic height: $targetHeight (isPortrait=$isPortrait, available=$availableHeight)")
 
         view.layoutParams = FrameLayout.LayoutParams(
             android.view.ViewGroup.LayoutParams.MATCH_PARENT,
