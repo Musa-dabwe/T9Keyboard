@@ -16,7 +16,6 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
 import androidx.emoji2.text.EmojiCompat
 import androidx.emoji2.text.DefaultEmojiCompatConfig
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +24,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.musa.t9keyboard.utils.calculateKeyboardHeight
 
 class T9InputMethodService : InputMethodService() {
 
@@ -104,8 +102,13 @@ class T9InputMethodService : InputMethodService() {
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
-        // Force the insets listener to re-fire and recalculate height whenever the device rotates.
-        container?.let { ViewCompat.requestApplyInsets(it) }
+        // Recalculate and re-apply height on orientation change
+        container?.let { c ->
+            if (c.childCount > 0) {
+                val currentView = c.getChildAt(0)
+                applyDynamicHeight(currentView)
+            }
+        }
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
@@ -158,13 +161,12 @@ class T9InputMethodService : InputMethodService() {
             container = FrameLayout(themedContext)
             container?.let { c ->
                 ViewCompat.setOnApplyWindowInsetsListener(c) { view, insets ->
-                    val newHeight = calculateKeyboardHeight(view.context, insets)
+                    val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+                    view.setPadding(0, 0, 0, navBarInsets.bottom)
 
-                    android.util.Log.d("T9Lifecycle", "Applying new height from insets: $newHeight")
-
-                    // Apply to all keyboard views
-                    listOf(keyboardView, symbolsView, emojiPickerView, textEditingView).forEach {
-                        it?.updateLayoutParams { height = newHeight }
+                    // Recalculate and re-apply height when insets change
+                    if (c.childCount > 0) {
+                        applyDynamicHeight(c.getChildAt(0), insets)
                     }
                     insets
                 }
@@ -172,14 +174,10 @@ class T9InputMethodService : InputMethodService() {
         }
 
         if (keyboardView == null) {
-            val lp = FrameLayout.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            keyboardView = KeyboardView(themedContext).apply { layoutParams = lp }
-            symbolsView = SymbolsView(themedContext).apply { layoutParams = lp }
-            emojiPickerView = EmojiPickerView(themedContext).apply { layoutParams = lp }
-            textEditingView = TextEditingView(themedContext).apply { layoutParams = lp }
+            keyboardView = KeyboardView(themedContext)
+            symbolsView = SymbolsView(themedContext)
+            emojiPickerView = EmojiPickerView(themedContext)
+            textEditingView = TextEditingView(themedContext)
             setupListeners()
         }
 
@@ -189,13 +187,11 @@ class T9InputMethodService : InputMethodService() {
         // Ensure the view is not already added to another parent or this container
         (kv.parent as? android.view.ViewGroup)?.removeView(kv)
         if (c.childCount == 0) {
+            applyDynamicHeight(kv)
             c.addView(kv)
         } else {
             showView(kv)
         }
-
-        // Call requestApplyInsets immediately to force an initial calculation.
-        ViewCompat.requestApplyInsets(c)
 
         return c
     }
@@ -746,12 +742,32 @@ class T9InputMethodService : InputMethodService() {
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, meta, -1, 0, KeyEvent.FLAG_SOFT_KEYBOARD))
     }
 
+    private fun applyDynamicHeight(view: View, insets: WindowInsetsCompat? = null) {
+        val displayMetrics = resources.displayMetrics
+        val isPortrait = displayMetrics.heightPixels > displayMetrics.widthPixels
+
+        val actualInsets = insets ?: ViewCompat.getRootWindowInsets(container!!)
+        val systemBarHeight = actualInsets?.getInsets(WindowInsetsCompat.Type.systemBars())?.let { it.top + it.bottom } ?: 0
+        val availableHeight = displayMetrics.heightPixels - systemBarHeight
+
+        val targetPercentage = if (isPortrait) 0.35f else 0.50f
+        val targetHeight = (availableHeight * targetPercentage).toInt()
+
+        android.util.Log.d("T9Lifecycle", "Applying dynamic height: $targetHeight (isPortrait=$isPortrait, available=$availableHeight)")
+
+        view.layoutParams = FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            targetHeight
+        )
+    }
+
     private fun showView(view: View, force: Boolean = false) {
         android.util.Log.d("T9Lifecycle", "showView: ${view.javaClass.simpleName}, isWindowVisible=$isWindowVisible, force=$force")
         val c = container ?: return
 
         // Skip adding if it's already the only child
         if (c.childCount == 1 && c.getChildAt(0) === view) {
+            applyDynamicHeight(view)
             return
         }
 
@@ -763,6 +779,7 @@ class T9InputMethodService : InputMethodService() {
         }
 
         c.removeAllViews()
+        applyDynamicHeight(view)
         c.addView(view)
         if (view is SymbolsView) {
             view.resetScroll()
