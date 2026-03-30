@@ -44,7 +44,7 @@ class SymbolsView @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         setupTopBar()
-        refreshSymbolGrid()
+        setupSymbolGrid()
     }
 
     private fun setupTopBar() {
@@ -54,7 +54,7 @@ class SymbolsView @JvmOverloads constructor(
         }
     }
 
-    fun refreshSymbolGrid() {
+    private fun setupSymbolGrid() {
         binding.symbolGrid.removeAllViews()
         val ubuntu = FontUtils.getUbuntu(context)
 
