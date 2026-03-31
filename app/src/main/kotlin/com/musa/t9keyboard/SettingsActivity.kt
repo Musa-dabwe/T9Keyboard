@@ -88,6 +88,25 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // Version Taps for Debug Logs
+        var versionTapCount = 0
+        var lastTapTime = 0L
+        binding.txtVersion.setOnClickListener {
+            val now = System.currentTimeMillis()
+            if (now - lastTapTime < 500) {
+                versionTapCount++
+            } else {
+                versionTapCount = 1
+            }
+            lastTapTime = now
+
+            if (versionTapCount >= 5) {
+                versionTapCount = 0
+                val intent = android.content.Intent(this, DebugLogsActivity::class.java)
+                startActivity(intent)
+            }
+        }
+
         // Default Keyboard
         binding.rowDefaultKeyboard.setOnClickListener {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

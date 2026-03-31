@@ -8,6 +8,7 @@ object LearnedDictionary {
     private val lastTypedMap = mutableMapOf<String, Long>()
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
     private lateinit var prefs: SharedPreferences
+    private var appContext: Context? = null
 
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
@@ -22,6 +23,7 @@ object LearnedDictionary {
 
     @Synchronized
     fun load(context: Context) {
+        appContext = context.applicationContext
         prefs = context.getSharedPreferences("learned_words", Context.MODE_PRIVATE)
         learnedWords.clear()
         lastTypedMap.clear()
@@ -90,39 +92,43 @@ object LearnedDictionary {
 
     @Synchronized
     fun learnWord(word: String, previousWord: String? = null) {
-        val lowerWord = word.lowercase().trim()
-        if (lowerWord.isEmpty()) return
+        try {
+            val lowerWord = word.lowercase().trim()
+            if (lowerWord.isEmpty()) return
 
-        val newFreq = (learnedWords[lowerWord] ?: 0) + 1
-        learnedWords[lowerWord] = newFreq
+            val newFreq = (learnedWords[lowerWord] ?: 0) + 1
+            learnedWords[lowerWord] = newFreq
 
-        val now = System.currentTimeMillis()
-        lastTypedMap[lowerWord] = now
-        prefs.edit().putLong("last_typed_$lowerWord", now).apply()
+            val now = System.currentTimeMillis()
+            lastTypedMap[lowerWord] = now
+            prefs.edit().putLong("last_typed_$lowerWord", now).apply()
 
-        if (previousWord != null) {
-            val lowerPrev = previousWord.lowercase().trim()
-            if (lowerPrev.isNotEmpty()) {
-                val nextMap = nextWordMap.getOrPut(lowerPrev) { mutableMapOf() }
-                nextMap[lowerWord] = (nextMap[lowerWord] ?: 0) + 1
+            if (previousWord != null) {
+                val lowerPrev = previousWord.lowercase().trim()
+                if (lowerPrev.isNotEmpty()) {
+                    val nextMap = nextWordMap.getOrPut(lowerPrev) { mutableMapOf() }
+                    nextMap[lowerWord] = (nextMap[lowerWord] ?: 0) + 1
 
-                if (nextWordMap.size > 5000) {
-                    val evictKey = nextWordMap.minByOrNull { entry ->
-                        entry.value.values.sum()
-                    }?.key
-                    if (evictKey != null) {
-                        nextWordMap.remove(evictKey)
-                        val editor = prefs.edit()
-                        prefs.all.keys.filter { it.startsWith("next_${evictKey}__") }.forEach {
-                            editor.remove(it)
+                    if (nextWordMap.size > 5000) {
+                        val evictKey = nextWordMap.minByOrNull { entry ->
+                            entry.value.values.sum()
+                        }?.key
+                        if (evictKey != null) {
+                            nextWordMap.remove(evictKey)
+                            val editor = prefs.edit()
+                            prefs.all.keys.filter { it.startsWith("next_${evictKey}__") }.forEach {
+                                editor.remove(it)
+                            }
+                            editor.apply()
                         }
-                        editor.apply()
                     }
                 }
             }
-        }
 
-        save()
+            save()
+        } catch (e: Exception) {
+            appContext?.let { CrashLogger.log("LearnedDictionary.learnWord", e, it) }
+        }
     }
 
     @Synchronized

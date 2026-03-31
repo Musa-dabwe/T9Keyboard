@@ -916,6 +916,17 @@
                     android:textColor="@color/settings_text_secondary"
                     android:textSize="13sp" />
 
+                <TextView
+                    android:id="@+id/txt_version"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:gravity="center"
+                    android:text="Version 1.0.0"
+                    android:textColor="@color/settings_text_secondary"
+                    android:textSize="12sp"
+                    android:paddingBottom="16dp" />
+
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>

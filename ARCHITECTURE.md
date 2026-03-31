@@ -30,6 +30,7 @@ As defined in `AndroidManifest.xml`:
 | `AutocorrectEngine` | Evaluates typed words against dictionaries to suggest corrections based on sensitivity levels. | `BKTree`, `LearnedDictionary`, `AospDictionary` |
 | `ShiftStateManager` | Tracks and toggles between `OFF`, `ONE_SHOT`, and `CAPS_LOCK` states. Handles auto-capitalization logic. | None |
 | `PreferencesManager` | Type-safe wrapper for `SharedPreferences` (file: `t9_prefs`). | `SharedPreferences` |
+| `CrashLogger` | Singleton that writes timestamped error logs to a local file (`t9_errors.log`) with a 200-line rotation cap. | `FileOutputStream`, `SimpleDateFormat` |
 
 ### 3.2. UI Components (Views)
 
