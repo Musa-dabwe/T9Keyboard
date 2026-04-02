@@ -32,7 +32,7 @@ class SuggestionBar @JvmOverloads constructor(
     var onToolbarActionClickListener: ((ToolbarAction) -> Unit)? = null
 
     private var accentColor: Int = Color.parseColor("#BB86FC")
-    private var suggestionFontSize: Float = 18f
+    private var suggestionFontSize: Float = 13f
     private var isXt9Mode: Boolean = false
     private val ubuntuTypeface = FontUtils.getUbuntu(context)
     private val suggestionAdapter = SuggestionAdapter()
@@ -153,7 +153,7 @@ class SuggestionBar @JvmOverloads constructor(
 
     fun setFontSize(sizeSp: Float) {
         this.suggestionFontSize = sizeSp
-        binding.anchoredSuggestion.textSize = sizeSp + 4 // Make anchored word slightly larger
+        binding.anchoredSuggestion.textSize = sizeSp
     }
 
     private fun dpToPx(dp: Int): Int =

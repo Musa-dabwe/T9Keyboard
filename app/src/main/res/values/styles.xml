@@ -14,9 +14,9 @@
 
     <style name="KeyboardKey">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">64dp</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_margin">4dp</item>
+        <item name="android:layout_margin">3dp</item>
         <item name="android:background">@drawable/key_background_selector</item>
         <item name="android:textColor">@color/key_text_color</item>
         <item name="android:textSize">18sp</item>
@@ -27,9 +27,9 @@
 
     <style name="KeyboardKeyLayout">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">64dp</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_margin">4dp</item>
+        <item name="android:layout_margin">3dp</item>
         <item name="android:background">@drawable/key_background_selector</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>

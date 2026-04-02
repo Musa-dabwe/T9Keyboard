@@ -10,104 +10,118 @@
     <com.musa.t9keyboard.SuggestionBar
         android:id="@+id/suggestionBar"
         android:layout_width="match_parent"
-        android:layout_height="48dp" />
+        android:layout_height="36dp" />
 
-    <!-- Row 1 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <FrameLayout android:id="@+id/key_punct" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_punct" style="@style/KeyPrimaryLabel" android:text=".,?!" />
-            <TextView android:id="@+id/secondary_label_punct" style="@style/KeySecondaryLabel" android:text="1" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_abc" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_abc" style="@style/KeyPrimaryLabel" android:text="ABC" />
-            <TextView android:id="@+id/secondary_label_abc" style="@style/KeySecondaryLabel" android:text="2" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_def" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_def" style="@style/KeyPrimaryLabel" android:text="DEF" />
-            <TextView android:id="@+id/secondary_label_def" style="@style/KeySecondaryLabel" android:text="3" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_del" style="@style/KeyboardKeyLayout">
-            <ImageView
-                android:id="@+id/label_del_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_delete"
-                app:tint="@color/delete_key_color" />
-        </FrameLayout>
-    </LinearLayout>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="6dp">
 
-    <!-- Row 2 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <FrameLayout android:id="@+id/key_ghi" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_ghi" style="@style/KeyPrimaryLabel" android:text="GHI" />
-            <TextView android:id="@+id/secondary_label_ghi" style="@style/KeySecondaryLabel" android:text="4" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_jkl" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_jkl" style="@style/KeyPrimaryLabel" android:text="JKL" />
-            <TextView android:id="@+id/secondary_label_jkl" style="@style/KeySecondaryLabel" android:text="5" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_mno" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_mno" style="@style/KeyPrimaryLabel" android:text="MNO" />
-            <TextView android:id="@+id/secondary_label_mno" style="@style/KeySecondaryLabel" android:text="6" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_sym" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_sym" style="@style/KeyPrimaryLabel" android:text="SYM" />
-        </FrameLayout>
-    </LinearLayout>
+        <!-- Row 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <FrameLayout android:id="@+id/key_punct" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_punct" style="@style/KeyPrimaryLabel" android:text=".,?!" />
+                <TextView android:id="@+id/secondary_label_punct" style="@style/KeySecondaryLabel" android:text="1" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_abc" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_abc" style="@style/KeyPrimaryLabel" android:text="ABC" />
+                <TextView android:id="@+id/secondary_label_abc" style="@style/KeySecondaryLabel" android:text="2" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_def" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_def" style="@style/KeyPrimaryLabel" android:text="DEF" />
+                <TextView android:id="@+id/secondary_label_def" style="@style/KeySecondaryLabel" android:text="3" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_del" style="@style/KeyboardKeyLayout">
+                <ImageView
+                    android:id="@+id/label_del_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_delete"
+                    app:tint="@color/delete_key_color" />
+            </FrameLayout>
+        </LinearLayout>
 
-    <!-- Row 3 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <FrameLayout android:id="@+id/key_pqrs" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_pqrs" style="@style/KeyPrimaryLabel" android:text="PQRS" />
-            <TextView android:id="@+id/secondary_label_pqrs" style="@style/KeySecondaryLabel" android:text="7" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_tuv" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_tuv" style="@style/KeyPrimaryLabel" android:text="TUV" />
-            <TextView android:id="@+id/secondary_label_tuv" style="@style/KeySecondaryLabel" android:text="8" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_wxyz" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_wxyz" style="@style/KeyPrimaryLabel" android:text="WXYZ" />
-            <TextView android:id="@+id/secondary_label_wxyz" style="@style/KeySecondaryLabel" android:text="9" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_shift" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_shift" style="@style/KeyPrimaryLabel" android:text="SHIFT" />
-        </FrameLayout>
-    </LinearLayout>
+        <!-- Row 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <FrameLayout android:id="@+id/key_ghi" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_ghi" style="@style/KeyPrimaryLabel" android:text="GHI" />
+                <TextView android:id="@+id/secondary_label_ghi" style="@style/KeySecondaryLabel" android:text="4" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_jkl" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_jkl" style="@style/KeyPrimaryLabel" android:text="JKL" />
+                <TextView android:id="@+id/secondary_label_jkl" style="@style/KeySecondaryLabel" android:text="5" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_mno" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_mno" style="@style/KeyPrimaryLabel" android:text="MNO" />
+                <TextView android:id="@+id/secondary_label_mno" style="@style/KeySecondaryLabel" android:text="6" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_sym" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_sym" style="@style/KeyPrimaryLabel" android:text="SYM" />
+            </FrameLayout>
+        </LinearLayout>
 
-    <!-- Row 4 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_space" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_space" style="@style/KeyPrimaryLabel" android:text="SPACE" />
-            <TextView android:id="@+id/secondary_label_space" style="@style/KeySecondaryLabel" android:text="0" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_emoji" style="@style/KeyboardKeyLayout">
-            <ImageView
-                android:id="@+id/label_emoji"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:alpha="0.9"
-                android:src="@drawable/ic_emoji" />
-        </FrameLayout>
-        <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
-            <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
-        </FrameLayout>
+        <!-- Row 3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <FrameLayout android:id="@+id/key_pqrs" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_pqrs" style="@style/KeyPrimaryLabel" android:text="PQRS" />
+                <TextView android:id="@+id/secondary_label_pqrs" style="@style/KeySecondaryLabel" android:text="7" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_tuv" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_tuv" style="@style/KeyPrimaryLabel" android:text="TUV" />
+                <TextView android:id="@+id/secondary_label_tuv" style="@style/KeySecondaryLabel" android:text="8" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_wxyz" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_wxyz" style="@style/KeyPrimaryLabel" android:text="WXYZ" />
+                <TextView android:id="@+id/secondary_label_wxyz" style="@style/KeySecondaryLabel" android:text="9" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_shift" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_shift" style="@style/KeyPrimaryLabel" android:text="SHIFT" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- Row 4 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+            <FrameLayout android:id="@+id/key_123" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_123" style="@style/KeyPrimaryLabel" android:text="123" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_space" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_space" style="@style/KeyPrimaryLabel" android:text="SPACE" />
+                <TextView android:id="@+id/secondary_label_space" style="@style/KeySecondaryLabel" android:text="0" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_emoji" style="@style/KeyboardKeyLayout">
+                <ImageView
+                    android:id="@+id/label_emoji"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:alpha="0.9"
+                    android:src="@drawable/ic_emoji" />
+            </FrameLayout>
+            <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
+                <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
+            </FrameLayout>
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>
