@@ -96,8 +96,16 @@ class KeyLabelRenderer(
     private fun updateKeyBackgrounds() {
         val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
         val pressedColorList = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf(android.R.attr.state_activated), intArrayOf()),
-            intArrayOf(pressedColor, accentColor, Color.parseColor("#000000"))
+            arrayOf(
+                intArrayOf(android.R.attr.state_pressed),
+                intArrayOf(android.R.attr.state_activated),
+                intArrayOf()
+            ),
+            intArrayOf(
+                pressedColor,
+                accentColor,
+                Color.parseColor("#000000")
+            )
         )
 
         val keys = listOf(

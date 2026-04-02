@@ -18,13 +18,31 @@ class TextEditingView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
     sealed class EditAction {
-        object HOME : EditAction(); object HOME_LONG : EditAction(); object UP : EditAction(); object END : EditAction()
-        object END_LONG : EditAction(); object SELECT_ALL : EditAction(); object LEFT : EditAction(); object SELECT : EditAction()
-        object SELECT_WORD : EditAction(); object RIGHT : EditAction(); object COPY : EditAction(); object COPY_LONG : EditAction()
-        object SELECT_LEFT_WORD : EditAction(); object SELECT_LEFT_WORD_LONG : EditAction(); object DOWN : EditAction()
-        object SELECT_RIGHT_WORD : EditAction(); object SELECT_RIGHT_WORD_LONG : EditAction(); object PASTE : EditAction()
-        object PASTE_LONG : EditAction(); object CUT : EditAction(); object CUT_LONG : EditAction(); object UNDO : EditAction()
-        object REDO : EditAction(); object DELETE : EditAction(); object ENTER : EditAction()
+        object HOME : EditAction()
+        object HOME_LONG : EditAction()
+        object UP : EditAction()
+        object END : EditAction()
+        object END_LONG : EditAction()
+        object SELECT_ALL : EditAction()
+        object LEFT : EditAction()
+        object SELECT : EditAction()
+        object SELECT_WORD : EditAction()
+        object RIGHT : EditAction()
+        object COPY : EditAction()
+        object COPY_LONG : EditAction()
+        object SELECT_LEFT_WORD : EditAction()
+        object SELECT_LEFT_WORD_LONG : EditAction()
+        object DOWN : EditAction()
+        object SELECT_RIGHT_WORD : EditAction()
+        object SELECT_RIGHT_WORD_LONG : EditAction()
+        object PASTE : EditAction()
+        object PASTE_LONG : EditAction()
+        object CUT : EditAction()
+        object CUT_LONG : EditAction()
+        object UNDO : EditAction()
+        object REDO : EditAction()
+        object DELETE : EditAction()
+        object ENTER : EditAction()
     }
 
     var onAction: ((EditAction) -> Unit)? = null
@@ -57,8 +75,11 @@ class TextEditingView @JvmOverloads constructor(
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(36))
             text = "TEXT EDITING"
             setTextColor(Color.parseColor("#888888"))
-            textSize = 13f; typeface = ubuntu; gravity = Gravity.CENTER
-            setAllCaps(true); letterSpacing = 0.05f
+            textSize = 13f
+            typeface = ubuntu
+            gravity = Gravity.CENTER
+            setAllCaps(true)
+            letterSpacing = 0.05f
         })
 
         val gridLayout = LinearLayout(context).apply {
@@ -68,23 +89,59 @@ class TextEditingView @JvmOverloads constructor(
         }
 
         val rows = listOf(
-            listOf(KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300), KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up), KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300), KeyConfig("⌫", 22f, EditAction.DELETE, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_delete)),
-            listOf(KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100, iconResId = R.drawable.ic_caret_left), KeyConfig("Select", 15f, EditAction.SELECT, longAction = EditAction.SELECT_WORD), KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100, iconResId = R.drawable.ic_caret_right), KeyConfig("ABC", 18f, onClick = { onAbcClick?.invoke() })),
-            listOf(KeyConfig("Cut", 16f, EditAction.CUT, longAction = EditAction.CUT_LONG), KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down), KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG), KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)),
-            listOf(KeyConfig("123", 18f, onClick = { on123Click?.invoke() }), KeyConfig("Select all", 14f, EditAction.SELECT_ALL, weight = 2f), KeyConfig("↵", 22f, EditAction.ENTER))
+            listOf(
+                KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300),
+                KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up),
+                KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300),
+                KeyConfig("⌫", 22f, EditAction.DELETE, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_delete)
+            ),
+            listOf(
+                KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100, iconResId = R.drawable.ic_caret_left),
+                KeyConfig("Select", 15f, EditAction.SELECT, longAction = EditAction.SELECT_WORD),
+                KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100, iconResId = R.drawable.ic_caret_right),
+                KeyConfig("ABC", 18f, onClick = { onAbcClick?.invoke() })
+            ),
+            listOf(
+                KeyConfig("Cut", 16f, EditAction.CUT, longAction = EditAction.CUT_LONG),
+                KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down),
+                KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG),
+                KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)
+            ),
+            listOf(
+                KeyConfig("123", 18f, onClick = { on123Click?.invoke() }),
+                KeyConfig("Select all", 14f, EditAction.SELECT_ALL, weight = 2f),
+                KeyConfig("↵", 22f, EditAction.ENTER)
+            )
         )
 
         rows.forEachIndexed { i, configs ->
             val row = createRow(configs)
-            if (i == 1) { selectKey = row.getChildAt(1) as TextView; abcKey = row.getChildAt(3) as TextView }
-            if (i == 2) { cutKey = row.getChildAt(0) as TextView; copyKey = row.getChildAt(2) as TextView }
+            if (i == 1) {
+                selectKey = row.getChildAt(1) as TextView
+                abcKey = row.getChildAt(3) as TextView
+            }
+            if (i == 2) {
+                cutKey = row.getChildAt(0) as TextView
+                copyKey = row.getChildAt(2) as TextView
+            }
             gridLayout.addView(row)
         }
         addView(gridLayout)
-        updateSelectKeyVisuals(); updateSelectionState(false)
+        updateSelectKeyVisuals()
+        updateSelectionState(false)
     }
 
-    private data class KeyConfig(val label: String, val textSize: Float, val action: EditAction? = null, val longAction: EditAction? = null, val repeatInterval: Long? = null, val textColor: Int = Color.WHITE, val iconResId: Int? = null, val onClick: (() -> Unit)? = null, val weight: Float = 1f)
+    private data class KeyConfig(
+        val label: String,
+        val textSize: Float,
+        val action: EditAction? = null,
+        val longAction: EditAction? = null,
+        val repeatInterval: Long? = null,
+        val textColor: Int = Color.WHITE,
+        val iconResId: Int? = null,
+        val onClick: (() -> Unit)? = null,
+        val weight: Float = 1f
+    )
 
     private fun createRow(configs: List<KeyConfig>): LinearLayout {
         return LinearLayout(context).apply {
@@ -96,16 +153,26 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun createKey(config: KeyConfig): TextView {
         val key = TextView(context).apply {
-            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, config.weight).apply { setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3)) }
+            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, config.weight).apply {
+                setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3))
+            }
             if (config.iconResId != null) {
                 androidx.appcompat.content.res.AppCompatResources.getDrawable(context, config.iconResId)?.let {
-                    it.setTint(config.textColor); it.setBounds(0, 0, dpToPx(24), dpToPx(24))
+                    it.setTint(config.textColor)
+                    it.setBounds(0, 0, dpToPx(24), dpToPx(24))
                     val spannable = SpannableString(" ")
                     spannable.setSpan(android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                     text = spannable
                 }
-            } else text = config.label
-            setTextColor(config.textColor); textSize = config.textSize; typeface = FontUtils.getUbuntu(context); gravity = Gravity.CENTER; isClickable = true; isFocusable = true
+            } else {
+                text = config.label
+            }
+            setTextColor(config.textColor)
+            textSize = config.textSize
+            typeface = FontUtils.getUbuntu(context)
+            gravity = Gravity.CENTER
+            isClickable = true
+            isFocusable = true
         }
         allKeys.add(key)
         updateKeyBackground(key)
@@ -115,20 +182,41 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun updateKeyBackground(key: TextView) {
         if (::selectKey.isInitialized && key == selectKey) return
-        if (::abcKey.isInitialized && key == abcKey) { key.background = SelectKeyDrawable(true); return }
+        if (::abcKey.isInitialized && key == abcKey) {
+            key.background = SelectKeyDrawable(true)
+            return
+        }
 
         val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
-        val pressedColorList = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()), intArrayOf(pressedColor, Color.parseColor("#2D2D2D")))
-        key.background = GradientDrawable().apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dpToPx(4).toFloat(); setColor(Color.WHITE) }
+        val pressedColorList = android.content.res.ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()),
+            intArrayOf(pressedColor, Color.parseColor("#2D2D2D"))
+        )
+        key.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dpToPx(4).toFloat()
+            setColor(Color.WHITE)
+        }
         key.backgroundTintList = pressedColorList
     }
 
-    fun setSelectionMode(enabled: Boolean) { this.isSelectionMode = enabled; updateSelectKeyVisuals() }
+    fun setSelectionMode(enabled: Boolean) {
+        this.isSelectionMode = enabled
+        updateSelectKeyVisuals()
+    }
+
     fun updateSelectionState(hasSelection: Boolean) {
         val color = if (hasSelection) Color.WHITE else Color.parseColor("#666666")
-        copyKey.setTextColor(color); cutKey.setTextColor(color)
+        copyKey.setTextColor(color)
+        cutKey.setTextColor(color)
     }
-    fun setAccentColor(color: Int) { this.accentColor = color; updateSelectKeyVisuals(); allKeys.forEach { updateKeyBackground(it) } }
+
+    fun setAccentColor(color: Int) {
+        this.accentColor = color
+        updateSelectKeyVisuals()
+        allKeys.forEach { updateKeyBackground(it) }
+    }
+
     fun setDeletionSpeed(speed: Int) = keyHandler.setDeletionSpeed(speed)
 
     private fun updateSelectKeyVisuals() {
@@ -137,8 +225,12 @@ class TextEditingView @JvmOverloads constructor(
         if (isSelectionMode) {
             val content = SpannableString("Select")
             content.setSpan(UnderlineSpan(), 0, content.length, 0)
-            selectKey.text = content; selectKey.typeface = ubuntu
-        } else { selectKey.text = "Select"; selectKey.typeface = ubuntu }
+            selectKey.text = content
+            selectKey.typeface = ubuntu
+        } else {
+            selectKey.text = "Select"
+            selectKey.typeface = ubuntu
+        }
     }
 
     private inner class SelectKeyDrawable(val isSelected: Boolean) : Drawable() {

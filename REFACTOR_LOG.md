@@ -55,4 +55,7 @@ The codebase was audited for files exceeding 300 lines or handling multiple resp
 - Used constructor injection for delegates.
 - Zero circular dependencies introduced.
 - All import statements updated.
+- Fixed a `UninitializedPropertyAccessException` in `T9InputMethodService` by moving delegate initialization to `onCreate()` and adding `isViewReady` guards for lifecycle safety.
+- Introduced `T9Utils.kt` to consolidate shared character-to-digit mapping logic.
+- Cleaned up un-idiomatic Kotlin code (removed excessive semicolons and one-liners) for improved readability.
 - Project compiles and original unit tests (excluding pre-existing failures) pass.
