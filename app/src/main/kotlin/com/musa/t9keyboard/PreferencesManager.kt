@@ -82,7 +82,7 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putInt(KEY_KEY_FONT_SIZE, value).apply()
 
     var suggestionFontSize: Int
-        get() = prefs.getInt(KEY_SUGGESTION_FONT_SIZE, 16)
+        get() = prefs.getInt(KEY_SUGGESTION_FONT_SIZE, 13)
         set(value) = prefs.edit().putInt(KEY_SUGGESTION_FONT_SIZE, value).apply()
 
     var deletionSpeed: Int
