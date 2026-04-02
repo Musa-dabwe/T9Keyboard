@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.util.AttributeSet
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -14,14 +13,17 @@ import android.widget.ImageView
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.musa.t9keyboard.utils.FontUtils
 
 class EmojiPickerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
     companion object {
-        const val COLS = 8; const val VIEW_TYPE_HEADER = 0; const val VIEW_TYPE_EMOJI = 1; const val VIEW_TYPE_EMPTY_STATE = 2; const val MAX_RECENT = 24
+        const val COLS = 8
+        const val VIEW_TYPE_HEADER = 0
+        const val VIEW_TYPE_EMOJI = 1
+        const val VIEW_TYPE_EMPTY_STATE = 2
+        const val MAX_RECENT = 24
     }
 
     var onEmojiClickListener: ((String) -> Unit)? = null
@@ -36,7 +38,12 @@ class EmojiPickerView @JvmOverloads constructor(
     private var emojiAdapter: EmojiAdapter? = null
     private val preferences = PreferencesManager(context)
     private var cachedEmojiSize: Float = 32f
-    sealed class ListItem { data class Header(val name: String) : ListItem(); data class Emoji(val code: String) : ListItem() }
+
+    sealed class ListItem {
+        data class Header(val name: String) : ListItem()
+        data class Emoji(val code: String) : ListItem()
+    }
+
     private val flatList = mutableListOf<ListItem>()
 
     init {
@@ -48,31 +55,58 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun buildFlatList() {
         flatList.clear()
-        val recent = preferences.recentEmojis.let { if (it.isEmpty()) emptyList() else it.split(",") }
+        val recentEmojisStr = preferences.recentEmojis
+        val recent = if (recentEmojisStr.isEmpty()) emptyList() else recentEmojisStr.split(",")
+
         flatList.add(ListItem.Header("Recent Emoji"))
-        if (recent.isEmpty()) flatList.add(ListItem.Emoji("No recent emojis"))
-        else recent.take(MAX_RECENT).forEach { flatList.add(ListItem.Emoji(it)) }
+        if (recent.isEmpty()) {
+            flatList.add(ListItem.Emoji("No recent emojis"))
+        } else {
+            recent.take(MAX_RECENT).forEach {
+                flatList.add(ListItem.Emoji(it))
+            }
+        }
 
         EmojiData.categories.forEach { cat ->
             flatList.add(ListItem.Header(cat.name))
-            EmojiData.emojiMap[cat.name]?.values?.flatten()?.distinct()?.forEach { flatList.add(ListItem.Emoji(it)) }
+            EmojiData.emojiMap[cat.name]?.values?.flatten()?.distinct()?.forEach {
+                flatList.add(ListItem.Emoji(it))
+            }
         }
     }
 
     private fun setupViews() {
         removeAllViews()
         val topBar = LinearLayout(context).apply {
-            orientation = HORIZONTAL; layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48)); setBackgroundColor(Color.parseColor("#111111")); gravity = Gravity.CENTER_VERTICAL; setPadding(dpToPx(8), 0, dpToPx(8), 0)
+            orientation = HORIZONTAL
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
+            setBackgroundColor(Color.parseColor("#111111"))
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
-        val flexSpace = View(context).apply { layoutParams = LayoutParams(0, 1, 1f) }
-        val searchBtn = createTopButton(R.drawable.ic_search_heart)
-        val backBtn = createTopButton(R.drawable.ic_arrow_small_left).apply { setOnClickListener { onFeedbackRequested?.invoke(); onBackClickListener?.invoke() } }
 
-        topBar.addView(flexSpace); topBar.addView(searchBtn); topBar.addView(backBtn); addView(topBar)
+        val flexSpace = View(context).apply {
+            layoutParams = LayoutParams(0, 1, 1f)
+        }
+
+        val searchBtn = createTopButton(R.drawable.ic_search_heart)
+        val backBtn = createTopButton(R.drawable.ic_arrow_small_left).apply {
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                onBackClickListener?.invoke()
+            }
+        }
+
+        topBar.addView(flexSpace)
+        topBar.addView(searchBtn)
+        topBar.addView(backBtn)
+        addView(topBar)
 
         buildFlatList()
         emojiRecycler = RecyclerView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f); overScrollMode = View.OVER_SCROLL_NEVER; setBackgroundColor(Color.parseColor("#2B2B2B"))
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
+            overScrollMode = View.OVER_SCROLL_NEVER
+            setBackgroundColor(Color.parseColor("#2B2B2B"))
         }
 
         cachedEmojiSize = preferences.emojiSize.toFloat()
@@ -95,7 +129,12 @@ class EmojiPickerView @JvmOverloads constructor(
     }
 
     private fun createTopButton(resId: Int) = ImageView(context).apply {
-        layoutParams = LayoutParams(dpToPx(48), dpToPx(48)); setImageResource(resId); scaleType = ImageView.ScaleType.CENTER; setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12)); isClickable = true; isFocusable = true
+        layoutParams = LayoutParams(dpToPx(48), dpToPx(48))
+        setImageResource(resId)
+        scaleType = ImageView.ScaleType.CENTER
+        setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
+        isClickable = true
+        isFocusable = true
     }
 
     fun resetScroll() {
@@ -104,27 +143,41 @@ class EmojiPickerView @JvmOverloads constructor(
         emojiRecycler?.scrollToPosition(0)
     }
 
-    fun setDeletionSpeed(speed: Int) { this.deletionSpeed = speed }
+    fun setDeletionSpeed(speed: Int) {
+        this.deletionSpeed = speed
+    }
 
     fun setAccentColor(color: Int) {
         this.accentColor = color
-        currentRipple = android.graphics.drawable.RippleDrawable(ColorStateList.valueOf((color and 0x00FFFFFF) or (0x66 shl 24)), null, android.graphics.drawable.ColorDrawable(Color.WHITE))
+        val pressedColor = (color and 0x00FFFFFF) or (0x66 shl 24)
+        currentRipple = android.graphics.drawable.RippleDrawable(
+            ColorStateList.valueOf(pressedColor),
+            null,
+            android.graphics.drawable.ColorDrawable(Color.WHITE)
+        )
 
         val topBar = getChildAt(0) as? LinearLayout
         if (topBar != null) {
             val tint = ColorStateList.valueOf(color)
             for (i in 0 until topBar.childCount) {
                 val v = topBar.getChildAt(i)
-                if (v is ImageView) { v.background = currentRipple?.constantState?.newDrawable()?.mutate(); ImageViewCompat.setImageTintList(v, tint) }
+                if (v is ImageView) {
+                    v.background = currentRipple?.constantState?.newDrawable()?.mutate()
+                    ImageViewCompat.setImageTintList(v, tint)
+                }
             }
         }
         emojiAdapter?.notifyDataSetChanged()
     }
 
     private fun addToRecent(emoji: String) {
-        val recent = preferences.recentEmojis.let { if (it.isEmpty()) mutableListOf() else it.split(",").toMutableList() }
-        recent.remove(emoji); recent.add(0, emoji)
-        if (recent.size > MAX_RECENT) recent.removeAt(recent.size - 1)
+        val recentEmojisStr = preferences.recentEmojis
+        val recent = if (recentEmojisStr.isEmpty()) mutableListOf() else recentEmojisStr.split(",").toMutableList()
+        recent.remove(emoji)
+        recent.add(0, emoji)
+        if (recent.size > MAX_RECENT) {
+            recent.removeAt(recent.size - 1)
+        }
         preferences.recentEmojis = recent.joinToString(",")
     }
 

@@ -138,12 +138,22 @@ class KeyTouchHandler(
     private fun handleLetterKey(view: View, isNumMode: Boolean, isXt9Mode: Boolean) {
         if (isNumMode) {
             val text = when(view.id) {
-                binding.keyPunct.id -> "1"; binding.keyAbc.id -> "2"; binding.keyDef.id -> "3"
-                binding.keyGhi.id -> "4"; binding.keyJkl.id -> "5"; binding.keyMno.id -> "6"
-                binding.keyPqrs.id -> "7"; binding.keyTuv.id -> "8"; binding.keyWxyz.id -> "9"; else -> ""
+                binding.keyPunct.id -> "1"
+                binding.keyAbc.id -> "2"
+                binding.keyDef.id -> "3"
+                binding.keyGhi.id -> "4"
+                binding.keyJkl.id -> "5"
+                binding.keyMno.id -> "6"
+                binding.keyPqrs.id -> "7"
+                binding.keyTuv.id -> "8"
+                binding.keyWxyz.id -> "9"
+                else -> ""
             }
             if (text.isNotEmpty()) {
-                if (isWaitingToCommit) { handler.removeCallbacks(commitRunnable); commitCurrentTap() }
+                if (isWaitingToCommit) {
+                    handler.removeCallbacks(commitRunnable)
+                    commitCurrentTap()
+                }
                 onMultiTap(text[0], 0, true)
             }
             return
@@ -151,16 +161,25 @@ class KeyTouchHandler(
 
         val chars = keyMap[view.id] ?: return
         if (isXt9Mode && view.id != binding.keyPunct.id) {
-            if (isWaitingToCommit) { handler.removeCallbacks(commitRunnable); commitCurrentTap() }
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                commitCurrentTap()
+            }
             onMultiTap(chars[0], 0, true)
             return
         }
 
         if (currentKeyId == view.id) {
-            if (isWaitingToCommit) { handler.removeCallbacks(commitRunnable); isWaitingToCommit = false }
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                isWaitingToCommit = false
+            }
             tapCount++
         } else {
-            if (isWaitingToCommit) { handler.removeCallbacks(commitRunnable); commitCurrentTap() }
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                commitCurrentTap()
+            }
             currentKeyId = view.id
             tapCount = 0
         }

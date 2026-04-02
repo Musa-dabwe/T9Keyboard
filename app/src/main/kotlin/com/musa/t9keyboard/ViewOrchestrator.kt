@@ -7,19 +7,21 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class ViewOrchestrator(
-    private val service: T9InputMethodService,
-    private val container: FrameLayout
+    private val service: T9InputMethodService
 ) {
-
+    private var container: FrameLayout? = null
     var keyboardView: KeyboardView? = null
     var symbolsView: SymbolsView? = null
     var emojiPickerView: EmojiPickerView? = null
     var textEditingView: TextEditingView? = null
 
+    var isViewReady = false
+        private set
     private var isWindowVisible = false
     private var lastAppliedHeight = -1
 
-    init {
+    fun setContainer(container: FrameLayout) {
+        this.container = container
         ViewCompat.setOnApplyWindowInsetsListener(container) { _, insets ->
             val navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
             val screenHeight = service.resources.displayMetrics.heightPixels
@@ -35,6 +37,10 @@ class ViewOrchestrator(
             }
             insets
         }
+    }
+
+    fun markViewReady() {
+        isViewReady = true
     }
 
     private fun updateKeyboardHeight(height: Int) {
@@ -57,18 +63,20 @@ class ViewOrchestrator(
     }
 
     fun showView(view: View, force: Boolean = false) {
+        val c = container ?: return
+
         // Skip adding if it's already the only child
-        if (container.childCount == 1 && container.getChildAt(0) === view) {
+        if (c.childCount == 1 && c.getChildAt(0) === view) {
             return
         }
 
         // Suppress redundant view switches when window is not visible,
         // but allow the first view to be added even if hidden.
-        if (!force && !isWindowVisible && container.childCount > 0) {
+        if (!force && !isWindowVisible && c.childCount > 0) {
             return
         }
 
-        container.removeAllViews()
+        c.removeAllViews()
 
         // Ensure height is applied before adding
         if (lastAppliedHeight > 0) {
@@ -85,7 +93,7 @@ class ViewOrchestrator(
             )
         }
 
-        container.addView(view)
+        c.addView(view)
         if (view is SymbolsView) {
             view.resetScroll()
         }

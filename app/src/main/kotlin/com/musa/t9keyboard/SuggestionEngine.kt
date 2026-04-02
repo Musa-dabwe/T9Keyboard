@@ -48,7 +48,7 @@ class SuggestionEngine(
         val containing = if (targetLength >= 2) AospDictionary.getWordsContaining(composing) else emptyList()
 
         val allCandidates = if (contactsEnabled) {
-            val seq = constraints.map { if (it.length == 1 && it[0].isDigit()) it else getDigitForChar(it[0]).toString() }.joinToString("")
+            val seq = constraints.map { if (it.length == 1 && it[0].isDigit()) it else T9Utils.getDigitForChar(it[0]).toString() }.joinToString("")
             val contacts = ContactsDictionary.getSuggestionsForSequence(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
             val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
             (learned + contacts + aosp + contactPrefixes + containing).distinctBy { it.word.lowercase() }
@@ -57,7 +57,6 @@ class SuggestionEngine(
         }
 
         val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
-        // Simple heuristic: exact matches first, then longer matches
         val exactMatches = allCandidates.filter { it.word.length == targetLength }
             .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
                 .thenByDescending { it.frequency })
@@ -133,21 +132,6 @@ class SuggestionEngine(
                 (learned + aosp).distinct().take(20)
             }
             onSuggestionsReady(combined, null)
-        }
-    }
-
-    private fun getDigitForChar(c: Char): Char {
-        return when (c.lowercaseChar()) {
-            'a', 'b', 'c' -> '2'
-            'd', 'e', 'f' -> '3'
-            'g', 'h', 'i' -> '4'
-            'j', 'k', 'l' -> '5'
-            'm', 'n', 'o' -> '6'
-            'p', 'q', 'r', 's' -> '7'
-            't', 'u', 'v' -> '8'
-            'w', 'x', 'y', 'z' -> '9'
-            '.', ',', '?', '!' -> '1'
-            else -> ' '
         }
     }
 }
