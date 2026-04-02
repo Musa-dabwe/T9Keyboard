@@ -140,6 +140,11 @@ class SymbolsView @JvmOverloads constructor(
         // No scrolling in new design
     }
 
+    fun refreshSymbolGrid() {
+        setupSymbolGrid()
+        setAccentColor(accentColor)
+    }
+
     private fun dpToPx(dp: Int): Int =
         (dp * resources.displayMetrics.density + 0.5f).toInt()
 }

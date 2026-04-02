@@ -1,55 +1,30 @@
 package com.musa.t9keyboard
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.Typeface
+import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.os.Handler
-import android.os.Looper
 import android.text.SpannableString
 import android.text.style.UnderlineSpan
 import android.util.AttributeSet
 import android.view.Gravity
-import android.view.MotionEvent
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.musa.t9keyboard.utils.FontUtils
 
 class TextEditingView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
     sealed class EditAction {
-        object HOME : EditAction()
-        object HOME_LONG : EditAction()
-        object UP : EditAction()
-        object END : EditAction()
-        object END_LONG : EditAction()
-        object SELECT_ALL : EditAction()
-        object LEFT : EditAction()
-        object SELECT : EditAction()
-        object SELECT_WORD : EditAction()
-        object RIGHT : EditAction()
-        object COPY : EditAction()
-        object COPY_LONG : EditAction()
-        object SELECT_LEFT_WORD : EditAction()
-        object SELECT_LEFT_WORD_LONG : EditAction()
-        object DOWN : EditAction()
-        object SELECT_RIGHT_WORD : EditAction()
-        object SELECT_RIGHT_WORD_LONG : EditAction()
-        object PASTE : EditAction()
-        object PASTE_LONG : EditAction()
-        object CUT : EditAction()
-        object CUT_LONG : EditAction()
-        object UNDO : EditAction()
-        object REDO : EditAction()
-        object DELETE : EditAction()
-        object ENTER : EditAction()
+        object HOME : EditAction(); object HOME_LONG : EditAction(); object UP : EditAction(); object END : EditAction()
+        object END_LONG : EditAction(); object SELECT_ALL : EditAction(); object LEFT : EditAction(); object SELECT : EditAction()
+        object SELECT_WORD : EditAction(); object RIGHT : EditAction(); object COPY : EditAction(); object COPY_LONG : EditAction()
+        object SELECT_LEFT_WORD : EditAction(); object SELECT_LEFT_WORD_LONG : EditAction(); object DOWN : EditAction()
+        object SELECT_RIGHT_WORD : EditAction(); object SELECT_RIGHT_WORD_LONG : EditAction(); object PASTE : EditAction()
+        object PASTE_LONG : EditAction(); object CUT : EditAction(); object CUT_LONG : EditAction(); object UNDO : EditAction()
+        object REDO : EditAction(); object DELETE : EditAction(); object ENTER : EditAction()
     }
 
     var onAction: ((EditAction) -> Unit)? = null
@@ -61,13 +36,7 @@ class TextEditingView @JvmOverloads constructor(
 
     private var isSelectionMode = false
     private var accentColor = Color.parseColor("#00BFA5")
-
-    private val handler = Handler(Looper.getMainLooper())
-    private var repeatRunnable: Runnable? = null
-    private var deletionSpeed: Int = 100
-    private val deleteRepeatInterval: Long
-        get() = maxOf(30L, 200L - (deletionSpeed * 1.5).toLong())
-
+    private val keyHandler: EditKeyHandler
     private lateinit var selectKey: TextView
     private lateinit var abcKey: TextView
     private lateinit var copyKey: TextView
@@ -77,25 +46,19 @@ class TextEditingView @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         setBackgroundColor(Color.parseColor("#1A1A1A"))
-        layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dpToPx(304)
-        )
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(304))
+        keyHandler = EditKeyHandler(this, { onAction?.invoke(it) }, { onFeedbackRequested?.invoke() })
         setupUI()
     }
 
     private fun setupUI() {
         val ubuntu = FontUtils.getUbuntu(context)
-        // --- Header ---
         addView(TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(36))
             text = "TEXT EDITING"
             setTextColor(Color.parseColor("#888888"))
-            textSize = 13f
-            typeface = ubuntu
-            gravity = Gravity.CENTER
-            setAllCaps(true)
-            letterSpacing = 0.05f
+            textSize = 13f; typeface = ubuntu; gravity = Gravity.CENTER
+            setAllCaps(true); letterSpacing = 0.05f
         })
 
         val gridLayout = LinearLayout(context).apply {
@@ -104,239 +67,69 @@ class TextEditingView @JvmOverloads constructor(
             setPadding(dpToPx(6), 0, dpToPx(6), dpToPx(6))
         }
 
-        // Row 1: Undo, Up, Redo, Delete
-        val row1Configs = listOf(
-            KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300),
-            KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up),
-            KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300),
-            KeyConfig("⌫", 22f, EditAction.DELETE, repeatInterval = 100, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_delete)
+        val rows = listOf(
+            listOf(KeyConfig("Undo ↩", 15f, EditAction.UNDO, repeatInterval = 300), KeyConfig("∧", 22f, EditAction.UP, repeatInterval = 100, iconResId = R.drawable.ic_caret_up), KeyConfig("Redo ↪", 15f, EditAction.REDO, repeatInterval = 300), KeyConfig("⌫", 22f, EditAction.DELETE, textColor = Color.parseColor("#FF5252"), iconResId = R.drawable.ic_delete)),
+            listOf(KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100, iconResId = R.drawable.ic_caret_left), KeyConfig("Select", 15f, EditAction.SELECT, longAction = EditAction.SELECT_WORD), KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100, iconResId = R.drawable.ic_caret_right), KeyConfig("ABC", 18f, onClick = { onAbcClick?.invoke() })),
+            listOf(KeyConfig("Cut", 16f, EditAction.CUT, longAction = EditAction.CUT_LONG), KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down), KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG), KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)),
+            listOf(KeyConfig("123", 18f, onClick = { on123Click?.invoke() }), KeyConfig("Select all", 14f, EditAction.SELECT_ALL, weight = 2f), KeyConfig("↵", 22f, EditAction.ENTER))
         )
-        gridLayout.addView(createRow(row1Configs))
 
-        // Row 2: Left, Select, Right, ABC
-        val row2Configs = listOf(
-            KeyConfig("<", 22f, EditAction.LEFT, repeatInterval = 100, iconResId = R.drawable.ic_caret_left),
-            KeyConfig("Select", 15f, EditAction.SELECT, longAction = EditAction.SELECT_WORD),
-            KeyConfig(">", 22f, EditAction.RIGHT, repeatInterval = 100, iconResId = R.drawable.ic_caret_right),
-            KeyConfig("ABC", 18f, onClick = { onAbcClick?.invoke() })
-        )
-        val row2 = createRow(row2Configs)
-        selectKey = row2.getChildAt(1) as TextView
-        abcKey = row2.getChildAt(3) as TextView
-        gridLayout.addView(row2)
-
-        // Row 3: Cut, Down, Copy, Paste
-        val row3Configs = listOf(
-            KeyConfig("Cut", 16f, EditAction.CUT, longAction = EditAction.CUT_LONG),
-            KeyConfig("∨", 22f, EditAction.DOWN, repeatInterval = 100, iconResId = R.drawable.ic_caret_down),
-            KeyConfig("Copy", 16f, EditAction.COPY, longAction = EditAction.COPY_LONG),
-            KeyConfig("Paste", 16f, EditAction.PASTE, longAction = EditAction.PASTE_LONG)
-        )
-        val row3 = createRow(row3Configs)
-        cutKey = row3.getChildAt(0) as TextView
-        copyKey = row3.getChildAt(2) as TextView
-        gridLayout.addView(row3)
-
-        // Row 4: 123, Select All (spanning 2), Enter
-        val row4Configs = listOf(
-            KeyConfig("123", 18f, onClick = { on123Click?.invoke() }),
-            KeyConfig("Select all", 14f, EditAction.SELECT_ALL, weight = 2f),
-            KeyConfig("↩", 22f, EditAction.ENTER)
-        )
-        gridLayout.addView(createRow(row4Configs))
-
+        rows.forEachIndexed { i, configs ->
+            val row = createRow(configs)
+            if (i == 1) { selectKey = row.getChildAt(1) as TextView; abcKey = row.getChildAt(3) as TextView }
+            if (i == 2) { cutKey = row.getChildAt(0) as TextView; copyKey = row.getChildAt(2) as TextView }
+            gridLayout.addView(row)
+        }
         addView(gridLayout)
-
-        updateSelectKeyVisuals()
-        updateSelectionState(false)
+        updateSelectKeyVisuals(); updateSelectionState(false)
     }
 
-    private data class KeyConfig(
-        val label: String,
-        val textSize: Float,
-        val action: EditAction? = null,
-        val longAction: EditAction? = null,
-        val repeatInterval: Long? = null,
-        val textColor: Int = Color.WHITE,
-        val iconResId: Int? = null,
-        val onClick: (() -> Unit)? = null,
-        val weight: Float = 1f
-    )
+    private data class KeyConfig(val label: String, val textSize: Float, val action: EditAction? = null, val longAction: EditAction? = null, val repeatInterval: Long? = null, val textColor: Int = Color.WHITE, val iconResId: Int? = null, val onClick: (() -> Unit)? = null, val weight: Float = 1f)
 
     private fun createRow(configs: List<KeyConfig>): LinearLayout {
         return LinearLayout(context).apply {
             orientation = HORIZONTAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
-            configs.forEach { config ->
-                addView(createKey(config))
-            }
+            configs.forEach { addView(createKey(it)) }
         }
     }
 
     private fun createKey(config: KeyConfig): TextView {
         val key = TextView(context).apply {
-            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, config.weight).apply {
-                setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3))
-            }
+            layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, config.weight).apply { setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3)) }
             if (config.iconResId != null) {
-                val drawable = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, config.iconResId)
-                drawable?.let {
-                    it.setTint(config.textColor)
-                    it.setBounds(0, 0, dpToPx(24), dpToPx(24))
-                    val span = android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM)
-                    val spannable = android.text.SpannableString(" ")
-                    spannable.setSpan(span, 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                androidx.appcompat.content.res.AppCompatResources.getDrawable(context, config.iconResId)?.let {
+                    it.setTint(config.textColor); it.setBounds(0, 0, dpToPx(24), dpToPx(24))
+                    val spannable = SpannableString(" ")
+                    spannable.setSpan(android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                     text = spannable
                 }
-            } else {
-                text = config.label
-            }
-            setTextColor(config.textColor)
-            textSize = config.textSize
-            typeface = FontUtils.getUbuntu(context)
-            gravity = Gravity.CENTER
-            isClickable = true
-            isFocusable = true
+            } else text = config.label
+            setTextColor(config.textColor); textSize = config.textSize; typeface = FontUtils.getUbuntu(context); gravity = Gravity.CENTER; isClickable = true; isFocusable = true
         }
-
         allKeys.add(key)
         updateKeyBackground(key)
-
-        key.setOnTouchListener(object : OnTouchListener {
-            private var longPressedSent = false
-
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        onFeedbackRequested?.invoke()
-                        v.isPressed = true
-                        longPressedSent = false
-
-                        val effectiveRepeatInterval = if (config.action == EditAction.DELETE) {
-                            deletionSpeed.toLong()
-                        } else {
-                            config.repeatInterval
-                        }
-
-                        if (config.action != null) {
-                            val effectiveRepeatInterval = if (config.action == EditAction.DELETE) {
-                                deletionSpeed.toLong()
-                            } else {
-                                config.repeatInterval
-                            }
-
-                            if (effectiveRepeatInterval != null) {
-                                onAction?.invoke(config.action)
-                                startRepeating(config.action, effectiveRepeatInterval)
-                            } else if (config.longAction != null) {
-                                startLongPressCheck(config.longAction) { longPressedSent = true }
-                            }
-                        } else if (config.onClick != null) {
-                            // No repeat for custom onClick
-                        }
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        v.isPressed = false
-                        stopRepeating()
-                        if (!longPressedSent) {
-                            if (config.action != null) {
-                                if (config.repeatInterval == null) {
-                                    onAction?.invoke(config.action)
-                                }
-                            } else if (config.onClick != null) {
-                                onFeedbackRequested?.invoke()
-                                config.onClick.invoke()
-                            }
-                        }
-                    }
-                    MotionEvent.ACTION_CANCEL -> {
-                        v.isPressed = false
-                        stopRepeating()
-                    }
-                }
-                return true
-            }
-        })
+        keyHandler.setupTouchListener(key, config.action, config.longAction, config.repeatInterval, config.onClick)
         return key
     }
 
     private fun updateKeyBackground(key: TextView) {
         if (::selectKey.isInitialized && key == selectKey) return
-        if (::abcKey.isInitialized && key == abcKey) {
-            key.background = SelectKeyDrawable(true)
-            return
-        }
+        if (::abcKey.isInitialized && key == abcKey) { key.background = SelectKeyDrawable(true); return }
 
         val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
-        val pressedColorList = android.content.res.ColorStateList(
-            arrayOf(
-                intArrayOf(android.R.attr.state_pressed),
-                intArrayOf()
-            ),
-            intArrayOf(
-                pressedColor,
-                Color.parseColor("#2D2D2D") // Match the background color for TextEditingView
-            )
-        )
-        val shape = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = dpToPx(4).toFloat()
-            setColor(Color.WHITE)
-        }
-        key.background = shape
+        val pressedColorList = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()), intArrayOf(pressedColor, Color.parseColor("#2D2D2D")))
+        key.background = GradientDrawable().apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dpToPx(4).toFloat(); setColor(Color.WHITE) }
         key.backgroundTintList = pressedColorList
     }
 
-
-    private fun startRepeating(action: EditAction, interval: Long) {
-        stopRepeating()
-        val effectiveInterval = if (action == EditAction.DELETE) deleteRepeatInterval else interval
-        val initialDelay = if (action == EditAction.DELETE) 150L else 500L
-
-        repeatRunnable = object : Runnable {
-            override fun run() {
-                onAction?.invoke(action)
-                handler.postDelayed(this, effectiveInterval)
-            }
-        }
-        handler.postDelayed(repeatRunnable!!, initialDelay)
-    }
-
-    private fun startLongPressCheck(longAction: EditAction, onLongPressed: () -> Unit) {
-        stopRepeating()
-        repeatRunnable = Runnable {
-            onLongPressed()
-            onAction?.invoke(longAction)
-            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-        }
-        handler.postDelayed(repeatRunnable!!, 500)
-    }
-
-    private fun stopRepeating() {
-        repeatRunnable?.let { handler.removeCallbacks(it) }
-        repeatRunnable = null
-    }
-
-    fun setSelectionMode(enabled: Boolean) {
-        this.isSelectionMode = enabled
-        updateSelectKeyVisuals()
-    }
-
+    fun setSelectionMode(enabled: Boolean) { this.isSelectionMode = enabled; updateSelectKeyVisuals() }
     fun updateSelectionState(hasSelection: Boolean) {
         val color = if (hasSelection) Color.WHITE else Color.parseColor("#666666")
-        copyKey.setTextColor(color)
-        cutKey.setTextColor(color)
+        copyKey.setTextColor(color); cutKey.setTextColor(color)
     }
-
-    fun setAccentColor(color: Int) {
-        this.accentColor = color
-        updateSelectKeyVisuals()
-        allKeys.forEach { updateKeyBackground(it) }
-    }
-
-    fun setDeletionSpeed(speed: Int) {
-        this.deletionSpeed = speed
-    }
+    fun setAccentColor(color: Int) { this.accentColor = color; updateSelectKeyVisuals(); allKeys.forEach { updateKeyBackground(it) } }
+    fun setDeletionSpeed(speed: Int) = keyHandler.setDeletionSpeed(speed)
 
     private fun updateSelectKeyVisuals() {
         selectKey.background = SelectKeyDrawable(isSelectionMode)
@@ -344,30 +137,20 @@ class TextEditingView @JvmOverloads constructor(
         if (isSelectionMode) {
             val content = SpannableString("Select")
             content.setSpan(UnderlineSpan(), 0, content.length, 0)
-            selectKey.text = content
-            selectKey.typeface = ubuntu
-        } else {
-            selectKey.text = "Select"
-            selectKey.typeface = ubuntu
-        }
+            selectKey.text = content; selectKey.typeface = ubuntu
+        } else { selectKey.text = "Select"; selectKey.typeface = ubuntu }
     }
 
     private inner class SelectKeyDrawable(val isSelected: Boolean) : Drawable() {
-        private val bgPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-
-        override fun draw(canvas: android.graphics.Canvas) {
-            bgPaint.color = if (isSelected) accentColor else Color.parseColor("#2D2D2D")
-
-            val rect = android.graphics.RectF(bounds)
-            val radius = dpToPx(4).toFloat()
-            canvas.drawRoundRect(rect, radius, radius, bgPaint)
+        private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        override fun draw(canvas: Canvas) {
+            paint.color = if (isSelected) accentColor else Color.parseColor("#2D2D2D")
+            canvas.drawRoundRect(RectF(bounds), dpToPx(4).toFloat(), dpToPx(4).toFloat(), paint)
         }
-
-        override fun setAlpha(alpha: Int) { bgPaint.alpha = alpha }
-        override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) { bgPaint.colorFilter = colorFilter }
-        override fun getOpacity(): Int = android.graphics.PixelFormat.TRANSLUCENT
+        override fun setAlpha(alpha: Int) { paint.alpha = alpha }
+        override fun setColorFilter(cf: ColorFilter?) { paint.colorFilter = cf }
+        override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
     }
 
-    private fun dpToPx(dp: Int): Int =
-        (dp * resources.displayMetrics.density + 0.5f).toInt()
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density + 0.5f).toInt()
 }
