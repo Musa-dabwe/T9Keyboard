@@ -46,6 +46,9 @@ class SettingsActivity : AppCompatActivity() {
         R.color.accent_purple
     )
 
+    private var versionTapCount = 0
+    private var lastVersionTapTime = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -77,6 +80,21 @@ class SettingsActivity : AppCompatActivity() {
     private fun setupHeader() {
         binding.btnBack.setOnClickListener { finish() }
         binding.btnInfo.setOnClickListener { dialogHelper.showInfoDialog() }
+
+        binding.txtWelcome.setOnClickListener {
+            val now = System.currentTimeMillis()
+            if (now - lastVersionTapTime < 500) {
+                versionTapCount++
+            } else {
+                versionTapCount = 1
+            }
+            lastVersionTapTime = now
+            if (versionTapCount == 5) {
+                versionTapCount = 0
+                val intent = android.content.Intent(this, DebugLogsActivity::class.java)
+                startActivity(intent)
+            }
+        }
     }
 
     private fun setupUI() {

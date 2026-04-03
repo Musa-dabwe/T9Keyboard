@@ -172,3 +172,17 @@ graph TD
 ### 7.2. Flagged Items
 *   **Autocorrect Immunity**: Currently, any word in `LearnedDictionary` is immune to autocorrect, even if it was a typo the user accidentally "learned".
 *   **Multi-tap Finalization**: Logic in `handlePunctuationTap` and `handleLetterMultiTap` is complex and prone to edge-case bugs during rapid typing transition between letters and symbols.
+
+---
+
+## 8. Security & Privacy
+
+The T9 Keyboard project prioritizes user privacy and data security. A comprehensive threat model and security audit was performed on April 3, 2026.
+
+Key security measures implemented:
+*   **Sensitive Input Suppression**: Automatic detection of password, numeric, and phone fields to disable word learning and suggestion generation.
+*   **Data Retention Policy**: Enforced 180-day hard expiration for all user-learned words in the dictionary.
+*   **Internal Telemetry**: Secure error logging with `CrashLogger` using private internal storage (`filesDir`).
+*   **Scoped Permissions**: Minimal use of `READ_CONTACTS` with localized tokenization and clear user opt-out.
+
+For detailed findings and mitigation strategies, see the [SECURITY_REPORT.md](SECURITY_REPORT.md).

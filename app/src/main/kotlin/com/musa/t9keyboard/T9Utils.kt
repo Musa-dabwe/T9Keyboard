@@ -1,5 +1,7 @@
 package com.musa.t9keyboard
 
+import android.view.inputmethod.EditorInfo
+
 object T9Utils {
     fun getDigitForChar(c: Char): Char {
         return when (c.lowercaseChar()) {
@@ -29,5 +31,30 @@ object T9Utils {
             '1' -> '.'
             else -> ' '
         }
+    }
+
+    fun isInputTypeSensitive(info: EditorInfo?): Boolean {
+        if (info == null) return false
+        val inputType = info.inputType
+        val classType = inputType and EditorInfo.TYPE_MASK_CLASS
+        val variation = inputType and EditorInfo.TYPE_MASK_VARIATION
+
+        if (classType == EditorInfo.TYPE_CLASS_TEXT) {
+            if (variation == EditorInfo.TYPE_TEXT_VARIATION_PASSWORD ||
+                variation == EditorInfo.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                variation == EditorInfo.TYPE_TEXT_VARIATION_WEB_PASSWORD) {
+                return true
+            }
+        }
+
+        if (classType == EditorInfo.TYPE_CLASS_NUMBER) {
+            return true
+        }
+
+        if (classType == EditorInfo.TYPE_CLASS_PHONE) {
+            return true
+        }
+
+        return false
     }
 }
