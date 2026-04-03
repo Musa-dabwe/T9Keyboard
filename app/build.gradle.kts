@@ -35,14 +35,14 @@ android {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.emoji2:emoji2:1.4.0")
-    implementation("androidx.emoji2:emoji2-views:1.4.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("androidx.emoji2:emoji2:1.6.0")
+    implementation("androidx.emoji2:emoji2-views:1.6.0")
 }

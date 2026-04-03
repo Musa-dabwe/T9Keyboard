@@ -19,3 +19,19 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# T9 Keyboard ProGuard Rules
+
+# AOSP Dictionary Assets
+-keep class com.musa.t9keyboard.AospDictionary { *; }
+-keep class com.musa.t9keyboard.AospBigrams { *; }
+
+# EmojiCompat
+-keep class androidx.emoji2.text.** { *; }
+-keep class androidx.emoji2.widget.** { *; }
+
+# LearnedDictionary SharedPreferences serialization
+-keep class com.musa.t9keyboard.LearnedDictionary { *; }
+
+# FontUtils asset loading
+-keep class com.musa.t9keyboard.FontUtils { *; }
