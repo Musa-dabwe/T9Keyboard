@@ -17,7 +17,7 @@ This report summarizes the audit of dependencies for the T9 Keyboard project as 
 | **Coroutines** | 1.10.1 | 1.10.2 | ⚠️ Outdated | **Updated to 1.10.2.** |
 | **JUnit** | 4.13.2 | 6.0.3 | 🔍 Major version jump / ✅ Up to date (4.x) | **Requires manual review** for JUnit 6. Kept at 4.13.2 for maintenance branch stability. |
 | **Mockito Core** | 5.11.0 | 5.23.0 | ⚠️ Outdated | **Updated to 5.23.0.** |
-| **Mockito-Kotlin** | 5.2.1 | 6.3.0 | ❌ Unused / 🔍 Major version jump | **Unused.** Recommend removal. If kept, requires manual review for jump to v6. |
+| **Mockito-Kotlin** | 5.2.1 | 6.3.0 | ❌ Unused / 🗑️ Removed | **Removed.** Verified no usage in all test files. |
 
 ## Additional Observations
 
