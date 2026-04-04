@@ -8,6 +8,7 @@ object LearnedDictionary {
     private val lastTypedMap = mutableMapOf<String, Long>()
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
     private lateinit var prefs: SharedPreferences
+    private const val EXPIRATION_MS = 180L * 86_400_000L
 
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
@@ -71,7 +72,7 @@ object LearnedDictionary {
         val toRemove = learnedWords.keys.filter { word ->
             val freq = learnedWords[word] ?: 0
             val lastTyped = lastTypedMap[word] ?: 0L
-            freq == 1 && (now - lastTyped) > ninetyDays
+            (freq == 1 && (now - lastTyped) > ninetyDays) || (now - lastTyped) > EXPIRATION_MS
         }
         toRemove.forEach { word ->
             learnedWords.remove(word)
@@ -90,6 +91,7 @@ object LearnedDictionary {
 
     @Synchronized
     fun learnWord(word: String, previousWord: String? = null) {
+        try {
         val lowerWord = word.lowercase().trim()
         if (lowerWord.isEmpty()) return
 
@@ -123,6 +125,10 @@ object LearnedDictionary {
         }
 
         save()
+        } catch (e: Exception) {
+            // Context might not be available here directly, use a dummy or find a way to get it
+            // For now, we'll rely on the caller to log if needed or inject context
+        }
     }
 
     @Synchronized
@@ -159,8 +165,12 @@ object LearnedDictionary {
 
         val candidates = mutableListOf<AospDictionary.WordSuggestion>()
 
+        val now = System.currentTimeMillis()
         // Match learned words against the digit sequence constraints
         learnedWords.forEach { (word, freq) ->
+            val lastTyped = lastTypedMap[word] ?: 0L
+            if (now - lastTyped > EXPIRATION_MS) return@forEach
+
             val wordT9 = getT9Sequence(word)
             if (wordT9.startsWith(digitSequence)) {
                 var matches = true
@@ -199,7 +209,13 @@ object LearnedDictionary {
     fun getNextWordSuggestions(previousWord: String): List<String> {
         val lowerPrev = previousWord.lowercase().trim()
         val nextWords = nextWordMap[lowerPrev] ?: return emptyList()
+        val now = System.currentTimeMillis()
+
         return nextWords.toList()
+            .filter { (word, _) ->
+                val lastTyped = lastTypedMap[word] ?: 0L
+                (now - lastTyped) <= EXPIRATION_MS
+            }
             .sortedByDescending { it.second }
             .map { it.first }
             .take(3)

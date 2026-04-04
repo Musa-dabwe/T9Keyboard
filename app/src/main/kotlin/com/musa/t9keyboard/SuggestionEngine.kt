@@ -11,8 +11,12 @@ class SuggestionEngine(
     private var suggestionJob: Job? = null
     private var nextWordJob: Job? = null
 
-    fun requestSuggestions(editorState: EditorState, xt9Enabled: Boolean) {
+    fun requestSuggestions(editorState: EditorState, xt9Enabled: Boolean, isInputSensitive: Boolean = false) {
         suggestionJob?.cancel()
+        if (isInputSensitive) {
+            onSuggestionsReady(emptyList(), null)
+            return
+        }
         val constraints = editorState.currentWordConstraints.toList()
         val composing = editorState.composingText.toString()
         val lastWord = editorState.lastCommittedWord
@@ -122,8 +126,8 @@ class SuggestionEngine(
         return Pair(others, anchored)
     }
 
-    fun requestNextWordSuggestions(lastWord: String?) {
-        if (lastWord == null) return
+    fun requestNextWordSuggestions(lastWord: String?, isInputSensitive: Boolean = false) {
+        if (lastWord == null || isInputSensitive) return
         nextWordJob?.cancel()
         nextWordJob = serviceScope.launch {
             val combined = withContext(Dispatchers.Default) {

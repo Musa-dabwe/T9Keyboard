@@ -40,6 +40,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var contactPermissionGranted = false
     private var contactSuggestionsEnabled = false
     private var xt9Enabled = false
+    private var isInputSensitive = false
     private var autocorrectEnabled: Boolean = false
     private var autocorrectSensitivity: Int = 1 // 0=Conservative, 1=Normal, 2=Aggressive
 
@@ -69,6 +70,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         orchestrator = ViewOrchestrator(this)
         autocorrectController = AutocorrectController(AutocorrectEngine(AospDictionary.bkTree, LearnedDictionary))
         suggestionEngine = SuggestionEngine(serviceScope, { contactSuggestionsEnabled && contactPermissionGranted }) { suggestions, anchored ->
+            try {
             if (xt9Enabled) {
                 editorState.currentXt9Predictions = if (anchored != null) listOf(anchored) + suggestions else suggestions
                 val displayPredictions = editorState.currentXt9Predictions.toMutableList()
@@ -83,6 +85,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 icManager.setComposingText(displayAnchored, 1)
             } else {
                 orchestrator.keyboardView?.setSuggestions(suggestions, anchored)
+            }
+            } catch (e: Exception) {
+                CrashLogger.log("onSuggestionsReady", e, this)
             }
         }
         preferences = PreferencesManager(this)
@@ -101,11 +106,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
+        isInputSensitive = T9Utils.isInputTypeSensitive(attribute)
         resetImeState(attribute, resetShift = true)
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        isInputSensitive = T9Utils.isInputTypeSensitive(info)
         resetImeState(info, resetShift = false)
 
         contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
@@ -142,12 +149,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     override fun onCreateInputView(): View {
-        val themedContext = android.view.ContextThemeWrapper(this, R.style.AppTheme)
-        val container = FrameLayout(themedContext)
-        this.container = container
-        orchestrator.setContainer(container)
+        return try {
+            val themedContext = android.view.ContextThemeWrapper(this, R.style.AppTheme)
+            val container = FrameLayout(themedContext)
+            this.container = container
+            orchestrator.setContainer(container)
 
-        orchestrator.keyboardView = KeyboardView(themedContext).apply {
+            orchestrator.keyboardView = KeyboardView(themedContext).apply {
             onMultiTapListener = { c, tc, f -> onMultiTap(c, tc, f) }
             onActionClickListener = { a -> onActionClick(a) }
             onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
@@ -175,9 +183,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
         }
 
-        orchestrator.markViewReady()
-        orchestrator.showView(orchestrator.keyboardView!!, force = true)
-        return container
+            orchestrator.markViewReady()
+            orchestrator.showView(orchestrator.keyboardView!!, force = true)
+            container
+        } catch (e: Exception) {
+            CrashLogger.log("onCreateInputView", e, this)
+            View(this)
+        }
     }
 
     // --- Action Listeners ---
@@ -222,6 +234,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         if (action != KeyboardView.KeyboardAction.DEL) {
             autocorrectController.clear()
         }
+        try {
         when (action) {
             KeyboardView.KeyboardAction.DEL -> handleDelete()
             KeyboardView.KeyboardAction.SPACE -> {
@@ -272,6 +285,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             }
             KeyboardView.KeyboardAction.TOGGLE_XT9 -> toggleXt9()
         }
+        } catch (e: Exception) {
+            CrashLogger.log("onActionClick", e, this)
+        }
     }
 
     override fun onToolbarActionClick(action: SuggestionBar.ToolbarAction) {
@@ -290,13 +306,16 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onSuggestionClick(suggestion: String) {
         onFeedbackRequested()
+        try {
         if (xt9Enabled) {
             val originalWord = editorState.currentXt9Predictions.find { applyShiftState(it) == suggestion }
                 ?: if (applyShiftState(editorState.xt9RawSequence.toString()) == suggestion) editorState.xt9RawSequence.toString() else suggestion
 
             icManager.commitText(suggestion, 1)
             icManager.commitText(" ", 1)
-            LearnedDictionary.learnWordStrong(originalWord, editorState.lastCommittedWord)
+            if (!isInputSensitive) {
+                LearnedDictionary.learnWordStrong(originalWord, editorState.lastCommittedWord)
+            }
             editorState.lastCommittedWord = originalWord
             editorState.xt9DigitSequence.setLength(0)
             editorState.xt9RawSequence.setLength(0)
@@ -305,14 +324,23 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             icManager.setComposingText(suggestion, 1)
             icManager.finishComposingText()
             icManager.commitText(" ", 1)
-            LearnedDictionary.learnWordStrong(suggestion, editorState.lastCommittedWord)
+            if (!isInputSensitive) {
+                try {
+                    LearnedDictionary.learnWordStrong(suggestion, editorState.lastCommittedWord)
+                } catch (e: Exception) {
+                    CrashLogger.log("onSuggestionClick.multi", e, this)
+                }
+            }
             editorState.lastCommittedWord = suggestion
             editorState.composingText.clear()
             editorState.currentWordConstraints.clear()
         }
         shiftManager.consumeShift()
         orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
-        suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord)
+        suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord, isInputSensitive)
+        } catch (e: Exception) {
+            CrashLogger.log("onSuggestionClick", e, this)
+        }
     }
 
     override fun onEditAction(action: TextEditingView.EditAction) {
@@ -554,7 +582,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                     editorState.currentWordConstraints[editorState.currentWordConstraints.size - 1] = rawChar.toString()
                 }
                 icManager.setComposingText(editorState.composingText, 1)
-                suggestionEngine.requestSuggestions(editorState, false)
+                suggestionEngine.requestSuggestions(editorState, false, isInputSensitive)
                 shiftManager.consumeShift()
                 orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
             }
@@ -571,7 +599,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 }
             }
             icManager.setComposingText(editorState.composingText, 1)
-            suggestionEngine.requestSuggestions(editorState, false)
+            suggestionEngine.requestSuggestions(editorState, false, isInputSensitive)
         }
     }
 
@@ -617,7 +645,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             if (editorState.composingText.isEmpty()) {
                 icManager.finishComposingText()
             }
-            suggestionEngine.requestSuggestions(editorState, false)
+            suggestionEngine.requestSuggestions(editorState, false, isInputSensitive)
         } else {
             if (!icManager.getSelectedText().isNullOrEmpty()) {
                 icManager.commitText("", 1)
@@ -652,7 +680,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         editorState.xt9RawSequence.setLength(0)
         editorState.currentXt9Predictions = emptyList()
 
-        LearnedDictionary.learnWordStrong(correction, editorState.lastCommittedWord)
+        if (!isInputSensitive) {
+            try {
+                LearnedDictionary.learnWordStrong(correction, editorState.lastCommittedWord)
+            } catch (e: Exception) {
+                CrashLogger.log("maybeAutocorrect.learn", e, this)
+            }
+        }
         editorState.lastCommittedWord = correction
         shiftManager.consumeShift()
         orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
@@ -670,7 +704,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             val finalWord = applyShiftState(wordToCommit)
             if (moveCursorToEnd) icManager.commitText(finalWord, 1) else icManager.finishComposingText()
             committedWord = finalWord
-            LearnedDictionary.learnWord(wordToCommit, editorState.lastCommittedWord)
+            if (!isInputSensitive) {
+                try {
+                    LearnedDictionary.learnWord(wordToCommit, editorState.lastCommittedWord)
+                } catch (e: Exception) {
+                    CrashLogger.log("finalizeCurrentComposing.xt9", e, this)
+                }
+            }
             editorState.lastCommittedWord = wordToCommit
             editorState.xt9DigitSequence.setLength(0)
             editorState.xt9RawSequence.setLength(0)
@@ -680,7 +720,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             if (moveCursorToEnd) icManager.setComposingText(word, 1)
             icManager.finishComposingText()
             committedWord = word
-            LearnedDictionary.learnWord(word, editorState.lastCommittedWord)
+            if (!isInputSensitive) {
+                try {
+                    LearnedDictionary.learnWord(word, editorState.lastCommittedWord)
+                } catch (e: Exception) {
+                    CrashLogger.log("finalizeCurrentComposing.multi", e, this)
+                }
+            }
             editorState.lastCommittedWord = word
             editorState.composingText.clear()
             editorState.currentWordConstraints.clear()
