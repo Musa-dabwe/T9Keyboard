@@ -26,8 +26,7 @@ As defined in `AndroidManifest.xml`:
 
 | Class | Responsibility | Direct Dependencies |
 | :--- | :--- | :--- |
-| `T9InputMethodService` | Orchestrates the entire IME. Manages view switching (Main, Symbols, Emoji, Edit), handles key events from views, coordinates prediction engine, and communicates with `InputConnection`. | `KeyboardView`, `SymbolsView`, `EmojiPickerView`, `TextEditingView`, `PreferencesManager`, `ShiftStateManager`, `AutocorrectEngine`, `AospDictionary`, `AospBigrams`, `LearnedDictionary`, `ContactsDictionary` |
-| `AutocorrectEngine` | Evaluates typed words against dictionaries to suggest corrections based on sensitivity levels. | `BKTree`, `LearnedDictionary`, `AospDictionary` |
+| `T9InputMethodService` | Orchestrates the entire IME. Manages view switching (Main, Symbols, Emoji, Edit), handles key events from views, coordinates prediction engine, and communicates with `InputConnection`. | `KeyboardView`, `SymbolsView`, `EmojiPickerView`, `TextEditingView`, `PreferencesManager`, `ShiftStateManager`, `AospDictionary`, `AospBigrams`, `LearnedDictionary`, `ContactsDictionary` |
 | `ShiftStateManager` | Tracks and toggles between `OFF`, `ONE_SHOT`, and `CAPS_LOCK` states. Handles auto-capitalization logic. | None |
 | `PreferencesManager` | Type-safe wrapper for `SharedPreferences` (file: `t9_prefs`). | `SharedPreferences` |
 
@@ -45,11 +44,10 @@ As defined in `AndroidManifest.xml`:
 
 | Class | Responsibility | Direct Dependencies |
 | :--- | :--- | :--- |
-| `AospDictionary` | Static dictionary loaded from assets (`en_us_words.txt`). Provides base frequencies and prefix lookups via `TreeMap`. | `BKTree`, `CoroutineContext (Dispatchers.IO)` |
+| `AospDictionary` | Static dictionary loaded from assets (`en_us_words.txt`). Provides base frequencies and prefix lookups via `TreeMap`. | `CoroutineContext (Dispatchers.IO)` |
 | `LearnedDictionary` | Dynamic dictionary stored in `SharedPreferences` (`learned_words`). Learns user words and bigrams. Implements recency decay. | `SharedPreferences` |
 | `AospBigrams` | Static next-word predictions loaded from assets (`en_us_bigrams.txt`). | `CoroutineContext (Dispatchers.IO)` |
 | `ContactsDictionary` | Asynchronously loads contact names to provide personalized suggestions. | `ContentResolver` |
-| `BKTree` | Burkhard-Keller tree structure used for fast Levenshtein distance (fuzzy) searching in autocorrect. | None |
 
 ### 3.4. Utilities & Data Helpers
 
@@ -83,8 +81,6 @@ The application **does not use Room database**. All persistence is handled via `
 | `contact_suggestions_enabled` | Boolean | `false` | Enables learning from contacts. |
 | `emoji_size` | Int | `32` | Size of emoji in the picker (sp). |
 | `recent_emojis` | String | `""` | Comma-separated list of recent emojis. |
-| `autocorrect_enabled`| Boolean | `false` | Enables autocorrect on Space/Punctuation. |
-| `autocorrect_sensitivity` | Int | `1` | 0: Conservative, 1: Normal, 2: Aggressive. |
 
 **File: `learned_words`**
 | Key Pattern | Type | Description |
@@ -99,7 +95,6 @@ The application **does not use Room database**. All persistence is handled via `
 | :--- | :--- | :--- |
 | `WordEntry` | Models a single word from `AospDictionary`. | `stripped: String, frequency: Int, display: String` |
 | `WordSuggestion` | Represents a candidate for the `SuggestionBar`. | `word: String, frequency: Int` |
-| `AutocorrectRecord` | Tracks the state of the last autocorrect for undo logic. | `original: String, correction: String, trigger: String` |
 | `EmojiCategory` | Defines an emoji category name and its icon. | `name: String, icon: String` |
 | `ListItem` (Sealed) | Items for the `EmojiPickerView` RecyclerView. | `Header(name: String)`, `Emoji(code: String)` |
 | `KeyConfig` (Private) | Configuration for keys in `TextEditingView`. | `label: String, textSize: Float, action: EditAction?, ...` |
@@ -170,7 +165,6 @@ graph TD
 *   **Search Functionality**: The search icon in `EmojiPickerView` is purely visual (`ic_search_heart`) and has no associated logic.
 
 ### 7.2. Flagged Items
-*   **Autocorrect Immunity**: Currently, any word in `LearnedDictionary` is immune to autocorrect, even if it was a typo the user accidentally "learned".
 *   **Multi-tap Finalization**: Logic in `handlePunctuationTap` and `handleLetterMultiTap` is complex and prone to edge-case bugs during rapid typing transition between letters and symbols.
 
 ---
