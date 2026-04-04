@@ -28,7 +28,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private lateinit var editorState: EditorState
     private lateinit var icManager: InputConnectionManager
     private lateinit var suggestionEngine: SuggestionEngine
-    private lateinit var autocorrectController: AutocorrectController
 
     private lateinit var preferences: PreferencesManager
     private val shiftManager = ShiftStateManager()
@@ -41,8 +40,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var contactSuggestionsEnabled = false
     private var xt9Enabled = false
     private var isInputSensitive = false
-    private var autocorrectEnabled: Boolean = false
-    private var autocorrectSensitivity: Int = 1 // 0=Conservative, 1=Normal, 2=Aggressive
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -68,9 +65,14 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         editorState = EditorState()
         icManager = InputConnectionManager(this)
         orchestrator = ViewOrchestrator(this)
-        autocorrectController = AutocorrectController(AutocorrectEngine(AospDictionary.bkTree, LearnedDictionary))
         suggestionEngine = SuggestionEngine(serviceScope, { contactSuggestionsEnabled && contactPermissionGranted }) { suggestions, anchored ->
             try {
+                if (xt9Enabled && editorState.xt9DigitSequence.isEmpty()) {
+                    // Next-word suggestions only — show in bar, do not set composing text
+                    orchestrator.keyboardView?.setSuggestions(suggestions, null)
+                    return@SuggestionEngine
+                }
+
             if (xt9Enabled) {
                 editorState.currentXt9Predictions = if (anchored != null) listOf(anchored) + suggestions else suggestions
                 val displayPredictions = editorState.currentXt9Predictions.toMutableList()
@@ -118,8 +120,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
         contactSuggestionsEnabled = preferences.contactSuggestionsEnabled
         xt9Enabled = preferences.xt9Enabled
-        autocorrectEnabled = preferences.autocorrectEnabled
-        autocorrectSensitivity = preferences.autocorrectSensitivity
 
         if (orchestrator.isViewReady) {
             val kv = orchestrator.keyboardView ?: return
@@ -195,7 +195,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     // --- Action Listeners ---
 
     override fun onMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
-        autocorrectController.clear()
         editorState.lastTapTime = System.currentTimeMillis()
         val digit = T9Utils.getDigitForChar(char)
         val isPunctuation = (digit == '1')
@@ -231,18 +230,11 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     override fun onActionClick(action: KeyboardView.KeyboardAction) {
-        if (action != KeyboardView.KeyboardAction.DEL) {
-            autocorrectController.clear()
-        }
         try {
         when (action) {
             KeyboardView.KeyboardAction.DEL -> handleDelete()
             KeyboardView.KeyboardAction.SPACE -> {
-                if (xt9Enabled && editorState.xt9DigitSequence.isNotEmpty()) {
-                    maybeAutocorrect(" ")
-                } else {
-                    commitTextWithFinalization(" ")
-                }
+                commitTextWithFinalization(" ")
                 suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord)
             }
             KeyboardView.KeyboardAction.ENTER -> {
@@ -546,7 +538,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private fun handlePunctuationTap(displayChar: Char, tapCount: Int, isFinished: Boolean) {
         if (isFinished) {
             if (editorState.xt9DigitSequence.isNotEmpty()) {
-                maybeAutocorrect(displayChar.toString())
+                commitTextWithFinalization(displayChar.toString())
             } else if (editorState.composingText.isNotEmpty()) {
                 icManager.commitText(editorState.composingText.toString(), 1)
                 editorState.composingText.setLength(0)
@@ -618,24 +610,16 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     private fun handleDelete() {
-        val record = autocorrectController.lastAutocorrection
-        if (record != null) {
-            autocorrectController.clear()
-            icManager.beginBatchEdit()
-            icManager.deleteSurroundingText(record.correction.length + record.trigger.length, 0)
-            icManager.commitText(record.original, 1)
-            icManager.endBatchEdit()
-            return
-        }
-
         if (xt9Enabled && editorState.xt9DigitSequence.isNotEmpty()) {
             editorState.xt9DigitSequence.deleteCharAt(editorState.xt9DigitSequence.length - 1)
             editorState.xt9RawSequence.deleteCharAt(editorState.xt9RawSequence.length - 1)
             if (editorState.xt9DigitSequence.isEmpty()) {
                 icManager.setComposingText("", 1)
-                icManager.deleteSurroundingText(1, 0)
+                icManager.finishComposingText()
+                orchestrator.keyboardView?.setSuggestions(emptyList())
+            } else {
+                suggestionEngine.requestSuggestions(editorState, true)
             }
-            suggestionEngine.requestSuggestions(editorState, true)
         } else if (!xt9Enabled && editorState.composingText.isNotEmpty()) {
             editorState.composingText.deleteCharAt(editorState.composingText.length - 1)
             if (editorState.currentWordConstraints.isNotEmpty()) {
@@ -653,46 +637,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 icManager.sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
             }
         }
-    }
-
-    private fun maybeAutocorrect(trigger: String) {
-        if (!autocorrectEnabled || !xt9Enabled || !AospDictionary.isBKTreeReady) {
-            commitTextWithFinalization(trigger)
-            return
-        }
-        val typedWord = editorState.xt9RawSequence.toString()
-        val prediction = if (editorState.currentXt9Predictions.isNotEmpty()) editorState.currentXt9Predictions[0] else typedWord
-        val correction = autocorrectController.getCorrection(typedWord, prediction, autocorrectSensitivity)
-
-        if (correction == null) {
-            commitTextWithFinalization(trigger)
-            return
-        }
-
-        val finalCorrection = applyShiftState(correction)
-        autocorrectController.saveRecord(applyShiftState(prediction), finalCorrection, trigger)
-
-        icManager.beginBatchEdit()
-        icManager.commitText(finalCorrection + trigger, 1)
-        icManager.endBatchEdit()
-
-        editorState.xt9DigitSequence.setLength(0)
-        editorState.xt9RawSequence.setLength(0)
-        editorState.currentXt9Predictions = emptyList()
-
-        if (!isInputSensitive) {
-            try {
-                LearnedDictionary.learnWordStrong(correction, editorState.lastCommittedWord)
-            } catch (e: Exception) {
-                CrashLogger.log("maybeAutocorrect.learn", e, this)
-            }
-        }
-        editorState.lastCommittedWord = correction
-        shiftManager.consumeShift()
-        orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
-        orchestrator.keyboardView?.setSuggestions(emptyList())
-        editorState.lastDigit = ' '
-        orchestrator.keyboardView?.showAutocorrectIndicator(finalCorrection)
     }
 
     private fun finalizeCurrentComposing(moveCursorToEnd: Boolean = true) {
