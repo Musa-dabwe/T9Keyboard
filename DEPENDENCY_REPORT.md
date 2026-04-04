@@ -6,7 +6,7 @@ This report summarizes the audit of dependencies for the T9 Keyboard project as 
 
 | Library Name | Declared Version | Latest Stable Version | Status | Recommended Action |
 | :--- | :--- | :--- | :--- | :--- |
-| **Android Gradle Plugin (AGP)** | 8.13.0 | 9.1.0 | 🔍 Major version jump / ⚠️ Experimental | **Requires manual review.** 8.13.0 is ahead of stable. |
+| **Android Gradle Plugin (AGP)** | 8.13.2 | 9.1.0 | ✅ Up to date | **Updated to 8.13.2.** Resolved Kotlin 2.3.20 / D8 metadata mismatch. |
 | **Kotlin** | 2.1.0 | 2.3.20 | ⚠️ Outdated | **Updated to 2.3.20.** |
 | **AndroidX Core KTX** | 1.17.0 | 1.18.0 | ⚠️ Outdated | **Updated to 1.18.0.** |
 | **AppCompat** | 1.7.1 | 1.7.1 | ✅ Up to date | None. |
@@ -23,7 +23,7 @@ This report summarizes the audit of dependencies for the T9 Keyboard project as 
 
 ### Preview / Experimental Tools
 - **compileSdk = 36**: This is a preview SDK (Android 16). The project targets it intentionally.
-- **AGP 8.13.0**: This version is ahead of confirmed stable releases. Pinning to a stable release (e.g., 9.1.0) is recommended unless experimental features are required.
+- **AGP 8.13.2**: This version was chosen to ensure compatibility with Kotlin 2.3 metadata format for the D8/R8 compiler.
 
 ### ProGuard / R8 Rules
 - Updated `app/proguard-rules.pro` with keep rules for:
