@@ -120,6 +120,7 @@
             </FrameLayout>
             <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
                 <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
+                <TextView android:id="@+id/secondary_label_enter" style="@style/KeySecondaryLabel" android:text="⌨" />
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>
