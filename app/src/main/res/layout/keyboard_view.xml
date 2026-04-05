@@ -117,6 +117,11 @@
                     android:layout_gravity="center"
                     android:alpha="0.9"
                     android:src="@drawable/ic_emoji" />
+                <TextView
+                    android:id="@+id/label_emoji_text"
+                    style="@style/KeyPrimaryLabel"
+                    android:text="."
+                    android:visibility="gone" />
             </FrameLayout>
             <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
                 <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />

@@ -27,7 +27,7 @@ class KeyLabelRenderer(
             binding.labelPunct, binding.secondaryLabelPunct,
             binding.labelShift, binding.labelEnter,
             binding.labelSpace, binding.secondaryLabelSpace,
-            binding.labelSym, binding.label123
+            binding.labelSym, binding.label123, binding.labelEmojiText
         )
         allTextViews.forEach { it.typeface = ubuntu }
     }
@@ -64,8 +64,12 @@ class KeyLabelRenderer(
         if (isNumMode) {
             binding.label123.text = ","
             binding.labelShift.text = "ABC"
+            binding.labelEmoji.visibility = View.GONE
+            binding.labelEmojiText.visibility = View.VISIBLE
         } else {
             binding.label123.text = "123"
+            binding.labelEmoji.visibility = View.VISIBLE
+            binding.labelEmojiText.visibility = View.GONE
             updateShiftState(lastShiftState, isNumMode)
         }
     }

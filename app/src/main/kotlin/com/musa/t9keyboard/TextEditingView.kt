@@ -241,6 +241,7 @@ class TextEditingView @JvmOverloads constructor(
         }
         override fun setAlpha(alpha: Int) { paint.alpha = alpha }
         override fun setColorFilter(cf: ColorFilter?) { paint.colorFilter = cf }
+        @Suppress("OVERRIDE_DEPRECATION")
         override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
     }
 

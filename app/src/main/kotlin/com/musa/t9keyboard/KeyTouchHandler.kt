@@ -137,7 +137,8 @@ class KeyTouchHandler(
 
         binding.keyEmoji.setOnClickListener {
             onFeedback()
-            onAction(KeyboardView.KeyboardAction.EMOJI)
+            if (isNumMode) onMultiTap('.', 0, true)
+            else onAction(KeyboardView.KeyboardAction.EMOJI)
         }
     }
 
