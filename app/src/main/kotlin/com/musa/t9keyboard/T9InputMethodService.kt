@@ -258,6 +258,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             KeyboardView.KeyboardAction.COMMA -> {
                 icManager.commitText(",", 1)
             }
+            KeyboardView.KeyboardAction.PERIOD -> {
+                icManager.commitText(".", 1)
+            }
             KeyboardView.KeyboardAction.EMOJI -> {
                 orchestrator.emojiPickerView?.let {
                     it.resetScroll()
