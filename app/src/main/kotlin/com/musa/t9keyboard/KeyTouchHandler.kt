@@ -104,6 +104,12 @@ class KeyTouchHandler(
             onAction(KeyboardView.KeyboardAction.ENTER)
         }
 
+        binding.keyEnter.setOnLongClickListener {
+            onFeedback()
+            onAction(KeyboardView.KeyboardAction.SWITCH_KEYBOARD)
+            true
+        }
+
         binding.keySpace.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) onFeedback()
             false
