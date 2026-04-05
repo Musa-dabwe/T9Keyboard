@@ -21,7 +21,9 @@ import com.google.android.material.slider.Slider
 import android.widget.LinearLayout
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import androidx.core.app.ActivityCompat
 
@@ -99,25 +101,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupUI() {
         binding.rowDefaultKeyboard.setOnClickListener {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showInputMethodPicker()
-        }
-
-        updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
-        binding.rowAutocorrectSensitivity.visibility = if (preferences.autocorrectEnabled) View.VISIBLE else View.GONE
-        binding.rowAutocorrect.setOnClickListener {
-            preferences.autocorrectEnabled = !preferences.autocorrectEnabled
-            updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
-            binding.rowAutocorrectSensitivity.visibility = if (preferences.autocorrectEnabled) View.VISIBLE else View.GONE
-        }
-
-        val sensitivityLabels = listOf("Conservative", "Normal", "Aggressive")
-        binding.boxAutocorrectSensitivity.text = sensitivityLabels[preferences.autocorrectSensitivity]
-        binding.rowAutocorrectSensitivity.setOnClickListener {
-            dialogHelper.showSensitivityDialog { which ->
-                preferences.autocorrectSensitivity = which
-                binding.boxAutocorrectSensitivity.text = sensitivityLabels[which]
-            }
+            val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
         }
 
         updateToggle(binding.toggleXt9, preferences.xt9Enabled)
@@ -321,7 +307,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateToggles() {
-        updateToggle(binding.toggleAutocorrect, preferences.autocorrectEnabled)
         updateToggle(binding.toggleXt9, preferences.xt9Enabled)
         updateToggle(binding.toggleHaptic, preferences.hapticEnabled)
         updateToggle(binding.toggleSound, preferences.soundEnabled)
@@ -331,7 +316,6 @@ class SettingsActivity : AppCompatActivity() {
     private fun applyAccentColor() {
         val color = ContextCompat.getColor(this, accentColors[preferences.accentColorIndex])
         val headers = listOf(
-            binding.headerTyping,
             binding.headerInputMode,
             binding.headerFeedback,
             binding.headerLayout,
@@ -347,12 +331,6 @@ class SettingsActivity : AppCompatActivity() {
         val ubuntu = FontUtils.getUbuntu(this)
         val views = listOf(
             binding.txtWelcome,
-            binding.headerTyping,
-            binding.txtAutocorrectTitle,
-            binding.txtAutocorrectSubtitle,
-            binding.txtAutocorrectSensitivityTitle,
-            binding.txtAutocorrectSensitivitySubtitle,
-            binding.boxAutocorrectSensitivity,
             binding.headerInputMode,
             binding.txtXt9Title,
             binding.txtXt9Subtitle,
