@@ -51,7 +51,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onDestroy() {
         super.onDestroy()
-        (serviceScope.coroutineContext[Job] as? Job)?.cancel()
+        (serviceScope.coroutineContext[Job])?.cancel()
     }
 
     override fun onCreate() {
@@ -524,7 +524,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onFeedbackRequested() {
         if (preferences.hapticEnabled) {
-            val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+            val vibrator = getSystemService(android.os.Vibrator::class.java)
             vibrator.vibrate(android.os.VibrationEffect.createOneShot(preferences.hapticDuration.toLong(), android.os.VibrationEffect.DEFAULT_AMPLITUDE))
         }
         if (preferences.soundEnabled) {
