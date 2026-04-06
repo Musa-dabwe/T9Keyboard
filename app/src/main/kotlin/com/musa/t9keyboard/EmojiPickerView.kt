@@ -10,7 +10,10 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
+import androidx.core.graphics.PaintCompat
+import android.graphics.Paint
 import androidx.core.widget.ImageViewCompat
+import androidx.emoji2.text.EmojiCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -38,6 +41,17 @@ class EmojiPickerView @JvmOverloads constructor(
     private var emojiAdapter: EmojiAdapter? = null
     private val preferences = PreferencesManager(context)
     private var cachedEmojiSize: Float = 32f
+    private val paint = Paint()
+
+    private val emojiCompatCallback = object : EmojiCompat.InitCallback() {
+        override fun onInitialized() {
+            post {
+                if (isAttachedToWindow) {
+                    refreshEmojiList()
+                }
+            }
+        }
+    }
 
     sealed class ListItem {
         data class Header(val name: String) : ListItem()
@@ -53,10 +67,23 @@ class EmojiPickerView @JvmOverloads constructor(
         setupViews()
     }
 
+    private fun isEmojiSupported(emoji: String): Boolean {
+        if (!PaintCompat.hasGlyph(paint, emoji)) return false
+        return try {
+            val emojiCompat = EmojiCompat.get()
+            if (emojiCompat.loadState != EmojiCompat.LOAD_STATE_SUCCEEDED) return true
+            val match = emojiCompat.getEmojiMatch(emoji, Int.MAX_VALUE)
+            match != EmojiCompat.EMOJI_UNSUPPORTED
+        } catch (e: IllegalStateException) {
+            true
+        }
+    }
+
     private fun buildFlatList() {
         flatList.clear()
         val recentEmojisStr = preferences.recentEmojis
         val recent = if (recentEmojisStr.isEmpty()) emptyList() else recentEmojisStr.split(",")
+            .filter { isEmojiSupported(it) }
 
         flatList.add(ListItem.Header("Recent Emoji"))
         if (recent.isEmpty()) {
@@ -68,10 +95,33 @@ class EmojiPickerView @JvmOverloads constructor(
         }
 
         EmojiData.categories.forEach { cat ->
-            flatList.add(ListItem.Header(cat.name))
-            EmojiData.emojiMap[cat.name]?.values?.flatten()?.distinct()?.forEach {
-                flatList.add(ListItem.Emoji(it))
+            val categoryEmojis = EmojiData.emojiMap[cat.name]?.values?.flatten()?.distinct()
+                ?.filter { isEmojiSupported(it) } ?: emptyList()
+
+            if (categoryEmojis.isNotEmpty()) {
+                flatList.add(ListItem.Header(cat.name))
+                categoryEmojis.forEach {
+                    flatList.add(ListItem.Emoji(it))
+                }
             }
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        try {
+            EmojiCompat.get().registerInitCallback(emojiCompatCallback)
+        } catch (e: IllegalStateException) {
+            // EmojiCompat not initialized
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        try {
+            EmojiCompat.get().unregisterInitCallback(emojiCompatCallback)
+        } catch (e: IllegalStateException) {
+            // EmojiCompat not initialized
         }
     }
 
@@ -138,9 +188,13 @@ class EmojiPickerView @JvmOverloads constructor(
     }
 
     fun resetScroll() {
+        refreshEmojiList()
+        emojiRecycler?.scrollToPosition(0)
+    }
+
+    private fun refreshEmojiList() {
         buildFlatList()
         emojiAdapter?.notifyDataSetChanged()
-        emojiRecycler?.scrollToPosition(0)
     }
 
     fun setDeletionSpeed(speed: Int) {
