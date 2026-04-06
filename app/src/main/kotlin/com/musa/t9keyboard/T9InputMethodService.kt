@@ -102,8 +102,15 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             }
         }
 
-        val config = DefaultEmojiCompatConfig.create(this)
-        if (config != null) EmojiCompat.init(config)
+        val fontRequest = androidx.core.provider.FontRequest(
+            "com.google.android.gms.fonts",
+            "com.google.android.gms",
+            "Noto Color Emoji Compat",
+            R.array.com_google_android_gms_fonts_certs
+        )
+        val config = androidx.emoji2.text.FontRequestEmojiCompatConfig(this, fontRequest)
+            .setReplaceAll(false)
+        EmojiCompat.init(config)
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
