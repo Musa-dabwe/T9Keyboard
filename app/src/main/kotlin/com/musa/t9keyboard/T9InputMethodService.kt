@@ -40,6 +40,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var contactSuggestionsEnabled = false
     private var xt9Enabled = false
     private var isInputSensitive = false
+    private var isEmojiSearchActive = false
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -73,21 +74,21 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                     return@SuggestionEngine
                 }
 
-            if (xt9Enabled) {
-                editorState.currentXt9Predictions = if (anchored != null) listOf(anchored) + suggestions else suggestions
-                val displayPredictions = editorState.currentXt9Predictions.toMutableList()
-                val rawFallback = editorState.xt9RawSequence.toString()
-                if (displayPredictions.isEmpty()) displayPredictions.add(rawFallback)
+                if (xt9Enabled) {
+                    editorState.currentXt9Predictions = if (anchored != null) listOf(anchored) + suggestions else suggestions
+                    val displayPredictions = editorState.currentXt9Predictions.toMutableList()
+                    val rawFallback = editorState.xt9RawSequence.toString()
+                    if (displayPredictions.isEmpty()) displayPredictions.add(rawFallback)
 
-                val capitalizedPredictions = displayPredictions.map { applyShiftState(it) }
-                val displayAnchored = if (capitalizedPredictions.isNotEmpty()) capitalizedPredictions[0] else applyShiftState(rawFallback)
-                val others = if (capitalizedPredictions.size > 1) capitalizedPredictions.drop(1).take(20) else emptyList()
+                    val capitalizedPredictions = displayPredictions.map { applyShiftState(it) }
+                    val displayAnchored = if (capitalizedPredictions.isNotEmpty()) capitalizedPredictions[0] else applyShiftState(rawFallback)
+                    val others = if (capitalizedPredictions.size > 1) capitalizedPredictions.drop(1).take(20) else emptyList()
 
-                orchestrator.keyboardView?.setSuggestions(others, displayAnchored)
-                icManager.setComposingText(displayAnchored, 1)
-            } else {
-                orchestrator.keyboardView?.setSuggestions(suggestions, anchored)
-            }
+                    orchestrator.keyboardView?.setSuggestions(others, displayAnchored)
+                    icManager.setComposingText(displayAnchored, 1)
+                } else {
+                    orchestrator.keyboardView?.setSuggestions(suggestions, anchored)
+                }
             } catch (e: Exception) {
                 CrashLogger.log("onSuggestionsReady", e, this)
             }
@@ -163,32 +164,33 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             orchestrator.setContainer(container)
 
             orchestrator.keyboardView = KeyboardView(themedContext).apply {
-            onMultiTapListener = { c, tc, f -> onMultiTap(c, tc, f) }
-            onActionClickListener = { a -> onActionClick(a) }
-            onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
-            setOnSuggestionClickListener { s -> onSuggestionClick(s) }
-            setOnToolbarActionClickListener { a -> onToolbarActionClick(a) }
-        }
-        orchestrator.symbolsView = SymbolsView(themedContext).apply {
-            onSymbolClickListener = { s -> commitTextWithFinalization(s) }
-            onBackClickListener = { onBackClick() }
-            onDeleteClickListener = { onActionClick(KeyboardView.KeyboardAction.DEL) }
-            onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
-        }
-        orchestrator.emojiPickerView = EmojiPickerView(themedContext).apply {
-            onEmojiClickListener = { e -> onEmojiClick(e) }
-            onBackspaceClick = { this@T9InputMethodService.onBackspaceClick() }
-            onBackClickListener = { onBackClick() }
-            onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
-        }
-        orchestrator.textEditingView = TextEditingView(themedContext).apply {
-            onAction = { a -> onEditAction(a) }
-            onAbcClick = { this@T9InputMethodService.onAbcClick() }
-            on123Click = { this@T9InputMethodService.on123Click() }
-            onSymClick = { this@T9InputMethodService.onSymClick() }
-            onEmojiClick = { this@T9InputMethodService.onEmojiClick() }
-            onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
-        }
+                onMultiTapListener = { c, tc, f -> onMultiTap(c, tc, f) }
+                onActionClickListener = { a -> onActionClick(a) }
+                onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+                setOnSuggestionClickListener { s -> onSuggestionClick(s) }
+                setOnToolbarActionClickListener { a -> onToolbarActionClick(a) }
+            }
+            orchestrator.symbolsView = SymbolsView(themedContext).apply {
+                onSymbolClickListener = { s -> commitTextWithFinalization(s) }
+                onBackClickListener = { onBackClick() }
+                onDeleteClickListener = { onActionClick(KeyboardView.KeyboardAction.DEL) }
+                onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+            }
+            orchestrator.emojiPickerView = EmojiPickerView(themedContext).apply {
+                onEmojiClickListener = { e -> onEmojiClick(e) }
+                onBackspaceClick = { this@T9InputMethodService.onBackspaceClick() }
+                onBackClickListener = { onBackClick() }
+                onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+                onSearchModeListener = { active -> isEmojiSearchActive = active }
+            }
+            orchestrator.textEditingView = TextEditingView(themedContext).apply {
+                onAction = { a -> onEditAction(a) }
+                onAbcClick = { this@T9InputMethodService.onAbcClick() }
+                on123Click = { this@T9InputMethodService.on123Click() }
+                onSymClick = { this@T9InputMethodService.onSymClick() }
+                onEmojiClick = { this@T9InputMethodService.onEmojiClick() }
+                onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+            }
 
             orchestrator.markViewReady()
             orchestrator.showView(orchestrator.keyboardView!!, force = true)
@@ -202,6 +204,18 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     // --- Action Listeners ---
 
     override fun onMultiTap(char: Char, tapCount: Int, isFinished: Boolean) {
+        if (isEmojiSearchActive) {
+            if (!isFinished) {
+                orchestrator.emojiPickerView?.updateSearchChar(char, tapCount == 0)
+            } else if (isFinished && tapCount == 0) {
+                val isPunctuation = (T9Utils.getDigitForChar(char) == '1')
+                if (char.isDigit() || (xt9Enabled && !isPunctuation)) {
+                    orchestrator.emojiPickerView?.appendSearchChar(char)
+                }
+            }
+            return
+        }
+
         editorState.lastTapTime = System.currentTimeMillis()
         val digit = T9Utils.getDigitForChar(char)
         val isPunctuation = (digit == '1')
@@ -238,55 +252,73 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onActionClick(action: KeyboardView.KeyboardAction) {
         try {
-        when (action) {
-            KeyboardView.KeyboardAction.DEL -> handleDelete()
-            KeyboardView.KeyboardAction.SPACE -> {
-                commitTextWithFinalization(" ")
-                suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord)
-            }
-            KeyboardView.KeyboardAction.ENTER -> {
-                commitTextWithFinalization("")
-                icManager.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
-            }
-            KeyboardView.KeyboardAction.SHIFT -> {
-                shiftManager.toggle()
-                orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
-            }
-            KeyboardView.KeyboardAction.CAPS_LOCK -> {
-                shiftManager.onDoubleTap()
-                orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
-            }
-            KeyboardView.KeyboardAction.SYM -> {
-                orchestrator.symbolsView?.let { orchestrator.showView(it) }
-            }
-            KeyboardView.KeyboardAction.NUM -> {
-                orchestrator.keyboardView?.toggleNumMode()
-            }
-            KeyboardView.KeyboardAction.COMMA -> {
-                icManager.commitText(",", 1)
-            }
-            KeyboardView.KeyboardAction.PERIOD -> {
-                icManager.commitText(".", 1)
-            }
-            KeyboardView.KeyboardAction.EMOJI -> {
-                orchestrator.emojiPickerView?.let {
-                    it.resetScroll()
-                    orchestrator.showView(it)
+            if (isEmojiSearchActive) {
+                when (action) {
+                    KeyboardView.KeyboardAction.DEL -> {
+                        orchestrator.emojiPickerView?.deleteSearchChar()
+                        return
+                    }
+                    KeyboardView.KeyboardAction.SPACE -> {
+                        orchestrator.emojiPickerView?.appendSearchChar(' ')
+                        return
+                    }
+                    else -> { /* Fall through to reset search */ }
                 }
             }
-            KeyboardView.KeyboardAction.SHOW_TEXT_EDITING -> showTextEditingPanel()
-            KeyboardView.KeyboardAction.SETTINGS -> {
-                val intent = android.content.Intent(this, SettingsActivity::class.java).apply {
-                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+
+            if (isEmojiSearchActive) {
+                orchestrator.emojiPickerView?.exitSearchMode()
+            }
+
+            when (action) {
+                KeyboardView.KeyboardAction.DEL -> handleDelete()
+                KeyboardView.KeyboardAction.SPACE -> {
+                    commitTextWithFinalization(" ")
+                    suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord)
                 }
-                startActivity(intent)
+                KeyboardView.KeyboardAction.ENTER -> {
+                    commitTextWithFinalization("")
+                    icManager.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+                }
+                KeyboardView.KeyboardAction.SHIFT -> {
+                    shiftManager.toggle()
+                    orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
+                }
+                KeyboardView.KeyboardAction.CAPS_LOCK -> {
+                    shiftManager.onDoubleTap()
+                    orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
+                }
+                KeyboardView.KeyboardAction.SYM -> {
+                    orchestrator.symbolsView?.let { orchestrator.showView(it) }
+                }
+                KeyboardView.KeyboardAction.NUM -> {
+                    orchestrator.keyboardView?.toggleNumMode()
+                }
+                KeyboardView.KeyboardAction.COMMA -> {
+                    icManager.commitText(",", 1)
+                }
+                KeyboardView.KeyboardAction.PERIOD -> {
+                    icManager.commitText(".", 1)
+                }
+                KeyboardView.KeyboardAction.EMOJI -> {
+                    orchestrator.emojiPickerView?.let {
+                        it.resetScroll()
+                        orchestrator.showView(it)
+                    }
+                }
+                KeyboardView.KeyboardAction.SHOW_TEXT_EDITING -> showTextEditingPanel()
+                KeyboardView.KeyboardAction.SETTINGS -> {
+                    val intent = android.content.Intent(this, SettingsActivity::class.java).apply {
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                }
+                KeyboardView.KeyboardAction.SWITCH_KEYBOARD -> {
+                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showInputMethodPicker()
+                }
+                KeyboardView.KeyboardAction.TOGGLE_XT9 -> toggleXt9()
             }
-            KeyboardView.KeyboardAction.SWITCH_KEYBOARD -> {
-                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.showInputMethodPicker()
-            }
-            KeyboardView.KeyboardAction.TOGGLE_XT9 -> toggleXt9()
-        }
         } catch (e: Exception) {
             CrashLogger.log("onActionClick", e, this)
         }
@@ -294,6 +326,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onToolbarActionClick(action: SuggestionBar.ToolbarAction) {
         onFeedbackRequested()
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
+        }
         when (action) {
             SuggestionBar.ToolbarAction.SETTINGS -> {
                 val intent = android.content.Intent(this, SettingsActivity::class.java).apply {
@@ -308,38 +343,41 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onSuggestionClick(suggestion: String) {
         onFeedbackRequested()
-        try {
-        if (xt9Enabled) {
-            val originalWord = editorState.currentXt9Predictions.find { applyShiftState(it) == suggestion }
-                ?: if (applyShiftState(editorState.xt9RawSequence.toString()) == suggestion) editorState.xt9RawSequence.toString() else suggestion
-
-            icManager.commitText(suggestion, 1)
-            icManager.commitText(" ", 1)
-            if (!isInputSensitive) {
-                LearnedDictionary.learnWordStrong(originalWord, editorState.lastCommittedWord)
-            }
-            editorState.lastCommittedWord = originalWord
-            editorState.xt9DigitSequence.setLength(0)
-            editorState.xt9RawSequence.setLength(0)
-            editorState.currentXt9Predictions = emptyList()
-        } else {
-            icManager.setComposingText(suggestion, 1)
-            icManager.finishComposingText()
-            icManager.commitText(" ", 1)
-            if (!isInputSensitive) {
-                try {
-                    LearnedDictionary.learnWordStrong(suggestion, editorState.lastCommittedWord)
-                } catch (e: Exception) {
-                    CrashLogger.log("onSuggestionClick.multi", e, this)
-                }
-            }
-            editorState.lastCommittedWord = suggestion
-            editorState.composingText.clear()
-            editorState.currentWordConstraints.clear()
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
         }
-        shiftManager.consumeShift()
-        orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
-        suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord, isInputSensitive)
+        try {
+            if (xt9Enabled) {
+                val originalWord = editorState.currentXt9Predictions.find { applyShiftState(it) == suggestion }
+                    ?: if (applyShiftState(editorState.xt9RawSequence.toString()) == suggestion) editorState.xt9RawSequence.toString() else suggestion
+
+                icManager.commitText(suggestion, 1)
+                icManager.commitText(" ", 1)
+                if (!isInputSensitive) {
+                    LearnedDictionary.learnWordStrong(originalWord, editorState.lastCommittedWord)
+                }
+                editorState.lastCommittedWord = originalWord
+                editorState.xt9DigitSequence.setLength(0)
+                editorState.xt9RawSequence.setLength(0)
+                editorState.currentXt9Predictions = emptyList()
+            } else {
+                icManager.setComposingText(suggestion, 1)
+                icManager.finishComposingText()
+                icManager.commitText(" ", 1)
+                if (!isInputSensitive) {
+                    try {
+                        LearnedDictionary.learnWordStrong(suggestion, editorState.lastCommittedWord)
+                    } catch (e: Exception) {
+                        CrashLogger.log("onSuggestionClick.multi", e, this)
+                    }
+                }
+                editorState.lastCommittedWord = suggestion
+                editorState.composingText.clear()
+                editorState.currentWordConstraints.clear()
+            }
+            shiftManager.consumeShift()
+            orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
+            suggestionEngine.requestNextWordSuggestions(editorState.lastCommittedWord, isInputSensitive)
         } catch (e: Exception) {
             CrashLogger.log("onSuggestionClick", e, this)
         }
@@ -502,17 +540,26 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     override fun onAbcClick() {
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
+        }
         isSelectionMode = false
         orchestrator.textEditingView?.setSelectionMode(false)
         orchestrator.keyboardView?.let { orchestrator.showView(it) }
     }
 
     override fun on123Click() {
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
+        }
         onActionClick(KeyboardView.KeyboardAction.NUM)
         orchestrator.keyboardView?.let { orchestrator.showView(it) }
     }
 
     override fun onSymClick() {
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
+        }
         onActionClick(KeyboardView.KeyboardAction.SYM)
     }
 
@@ -522,6 +569,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onEmojiClick(emoji: String) {
         commitTextWithFinalization(emoji)
+        // Note: isEmojiSearchActive remains true as per Step 5 requirements
     }
 
     override fun onBackspaceClick() {
@@ -529,7 +577,11 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     override fun onBackClick() {
-        orchestrator.keyboardView?.let { orchestrator.showView(it) }
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
+        } else {
+            orchestrator.keyboardView?.let { orchestrator.showView(it) }
+        }
     }
 
     override fun onFeedbackRequested() {
@@ -724,6 +776,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         movingPosition = -1
         if (orchestrator.isViewReady) {
             orchestrator.textEditingView?.setSelectionMode(false)
+            if (isEmojiSearchActive) {
+                orchestrator.emojiPickerView?.exitSearchMode()
+            }
         }
         editorState.reset()
         icManager.finishComposingText()
@@ -825,6 +880,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        if (isEmojiSearchActive) {
+            orchestrator.emojiPickerView?.exitSearchMode()
+        }
         isWindowVisible = false
         orchestrator.setWindowVisible(false)
     }

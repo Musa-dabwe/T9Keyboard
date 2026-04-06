@@ -19,11 +19,10 @@ class EmojiAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun getItemViewType(position: Int): Int {
-        val item = items[position]
-        return when {
-            item is EmojiPickerView.ListItem.Header -> EmojiPickerView.VIEW_TYPE_HEADER
-            item is EmojiPickerView.ListItem.Emoji && item.code == "No recent emojis" -> EmojiPickerView.VIEW_TYPE_EMPTY_STATE
-            else -> EmojiPickerView.VIEW_TYPE_EMOJI
+        return when (val item = items[position]) {
+            is EmojiPickerView.ListItem.Header -> EmojiPickerView.VIEW_TYPE_HEADER
+            is EmojiPickerView.ListItem.EmptyState -> EmojiPickerView.VIEW_TYPE_EMPTY_STATE
+            is EmojiPickerView.ListItem.Emoji -> EmojiPickerView.VIEW_TYPE_EMOJI
         }
     }
 
@@ -83,20 +82,24 @@ class EmojiAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = items[position]
-        if (holder is HeaderVH) {
-            holder.tv.text = (item as EmojiPickerView.ListItem.Header).name
-        } else if (holder is EmojiVH) {
-            val vt = getItemViewType(position)
-            val tv = holder.tv
-            val code = (item as EmojiPickerView.ListItem.Emoji).code
-            if (vt == EmojiPickerView.VIEW_TYPE_EMPTY_STATE) {
-                tv.text = code
-            } else {
-                tv.text = code
-                tv.textSize = emojiSize
-                tv.setTextColor(Color.WHITE)
-                tv.background = rippleProvider()?.constantState?.newDrawable()?.mutate()
-                tv.setOnClickListener { onEmojiClick(code) }
+        when (holder) {
+            is HeaderVH -> {
+                holder.tv.text = (item as EmojiPickerView.ListItem.Header).name
+            }
+            is EmojiVH -> {
+                val tv = holder.tv
+                if (item is EmojiPickerView.ListItem.EmptyState) {
+                    tv.text = item.message
+                    tv.background = null
+                    tv.setOnClickListener(null)
+                } else if (item is EmojiPickerView.ListItem.Emoji) {
+                    val code = item.code
+                    tv.text = code
+                    tv.textSize = emojiSize
+                    tv.setTextColor(Color.WHITE)
+                    tv.background = rippleProvider()?.constantState?.newDrawable()?.mutate()
+                    tv.setOnClickListener { onEmojiClick(code) }
+                }
             }
         }
     }
