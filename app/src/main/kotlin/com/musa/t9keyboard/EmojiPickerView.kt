@@ -3,19 +3,27 @@ package com.musa.t9keyboard
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.UnderlineSpan
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.ImageView
 import androidx.core.graphics.PaintCompat
-import android.graphics.Paint
 import androidx.core.widget.ImageViewCompat
 import androidx.emoji2.text.EmojiCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.musa.t9keyboard.utils.FontUtils
 
 class EmojiPickerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -33,6 +41,7 @@ class EmojiPickerView @JvmOverloads constructor(
     var onBackspaceClick: (() -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
     var onFeedbackRequested: (() -> Unit)? = null
+    var onSearchModeListener: ((Boolean) -> Unit)? = null
 
     private var deletionSpeed: Int = 100
     private var emojiRecycler: RecyclerView? = null
@@ -42,6 +51,19 @@ class EmojiPickerView @JvmOverloads constructor(
     private val preferences = PreferencesManager(context)
     private var cachedEmojiSize: Float = 32f
     private val paint = Paint()
+
+    private var isSearchMode = false
+    private val searchQuery = StringBuilder()
+    private var searchTextView: TextView? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var cursorVisible = true
+    private val cursorRunnable = object : Runnable {
+        override fun run() {
+            cursorVisible = !cursorVisible
+            updateSearchDisplayText()
+            handler.postDelayed(this, 500)
+        }
+    }
 
     private val emojiCompatCallback = object : EmojiCompat.InitCallback() {
         override fun onInitialized() {
@@ -56,6 +78,7 @@ class EmojiPickerView @JvmOverloads constructor(
     sealed class ListItem {
         data class Header(val name: String) : ListItem()
         data class Emoji(val code: String) : ListItem()
+        data class EmptyState(val message: String) : ListItem()
     }
 
     private val flatList = mutableListOf<ListItem>()
@@ -68,6 +91,7 @@ class EmojiPickerView @JvmOverloads constructor(
     }
 
     private fun isEmojiSupported(emoji: String): Boolean {
+        if (emoji.isEmpty()) return false
         if (!PaintCompat.hasGlyph(paint, emoji)) return false
         return try {
             val emojiCompat = EmojiCompat.get()
@@ -81,13 +105,26 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun buildFlatList() {
         flatList.clear()
+        if (isSearchMode && searchQuery.isNotEmpty()) {
+            val query = searchQuery.toString()
+            val results = EmojiSearchData.search(query).filter { isEmojiSupported(it) }
+            if (results.isEmpty()) {
+                flatList.add(ListItem.EmptyState("No results for '$query'"))
+            } else {
+                results.forEach {
+                    flatList.add(ListItem.Emoji(it))
+                }
+            }
+            return
+        }
+
         val recentEmojisStr = preferences.recentEmojis
         val recent = if (recentEmojisStr.isEmpty()) emptyList() else recentEmojisStr.split(",")
             .filter { isEmojiSupported(it) }
 
         flatList.add(ListItem.Header("Recent Emoji"))
         if (recent.isEmpty()) {
-            flatList.add(ListItem.Emoji("No recent emojis"))
+            flatList.add(ListItem.EmptyState("No recent emojis"))
         } else {
             recent.take(MAX_RECENT).forEach {
                 flatList.add(ListItem.Emoji(it))
@@ -123,6 +160,9 @@ class EmojiPickerView @JvmOverloads constructor(
         } catch (e: IllegalStateException) {
             // EmojiCompat not initialized
         }
+        if (isSearchMode) {
+            exitSearchMode()
+        }
     }
 
     private fun setupViews() {
@@ -135,21 +175,11 @@ class EmojiPickerView @JvmOverloads constructor(
             setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
 
-        val flexSpace = View(context).apply {
-            layoutParams = LayoutParams(0, 1, 1f)
+        if (isSearchMode) {
+            setupSearchView(topBar)
+        } else {
+            setupNormalTopBar(topBar)
         }
-
-        val searchBtn = createTopButton(R.drawable.ic_search_heart)
-        val backBtn = createTopButton(R.drawable.ic_arrow_small_left).apply {
-            setOnClickListener {
-                onFeedbackRequested?.invoke()
-                onBackClickListener?.invoke()
-            }
-        }
-
-        topBar.addView(flexSpace)
-        topBar.addView(searchBtn)
-        topBar.addView(backBtn)
         addView(topBar)
 
         buildFlatList()
@@ -176,6 +206,120 @@ class EmojiPickerView @JvmOverloads constructor(
         emojiRecycler?.adapter = emojiAdapter
         addView(emojiRecycler)
         setAccentColor(accentColor)
+    }
+
+    private fun setupNormalTopBar(topBar: LinearLayout) {
+        val flexSpace = View(context).apply {
+            layoutParams = LayoutParams(0, 1, 1f)
+        }
+
+        val searchBtn = createTopButton(R.drawable.ic_search_heart).apply {
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                enterSearchMode()
+            }
+        }
+        val backBtn = createTopButton(R.drawable.ic_arrow_small_left).apply {
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                onBackClickListener?.invoke()
+            }
+        }
+
+        topBar.addView(flexSpace)
+        topBar.addView(searchBtn)
+        topBar.addView(backBtn)
+    }
+
+    private fun setupSearchView(topBar: LinearLayout) {
+        searchTextView = TextView(context).apply {
+            layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
+            hint = "Search emoji..."
+            setHintTextColor(Color.parseColor("#888888"))
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            typeface = FontUtils.getUbuntu(context)
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+        }
+        updateSearchDisplayText()
+
+        val closeBtn = createTopButton(R.drawable.ic_arrow_small_left).apply {
+            setOnClickListener {
+                onFeedbackRequested?.invoke()
+                exitSearchMode()
+            }
+        }
+
+        topBar.addView(searchTextView)
+        topBar.addView(closeBtn)
+    }
+
+    fun enterSearchMode() {
+        if (isSearchMode) return
+        isSearchMode = true
+        searchQuery.setLength(0)
+        onSearchModeListener?.invoke(true)
+        setupViews()
+        handler.post(cursorRunnable)
+    }
+
+    fun exitSearchMode() {
+        if (!isSearchMode) return
+        isSearchMode = false
+        onSearchModeListener?.invoke(false)
+        handler.removeCallbacks(cursorRunnable)
+        setupViews()
+    }
+
+    fun updateSearchChar(c: Char, isNewChar: Boolean) {
+        if (!isSearchMode) return
+        if (isNewChar) {
+            searchQuery.append(c)
+        } else if (searchQuery.isNotEmpty()) {
+            searchQuery.setCharAt(searchQuery.length - 1, c)
+        }
+        updateSearchDisplayText()
+        refreshEmojiList()
+    }
+
+    fun appendSearchChar(c: Char) {
+        updateSearchChar(c, true)
+    }
+
+    fun deleteSearchChar() {
+        if (!isSearchMode || searchQuery.isEmpty()) {
+            return
+        }
+        searchQuery.deleteCharAt(searchQuery.length - 1)
+        updateSearchDisplayText()
+        refreshEmojiList()
+    }
+
+    private fun updateSearchDisplayText() {
+        val tv = searchTextView ?: return
+        val cursor = if (cursorVisible) "|" else " "
+        val fullText = searchQuery.toString() + cursor
+
+        val spannable = SpannableString(fullText)
+        val cursorIndex = searchQuery.length
+        spannable.setSpan(
+            ForegroundColorSpan(accentColor),
+            cursorIndex,
+            cursorIndex + 1,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+
+        if (searchQuery.isNotEmpty()) {
+            spannable.setSpan(
+                UnderlineSpan(),
+                0,
+                searchQuery.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+
+        tv.text = spannable
     }
 
     private fun createTopButton(resId: Int) = ImageView(context).apply {
