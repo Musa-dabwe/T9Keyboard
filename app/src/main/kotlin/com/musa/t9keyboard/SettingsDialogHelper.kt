@@ -8,7 +8,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.google.android.material.slider.Slider
 
-class SettingsDialogHelper(private val context: Context, private val preferences: PreferencesManager, private val accentColors: List<Int>) {
+class SettingsDialogHelper(private val context: Context, private val preferences: PreferencesManager, private val accentColors: IntArray) {
 
     fun showInfoDialog() {
         val message = "T9 Keyboard is a modern, lightweight input method built for Android by Musadabwe in \n© 2026\n. Designed with speed and simplicity in mind, it brings back the familiarity of T9 predictive typing while adding smart word prediction powered by the AOSP dictionary. Built with Kotlin for the Android layer and Python for dictionary processing, T9 Keyboard is a passion project crafted from the ground up."
