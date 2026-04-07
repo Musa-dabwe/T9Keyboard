@@ -1,0 +1,91 @@
+# T9 Keyboard Optimization Plan
+
+This document outlines a structured, actionable plan to optimize the `com.musa.t9keyboard` Android project. The primary goal is to ensure smooth performance and a minimal memory footprint on low-end devices, specifically targeting a **1GB RAM** profile and **Android 7.1+ (API 25)** compatibility.
+
+## Section 1 — Codebase Audit (Steps 1–5)
+
+1. **Run Lint and R8 Analysis**: Use Android Studio's **Analyze > Inspect Code** to run Lint and R8 analysis. Flag unused classes, dead resources, and redundant imports across all modules.
+   > Note: This should be treated as a manual cleanup task, though Lint checks can be integrated into CI later.
+2. **Profile Memory Footprint**: Use the **Android Studio Memory Profiler** to profile the app at startup and during active typing. Document baseline heap allocation, GC (Garbage Collection) frequency, and any early leak indicators.
+3. **Audit Bitmap and Drawable Usages**: Identify any PNG/JPEG assets that should be converted to `VectorDrawable` or `WebP`. Flag any bitmaps loaded without downsampling to save memory.
+4. **Audit `HashMap` Usages**: Replace candidates with `SparseArray`, `LongSparseArray`, or `SparseBooleanArray` where keys are integers. This is critical in `LearnedDictionary`, `AospDictionary`, and suggestion/scoring structures to avoid unnecessary boxing.
+5. **Audit Background Processes**: Identify any running services, broadcast receivers, or observers that are not unregistered in `onStop()`/`onDestroy()`. Flag persistent services that could be replaced with `WorkManager`.
+
+## Section 2 — Android Version Compatibility (Steps 6–10)
+
+6. **Update `minSdk` to 25**: Update `minSdk` to `25` in `app/build.gradle.kts`. Ensure `compileSdk` and `targetSdk` remain at current levels (34+).
+7. **Audit API Usages**: Flag any calls to APIs introduced after API 25. Specifically check `WindowInsetsCompat` behavior, `EmojiCompat` initialization, and `InputMethodService` lifecycle differences on API 25–27.
+8. **Guard API Calls**: Replace or guard any unchecked `Build.VERSION.SDK_INT` calls. Add `@RequiresApi` annotations or inline version checks wherever APIs above 25 are used.
+9. **Test on API 25–27 Emulators**: Document known differences and required workarounds for `InputConnection` lifecycle, `finishComposingText()`, and `setSelection()` behavior on older APIs.
+10. **Verify `EmojiCompat` Degradation**: Ensure the emoji panel falls back cleanly (e.g., hiding or showing placeholders) without crashing if `EmojiCompat` fails to initialize or the downloadable font is unavailable on API 25.
+
+## Section 3 — Memory Optimization (Steps 11–17)
+
+11. **Implement `onTrimMemory`**: In the `T9InputMethodService` subclass, implement `onTrimMemory(level: Int)`. Release suggestion caches and non-critical structures in `LearnedDictionary` at `TRIM_MEMORY_UI_HIDDEN` and higher.
+12. **Eliminate Object Churn**: Audit `onDraw()` in custom views and loops inside the suggestion scoring pipeline. Move object allocations (like `Rect` or `Paint` objects) outside these high-frequency paths or implement object pools.
+13. **Refine `RecyclerView` Implementations**:
+    - Verify `SuggestionBar`'s `DiffUtil` implementation is optimal.
+    - Implement `DiffUtil` in `EmojiAdapter` to prevent full list rebinding.
+    - Audit for unnecessary view inflation and ensure stable IDs are used where beneficial.
+14. **Cap `LearnedDictionary` Memory**: Enforce a maximum entry count (e.g., 500 words) with LRU eviction for in-memory structures. Ensure the bigram map does not grow unbounded.
+15. **Lazy-Initialize Heavy Components**: Defer `AospDictionary` loading, `EmojiCompat` setup, and contact queries to background coroutines. Ensure these do not block the main thread at IME startup.
+16. **Optimize Skin Previews**: Use `RGB_565` bitmap configuration for keyboard theme/skin preview images where transparency is not required to halve memory usage.
+17. **Hardware-Backed Bitmaps**: On API 26+, use `Bitmap.Config.HARDWARE` via `BitmapFactory.Options.inPreferredConfig` where appropriate.
+    > Note: Hardware bitmaps are immutable and cannot be drawn to via Software Canvas.
+
+## Section 4 — APK Size Reduction (Steps 18–22)
+
+18. **Enable R8 Shrinking**: Enable R8 full-mode shrinking and obfuscation in the `release` build type. Verify `proguard-rules.pro` correctly preserves IME entry points and dictionary classes.
+19. **Convert PNGs to VectorDrawables**: Identify and convert all PNG icons and UI assets to SVG-based `VectorDrawable`. Focus on raster images above 10KB.
+20. **Convert to WebP**: Convert complex raster images (like fallback emoji assets or skin previews) to WebP format using the Android Studio converter.
+21. **Migrate to App Bundle (AAB)**: Shift release builds to AAB format to enable Play Store delivery of density-specific resources, reducing install size.
+22. **Audit Third-Party Dependencies**: Check if any libraries (e.g., `protobuf`) are pulling in more than necessary. Replace with lighter alternatives like `protobuf-lite` if found.
+
+## Section 5 — Background Work & Lifecycle (Steps 23–26)
+
+23. **Transition to `WorkManager`**: Replace any persistent background services with `WorkManager` one-time or periodic requests, especially for dictionary syncing or maintenance.
+24. **Clean up Observers and Receivers**: Ensure all `ContentObserver` (e.g., for contacts), broadcast receivers, and `LifecycleObserver` instances are unregistered in `onDestroy()`.
+25. **Reset Panel State**: Ensure `onStartInputView()` and `onFinishInputView()` correctly reset panel states and do not leak references to previous `InputConnection` instances.
+26. **Low-Memory Simulation**: Verify the keyboard responds correctly to `adb shell am send-trim-memory com.musa.t9keyboard MODERATE` without crashing or losing state.
+
+## Section 6 — Testing & Validation (Steps 27–30)
+
+27. **Test on 1GB RAM Device**: Create an AVD with 1GB RAM and API 25. Record heap snapshots before and after typing sessions to verify stability.
+28. **CPU Profiling**: Use the Android Studio CPU Profiler to ensure suggestion generation does not block the main thread for more than 16ms during active typing.
+29. **Monitor PSS**: Document baseline vs. post-optimization PSS (Proportional Set Size) values using `adb shell dumpsys meminfo com.musa.t9keyboard`.
+30. **Maintain Checklist**: Use the following checklist to track progress for each release cycle.
+
+---
+
+## Release Checklist
+
+- [ ] 1. Run Lint/R8 analysis and clean up.
+- [ ] 2. Profile memory baseline.
+- [ ] 3. Audit and optimize bitmap/drawable assets.
+- [ ] 4. Replace `HashMap` with `SparseArray` where applicable.
+- [ ] 5. Audit background processes and registrations.
+- [ ] 6. Update `minSdk` to 25.
+- [ ] 7. Audit and guard post-API 25 API calls.
+- [ ] 8. Guard `SDK_INT` checks.
+- [ ] 9. Test and workaround API 25–27 IME differences.
+- [ ] 10. Verify `EmojiCompat` fallback.
+- [ ] 11. Implement `onTrimMemory`.
+- [ ] 12. Eliminate object churn in high-frequency paths.
+- [ ] 13. Optimize `RecyclerView` and `DiffUtil` usage.
+- [ ] 14. Cap `LearnedDictionary` in-memory size.
+- [ ] 15. Lazy-initialize heavy components.
+- [ ] 16. Use `RGB_565` for previews.
+- [ ] 17. Enable `HARDWARE` bitmaps where safe.
+- [ ] 18. Enable R8 full-mode shrinking.
+- [ ] 19. Convert PNGs to `VectorDrawable`.
+- [ ] 20. Convert complex assets to WebP.
+- [ ] 21. Migrate release build to AAB.
+- [ ] 22. Audit and prune third-party dependencies.
+- [ ] 23. Replace persistent services with `WorkManager`.
+- [ ] 24. Unregister all observers/receivers in `onDestroy`.
+- [ ] 25. Correctly reset state in `onStartInputView`/`onFinishInputView`.
+- [ ] 26. Run trim-memory simulation test.
+- [ ] 27. Verify on 1GB RAM / API 25 AVD.
+- [ ] 28. Verify CPU performance during typing.
+- [ ] 29. Document PSS improvements.
+- [ ] 30. Final checklist validation.
