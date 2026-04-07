@@ -26,6 +26,9 @@ import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -199,7 +202,7 @@ class SettingsActivity : AppCompatActivity() {
                 } else {
                     preferences.contactSuggestionsEnabled = true
                     updateToggle(binding.toggleContacts, true)
-                    Thread { ContactsDictionary.load(this) }.start()
+                    lifecycleScope.launch(Dispatchers.IO) { ContactsDictionary.load(this@SettingsActivity) }
                 }
             } else {
                 preferences.contactSuggestionsEnabled = false
@@ -239,7 +242,7 @@ class SettingsActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 preferences.contactSuggestionsEnabled = true
                 updateToggle(binding.toggleContacts, true)
-                Thread { ContactsDictionary.load(this) }.start()
+                lifecycleScope.launch(Dispatchers.IO) { ContactsDictionary.load(this@SettingsActivity) }
                 Toast.makeText(this, "Contact suggestions enabled", Toast.LENGTH_SHORT).show()
             } else {
                 preferences.contactSuggestionsEnabled = false
