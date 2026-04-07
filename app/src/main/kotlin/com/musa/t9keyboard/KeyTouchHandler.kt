@@ -2,8 +2,10 @@ package com.musa.t9keyboard
 
 import android.os.Handler
 import android.os.Looper
+import android.util.SparseArray
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.util.set
 import com.musa.t9keyboard.databinding.KeyboardViewBinding
 
 class KeyTouchHandler(
@@ -28,17 +30,17 @@ class KeyTouchHandler(
 
     private var lastShiftTapTime: Long = 0
 
-    private val keyMap = mapOf(
-        binding.keyAbc.id to "abc",
-        binding.keyDef.id to "def",
-        binding.keyGhi.id to "ghi",
-        binding.keyJkl.id to "jkl",
-        binding.keyMno.id to "mno",
-        binding.keyPqrs.id to "pqrs",
-        binding.keyTuv.id to "tuv",
-        binding.keyWxyz.id to "wxyz",
-        binding.keyPunct.id to ".,!?"
-    )
+    private val keyMap = SparseArray<String>().apply {
+        set(binding.keyAbc.id, "abc")
+        set(binding.keyDef.id, "def")
+        set(binding.keyGhi.id, "ghi")
+        set(binding.keyJkl.id, "jkl")
+        set(binding.keyMno.id, "mno")
+        set(binding.keyPqrs.id, "pqrs")
+        set(binding.keyTuv.id, "tuv")
+        set(binding.keyWxyz.id, "wxyz")
+        set(binding.keyPunct.id, ".,!?")
+    }
 
     fun setupKeys(isNumMode: Boolean, isXt9Mode: Boolean) {
         val numberKeys = listOf(
@@ -166,7 +168,7 @@ class KeyTouchHandler(
             return
         }
 
-        val chars = keyMap[view.id] ?: return
+        val chars = keyMap.get(view.id) ?: return
         if (isXt9Mode && view.id != binding.keyPunct.id) {
             if (isWaitingToCommit) {
                 handler.removeCallbacks(commitRunnable)
@@ -199,7 +201,7 @@ class KeyTouchHandler(
 
     private fun commitCurrentTap() {
         if (currentKeyId != -1) {
-            val chars = keyMap[currentKeyId] ?: return
+            val chars = keyMap.get(currentKeyId) ?: return
             val currentChar = chars[tapCount % chars.length]
             onMultiTap(currentChar, tapCount, true)
             currentKeyId = -1

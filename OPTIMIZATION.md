@@ -61,9 +61,9 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
 
 - [ ] 1. Run Lint/R8 analysis and clean up.
 - [ ] 2. Profile memory baseline.
-- [ ] 3. Audit and optimize bitmap/drawable assets.
-- [ ] 4. Replace `HashMap` with `SparseArray` where applicable.
-- [ ] 5. Audit background processes and registrations.
+- [x] 3. Audit and optimize bitmap/drawable assets.
+- [x] 4. Replace `HashMap` with `SparseArray` where applicable.
+- [x] 5. Audit background processes and registrations.
 - [ ] 6. Update `minSdk` to 25.
 - [ ] 7. Audit and guard post-API 25 API calls.
 - [ ] 8. Guard `SDK_INT` checks.

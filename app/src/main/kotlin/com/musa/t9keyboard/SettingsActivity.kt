@@ -37,7 +37,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val PERMISSION_REQUEST_CONTACTS = 101
     }
 
-    private val accentColors = listOf(
+    private val accentColors = intArrayOf(
         R.color.accent_blue,
         R.color.accent_teal,
         R.color.accent_green,

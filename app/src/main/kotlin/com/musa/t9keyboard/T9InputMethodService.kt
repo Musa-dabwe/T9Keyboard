@@ -44,7 +44,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private val accentColorResIds = listOf(
+    private val accentColorResIds = intArrayOf(
         R.color.accent_blue, R.color.accent_teal, R.color.accent_green,
         R.color.accent_yellow, R.color.accent_magenta, R.color.accent_red,
         R.color.accent_orange, R.color.accent_purple
