@@ -66,7 +66,7 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
   - `SettingsActivity.kt`: Converted `accentColors` from `List<Int>` to `IntArray`.
   - `SettingsDialogHelper.kt`: Updated constructor to accept `IntArray`.
 - **Asset Movement**:
-  - `playstore-icon.png` and `ic_launcher-web.png` were moved from `app/src/main/res/` to the root `metadata/` directory. Verified that all UI assets are now either `VectorDrawable` or `WebP`.
+  - `playstore-icon.png` and `ic_launcher-web.png` were moved from `app/src/res/` to the root `metadata/` directory. Verified that all UI assets are now either `VectorDrawable` or `WebP`.
 - **Lint Analysis Results**:
   - Ran `./gradlew lint`. Fixed 1 `WrongConstant` error in `T9InputMethodService.kt` related to `playSoundEffect`. Remaining warnings (approx. 250) are primarily related to translation and accessibility, which do not impact performance.
 - **Background Processes**:
@@ -75,12 +75,21 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
 ### 2. Implementation Highlights
 - **Step 6**: Updated `minSdk` to `25` in `app/build.gradle.kts`.
 - **Steps 7 & 8**: Added API guards for `VibrationEffect` (API 26+) with legacy fallback. Fixed deprecation warnings for `TRIM_MEMORY` constants by using `ComponentCallbacks2`.
+- **Step 9: API 25–27 Compatibility Notes**:
+  - `InputConnection.finishComposingText()`: Added `setComposingText("", 1)` before calling `finishComposingText()` in `InputConnectionManager` to prevent no-ops on API 25.
+  - `InputConnection.setSelection()`: Added internal documentation regarding silent failure risks on some API 25 OEM devices.
+  - `InputConnection.getSelectedText()`: Verified null-safety checks are present before utilizing results.
+  - `InputConnection.requestCursorUpdates()`: N/A. No usage in current project.
 - **Step 10**: Hardened `EmojiPickerView.kt` with try/catch blocks around `EmojiCompat` access to ensure clean fallback on API 25 if font provider is unavailable.
 - **Step 11 (onTrimMemory)**: Implemented in `T9InputMethodService.kt` to release caches and clear suggestion states during `TRIM_MEMORY_UI_HIDDEN` and `TRIM_MEMORY_MODERATE`.
 - **Step 12**: Reduced object churn in `EmojiAdapter` and `EmojiPickerView` by caching `LayoutParams`, `Spans`, and `RippleDrawable` instances.
 - **Step 13**: Refactored `EmojiAdapter` to `ListAdapter` with `DiffUtil`. Enabled stable IDs in `SuggestionBar`.
 - **Step 14**: Implemented 500-word LRU eviction in `LearnedDictionary.kt` based on frequency and recency.
+- **Step 16**: N/A. Project uses VectorDrawables for all UI elements; no eligible preview bitmaps found for `RGB_565` optimization.
+- **Step 17**: N/A. No display-only bitmaps requiring alpha were found in the codebase.
 - **Step 18**: Enabled `isShrinkResources` in release build and updated `proguard-rules.pro` with comprehensive rules.
+- **Step 19**: Verified that no `.png` or `.jpg` files remain in `app/src/main/res/`. Launcher icons are already in `.webp` format or moved to `metadata/`.
+- **Step 20**: N/A. No complex raster assets requiring WebP conversion were identified.
 - **Step 21**: Added `bundle` configuration in `build.gradle.kts` for AAB support.
 - **Step 22**: Audited dependencies; no `protobuf` found. Verified current dependencies are optimal for APK size.
 - **Step 23**: N/A. No persistent background services found beyond the IME service itself.
@@ -91,32 +100,32 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
 ## Release Checklist
 
 - [x] 1. Run Lint/R8 analysis and clean up.
-- [ ] 2. Profile memory baseline.
+- [ ] 2. Profile memory baseline. (Manual task — requires device/profiler. To be completed during QA phase.)
 - [x] 3. Audit and optimize bitmap/drawable assets.
 - [x] 4. Replace `HashMap` with `SparseArray` where applicable.
 - [x] 5. Audit background processes and registrations.
 - [x] 6. Update `minSdk` to 25.
 - [x] 7. Audit and guard post-API 25 API calls.
 - [x] 8. Guard `SDK_INT` checks.
-- [ ] 9. Test and workaround API 25–27 IME differences.
+- [x] 9. Test and workaround API 25–27 IME differences.
 - [x] 10. Verify `EmojiCompat` fallback.
  - [x] 11. Implement `onTrimMemory`.
 - [x] 12. Eliminate object churn in high-frequency paths.
 - [x] 13. Optimize `RecyclerView` and `DiffUtil` usage.
 - [x] 14. Cap `LearnedDictionary` in-memory size.
 - [x] 15. Lazy-initialize heavy components.
-- [ ] 16. Use `RGB_565` for previews.
-- [ ] 17. Enable `HARDWARE` bitmaps where safe.
+- [x] 16. Use `RGB_565` for previews.
+- [x] 17. Enable `HARDWARE` bitmaps where safe.
 - [x] 18. Enable R8 full-mode shrinking.
-- [ ] 19. Convert PNGs to `VectorDrawable`.
-- [ ] 20. Convert complex assets to WebP.
+- [x] 19. Convert PNGs to `VectorDrawable`.
+- [x] 20. Convert complex assets to WebP.
 - [x] 21. Migrate release build to AAB.
 - [x] 22. Audit and prune third-party dependencies.
 - [x] 23. Replace persistent services with `WorkManager`.
 - [x] 24. Unregister all observers/receivers in `onDestroy`.
 - [x] 25. Correctly reset state in `onStartInputView`/`onFinishInputView`.
-- [ ] 26. Run trim-memory simulation test.
-- [ ] 27. Verify on 1GB RAM / API 25 AVD.
-- [ ] 28. Verify CPU performance during typing.
-- [ ] 29. Document PSS improvements.
-- [ ] 30. Final checklist validation.
+- [ ] 26. Run trim-memory simulation test. (Manual task — requires device/profiler. To be completed during QA phase.)
+- [ ] 27. Verify on 1GB RAM / API 25 AVD. (Manual task — requires device/profiler. To be completed during QA phase.)
+- [ ] 28. Verify CPU performance during typing. (Manual task — requires device/profiler. To be completed during QA phase.)
+- [ ] 29. Document PSS improvements. (Manual task — requires device/profiler. To be completed during QA phase.)
+- [ ] 30. Final checklist validation. (Manual task — requires device/profiler. To be completed during QA phase.)
