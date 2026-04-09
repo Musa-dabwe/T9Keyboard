@@ -51,6 +51,7 @@ class SuggestionBar @JvmOverloads constructor(
 
     private fun setupRecyclerView() {
         binding.suggestionRecyclerView.layoutManager = LinearLayoutManager(context, RecyclerView.HORIZONTAL, false)
+        suggestionAdapter.setHasStableIds(true)
         binding.suggestionRecyclerView.adapter = suggestionAdapter
     }
 
@@ -204,6 +205,10 @@ class SuggestionBar @JvmOverloads constructor(
         }
 
         override fun getItemCount(): Int = items.size
+
+        override fun getItemId(position: Int): Long {
+            return items[position].hashCode().toLong()
+        }
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
     }
