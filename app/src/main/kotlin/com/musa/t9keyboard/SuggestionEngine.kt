@@ -11,6 +11,11 @@ class SuggestionEngine(
     private var suggestionJob: Job? = null
     private var nextWordJob: Job? = null
 
+    fun cancelPendingJobs() {
+        suggestionJob?.cancel()
+        nextWordJob?.cancel()
+    }
+
     fun requestSuggestions(editorState: EditorState, xt9Enabled: Boolean, isInputSensitive: Boolean = false) {
         suggestionJob?.cancel()
         if (isInputSensitive) {

@@ -55,6 +55,8 @@ class EmojiPickerView @JvmOverloads constructor(
     private var isSearchMode = false
     private val searchQuery = StringBuilder()
     private var searchTextView: TextView? = null
+    private var foregroundSpan: ForegroundColorSpan? = null
+    private var underlineSpan: UnderlineSpan? = null
     private val handler = Handler(Looper.getMainLooper())
     private var cursorVisible = true
     private val cursorRunnable = object : Runnable {
@@ -98,7 +100,7 @@ class EmojiPickerView @JvmOverloads constructor(
             if (emojiCompat.loadState != EmojiCompat.LOAD_STATE_SUCCEEDED) return true
             val match = emojiCompat.getEmojiMatch(emoji, Int.MAX_VALUE)
             match != EmojiCompat.EMOJI_UNSUPPORTED
-        } catch (e: IllegalStateException) {
+        } catch (e: Exception) {
             true
         }
     }
@@ -148,8 +150,8 @@ class EmojiPickerView @JvmOverloads constructor(
         super.onAttachedToWindow()
         try {
             EmojiCompat.get().registerInitCallback(emojiCompatCallback)
-        } catch (e: IllegalStateException) {
-            // EmojiCompat not initialized
+        } catch (e: Exception) {
+            // EmojiCompat not initialized or unavailable
         }
     }
 
@@ -157,8 +159,8 @@ class EmojiPickerView @JvmOverloads constructor(
         super.onDetachedFromWindow()
         try {
             EmojiCompat.get().unregisterInitCallback(emojiCompatCallback)
-        } catch (e: IllegalStateException) {
-            // EmojiCompat not initialized
+        } catch (e: Exception) {
+            // EmojiCompat not initialized or unavailable
         }
         if (isSearchMode) {
             exitSearchMode()
@@ -199,10 +201,11 @@ class EmojiPickerView @JvmOverloads constructor(
             }
         }
         emojiRecycler?.layoutManager = glm
-        emojiAdapter = EmojiAdapter(context, flatList, cachedEmojiSize, { currentRipple }) { emoji ->
+        emojiAdapter = EmojiAdapter(context, cachedEmojiSize, { currentRipple }) { emoji ->
             onEmojiClickListener?.invoke(emoji)
             addToRecent(emoji)
         }
+        emojiAdapter?.submitList(flatList.toList())
         emojiRecycler?.adapter = emojiAdapter
         addView(emojiRecycler)
         setAccentColor(accentColor)
@@ -303,16 +306,24 @@ class EmojiPickerView @JvmOverloads constructor(
 
         val spannable = SpannableString(fullText)
         val cursorIndex = searchQuery.length
+
+        if (foregroundSpan == null || foregroundSpan?.foregroundColor != accentColor) {
+            foregroundSpan = ForegroundColorSpan(accentColor)
+        }
+
         spannable.setSpan(
-            ForegroundColorSpan(accentColor),
+            foregroundSpan,
             cursorIndex,
             cursorIndex + 1,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
         )
 
         if (searchQuery.isNotEmpty()) {
+            if (underlineSpan == null) {
+                underlineSpan = UnderlineSpan()
+            }
             spannable.setSpan(
-                UnderlineSpan(),
+                underlineSpan,
                 0,
                 searchQuery.length,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -338,7 +349,7 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun refreshEmojiList() {
         buildFlatList()
-        emojiAdapter?.notifyDataSetChanged()
+        emojiAdapter?.submitList(flatList.toList())
     }
 
     fun setDeletionSpeed(speed: Int) {

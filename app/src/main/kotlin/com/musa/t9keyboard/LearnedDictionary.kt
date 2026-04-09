@@ -42,6 +42,39 @@ object LearnedDictionary {
             }
         }
         cleanup()
+        enforceCap()
+    }
+
+    private fun enforceCap() {
+        if (learnedWords.size <= 500) return
+        val now = System.currentTimeMillis()
+        val sortedEntries = learnedWords.entries.sortedBy { (word, freq) ->
+            val lastTyped = lastTypedMap[word] ?: 0L
+            val daysSince = (now - lastTyped) / 86_400_000L
+            val recency = when {
+                daysSince <= 7   -> 1.0f
+                daysSince <= 30  -> 0.75f
+                daysSince <= 90  -> 0.5f
+                else             -> 0.25f
+            }
+            freq * recency
+        }
+        val toRemoveCount = learnedWords.size - 500
+        val toRemove = sortedEntries.take(toRemoveCount).map { it.key }
+
+        val editor = prefs.edit()
+        toRemove.forEach { word ->
+            learnedWords.remove(word)
+            lastTypedMap.remove(word)
+            nextWordMap.entries.forEach { it.value.remove(word) }
+            editor.remove("freq_$word")
+            editor.remove("last_typed_$word")
+            // Also remove any bigrams leading to this word
+            prefs.all.keys.filter { it.startsWith("next_") && it.endsWith("__$word") }.forEach {
+                editor.remove(it)
+            }
+        }
+        editor.apply()
     }
 
     private fun recencyMultiplier(word: String): Float {
@@ -113,6 +146,7 @@ object LearnedDictionary {
             }
         }
 
+        enforceCap()
         save()
         } catch (e: Exception) {
             // Context might not be available here directly, use a dummy or find a way to get it

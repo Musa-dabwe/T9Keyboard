@@ -1,6 +1,7 @@
 package com.musa.t9keyboard
 
 import android.content.Context
+import android.content.ComponentCallbacks2
 import android.inputmethodservice.InputMethodService
 import android.view.KeyEvent
 import android.view.View
@@ -53,11 +54,12 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     override fun onDestroy() {
         super.onDestroy()
         (serviceScope.coroutineContext[Job])?.cancel()
+        ContactsDictionary.clear()
     }
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= TRIM_MEMORY_UI_HIDDEN) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
             // Clear suggestion bar and keyboard state to free memory when UI is not visible
             if (orchestrator.isViewReady) {
                 orchestrator.keyboardView?.setSuggestions(emptyList())
@@ -65,7 +67,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             // SuggestionEngine is lightweight but we cancel pending jobs
             suggestionEngine.requestSuggestions(editorState, xt9Enabled, isInputSensitive = true)
         }
-        if (level >= TRIM_MEMORY_MODERATE) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_MODERATE) {
             // Perform more aggressive cleanup if memory is low
             LearnedDictionary.load(this) // Reloading essentially clears in-memory state and re-syncs with disk
         }
@@ -139,6 +141,14 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         isInputSensitive = T9Utils.isInputTypeSensitive(info)
+
+        // Reset state
+        editorState.xt9DigitSequence.setLength(0)
+        editorState.xt9RawSequence.setLength(0)
+        editorState.composingText.clear()
+        editorState.currentXt9Predictions = emptyList()
+        isSelectionMode = false
+
         resetImeState(info, resetShift = false)
 
         contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
@@ -170,6 +180,12 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     override fun onFinishInput() {
         super.onFinishInput()
         resetImeState(null, resetShift = true)
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        icManager.finishComposingText()
+        suggestionEngine.cancelPendingJobs()
     }
 
     override fun onCreateInputView(): View {
@@ -603,7 +619,12 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     override fun onFeedbackRequested() {
         if (preferences.hapticEnabled) {
             val vibrator = getSystemService(android.os.Vibrator::class.java)
-            vibrator.vibrate(android.os.VibrationEffect.createOneShot(preferences.hapticDuration.toLong(), android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(preferences.hapticDuration.toLong(), android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(preferences.hapticDuration.toLong())
+            }
         }
         if (preferences.soundEnabled) {
             val am = getSystemService(AUDIO_SERVICE) as android.media.AudioManager

@@ -22,16 +22,23 @@
 
 # T9 Keyboard ProGuard Rules
 
-# AOSP Dictionary Assets
+# IME Entry Points
+-keep class com.musa.t9keyboard.T9InputMethodService { *; }
+-keepclassmembers class * extends android.inputmethodservice.InputMethodService { *; }
+
+# Dictionaries
 -keep class com.musa.t9keyboard.AospDictionary { *; }
 -keep class com.musa.t9keyboard.AospBigrams { *; }
+-keep class com.musa.t9keyboard.LearnedDictionary { *; }
+-keep class com.musa.t9keyboard.ContactsDictionary { *; }
+
+# Emoji Data
+-keep class com.musa.t9keyboard.EmojiData { *; }
+-keep class com.musa.t9keyboard.EmojiSearchData { *; }
 
 # EmojiCompat
 -keep class androidx.emoji2.text.** { *; }
 -keep class androidx.emoji2.widget.** { *; }
 
-# LearnedDictionary SharedPreferences serialization
--keep class com.musa.t9keyboard.LearnedDictionary { *; }
-
 # FontUtils asset loading
--keep class com.musa.t9keyboard.FontUtils { *; }
+-keep class com.musa.t9keyboard.utils.FontUtils { *; }
