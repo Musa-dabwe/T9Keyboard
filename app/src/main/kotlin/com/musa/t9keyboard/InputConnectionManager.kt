@@ -20,9 +20,6 @@ class InputConnectionManager(private val service: T9InputMethodService) {
     }
 
     fun finishComposingText() {
-        // API 25 workaround: calling finishComposingText() on an already-empty region can no-op.
-        // We explicitly set it to empty first.
-        ic?.setComposingText("", 1)
         ic?.finishComposingText()
     }
 
@@ -45,8 +42,6 @@ class InputConnectionManager(private val service: T9InputMethodService) {
         ic?.getSelectedText(flags)
 
     fun setSelection(start: Int, end: Int) {
-        // API 25 workaround: setSelection can silently fail on some OEM devices.
-        // Callers should not assume cursor position shifted without re-reading state.
         ic?.setSelection(start, end)
     }
 
