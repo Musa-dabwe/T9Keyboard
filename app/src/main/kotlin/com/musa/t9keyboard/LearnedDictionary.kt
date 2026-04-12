@@ -10,6 +10,17 @@ object LearnedDictionary {
     private lateinit var prefs: SharedPreferences
     private const val EXPIRATION_MS = 180L * 86_400_000L
 
+    private val digitMap = mapOf(
+        'a' to '2', 'b' to '2', 'c' to '2',
+        'd' to '3', 'e' to '3', 'f' to '3',
+        'g' to '4', 'h' to '4', 'i' to '4',
+        'j' to '5', 'k' to '5', 'l' to '5',
+        'm' to '6', 'n' to '6', 'o' to '6',
+        'p' to '7', 'q' to '7', 'r' to '7', 's' to '7',
+        't' to '8', 'u' to '8', 'v' to '8',
+        'w' to '9', 'x' to '9', 'y' to '9', 'z' to '9'
+    )
+
     @Synchronized
     fun load(context: Context) {
         prefs = context.getSharedPreferences("learned_words", Context.MODE_PRIVATE)
@@ -145,7 +156,7 @@ object LearnedDictionary {
         if (constraints.isEmpty()) return emptyList()
 
         val digitSequence = constraints.map {
-            if (it.length == 1 && it[0].isDigit()) it else T9Utils.getDigitForChar(it[0])
+            if (it.length == 1 && it[0].isDigit()) it else (digitMap[it[0]] ?: ' ')
         }.joinToString("").trim()
 
         val bigramBoosts = if (previousWord != null) {
@@ -191,7 +202,7 @@ object LearnedDictionary {
     }
 
     private fun getT9Sequence(word: String): String {
-        return word.lowercase().filter { it in 'a'..'z' }.map { T9Utils.getDigitForChar(it) }.joinToString("").trim()
+        return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
     }
 
     @Synchronized
