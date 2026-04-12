@@ -55,22 +55,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         (serviceScope.coroutineContext[Job])?.cancel()
     }
 
-    override fun onTrimMemory(level: Int) {
-        super.onTrimMemory(level)
-        if (level >= TRIM_MEMORY_UI_HIDDEN) {
-            // Clear suggestion bar and keyboard state to free memory when UI is not visible
-            if (orchestrator.isViewReady) {
-                orchestrator.keyboardView?.setSuggestions(emptyList())
-            }
-            // SuggestionEngine is lightweight but we cancel pending jobs
-            suggestionEngine.requestSuggestions(editorState, xt9Enabled, isInputSensitive = true)
-        }
-        if (level >= TRIM_MEMORY_MODERATE) {
-            // Perform more aggressive cleanup if memory is low
-            LearnedDictionary.load(this) // Reloading essentially clears in-memory state and re-syncs with disk
-        }
-    }
-
     override fun onCreate() {
         super.onCreate()
         serviceScope.launch {
@@ -113,7 +97,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
         if (preferences.contactSuggestionsEnabled) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                serviceScope.launch(Dispatchers.IO) { ContactsDictionary.load(this@T9InputMethodService) }
+                Thread { ContactsDictionary.load(this) }.start()
             } else {
                 preferences.contactSuggestionsEnabled = false
             }
@@ -607,11 +591,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         }
         if (preferences.soundEnabled) {
             val am = getSystemService(AUDIO_SERVICE) as android.media.AudioManager
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                am.playSoundEffect(android.media.AudioManager.FX_KEY_CLICK, preferences.soundVolume)
-            } else {
-                am.playSoundEffect(android.media.AudioManager.FX_KEY_CLICK)
-            }
+            am.playSoundEffect(android.view.SoundEffectConstants.CLICK, preferences.soundVolume)
         }
     }
 
@@ -893,7 +873,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         orchestrator.setWindowVisible(true)
         if (contactSuggestionsEnabled && !ContactsDictionary.isLoaded()) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                serviceScope.launch(Dispatchers.IO) { ContactsDictionary.load(this@T9InputMethodService) }
+                Thread { ContactsDictionary.load(this) }.start()
             }
         }
     }

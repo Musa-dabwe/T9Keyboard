@@ -57,28 +57,9 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
 
 ---
 
-## Final Audit Results & Implementation Log
-
-### 1. Codebase Audit (Steps 1–5)
-- **SparseArray & IntArray Migration**:
-  - `KeyTouchHandler.kt`: Replaced `HashMap<Int, String>` with `SparseArray<String>` for `keyMap`.
-  - `T9InputMethodService.kt`: Converted `accentColorResIds` from `List<Int>` to `IntArray`.
-  - `SettingsActivity.kt`: Converted `accentColors` from `List<Int>` to `IntArray`.
-  - `SettingsDialogHelper.kt`: Updated constructor to accept `IntArray`.
-- **Asset Movement**:
-  - `playstore-icon.png` and `ic_launcher-web.png` were moved from `app/src/main/res/` to the root `metadata/` directory. Verified that all UI assets are now either `VectorDrawable` or `WebP`.
-- **Lint Analysis Results**:
-  - Ran `./gradlew lint`. Fixed 1 `WrongConstant` error in `T9InputMethodService.kt` related to `playSoundEffect`. Remaining warnings (approx. 250) are primarily related to translation and accessibility, which do not impact performance.
-- **Background Processes**:
-  - Refactored manual `Thread` usage for `ContactsDictionary` in `T9InputMethodService.kt` and `SettingsActivity.kt` to use managed Coroutines (`serviceScope` and `lifecycleScope`).
-
-### 2. Implementation Highlights
-- **Step 11 (onTrimMemory)**: Implemented in `T9InputMethodService.kt` to release caches and clear suggestion states during `TRIM_MEMORY_UI_HIDDEN` and `TRIM_MEMORY_MODERATE`.
-- **Digit Mapping**: Standardized on `T9Utils.getDigitForChar` as the single source of truth across `AospDictionary.kt`, `LearnedDictionary.kt`, and `ContactsDictionary.kt`.
-
 ## Release Checklist
 
-- [x] 1. Run Lint/R8 analysis and clean up.
+- [ ] 1. Run Lint/R8 analysis and clean up.
 - [ ] 2. Profile memory baseline.
 - [x] 3. Audit and optimize bitmap/drawable assets.
 - [x] 4. Replace `HashMap` with `SparseArray` where applicable.
@@ -88,7 +69,7 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
 - [ ] 8. Guard `SDK_INT` checks.
 - [ ] 9. Test and workaround API 25–27 IME differences.
 - [ ] 10. Verify `EmojiCompat` fallback.
- - [x] 11. Implement `onTrimMemory`.
+- [ ] 11. Implement `onTrimMemory`.
 - [ ] 12. Eliminate object churn in high-frequency paths.
 - [ ] 13. Optimize `RecyclerView` and `DiffUtil` usage.
 - [ ] 14. Cap `LearnedDictionary` in-memory size.
