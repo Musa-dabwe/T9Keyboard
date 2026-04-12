@@ -125,7 +125,14 @@
             </FrameLayout>
             <FrameLayout android:id="@+id/key_enter" style="@style/KeyboardKeyLayout">
                 <TextView android:id="@+id/label_enter" style="@style/KeyPrimaryLabel" android:text="↩" />
-                <TextView android:id="@+id/secondary_label_enter" style="@style/KeySecondaryLabel" android:text="⌨" />
+                <ImageView
+                    android:id="@+id/sub_icon_enter"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="6dp"
+                    android:src="@drawable/ic_dot" />
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>
