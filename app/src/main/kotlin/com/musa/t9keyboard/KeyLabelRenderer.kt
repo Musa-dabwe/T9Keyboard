@@ -94,6 +94,7 @@ class KeyLabelRenderer(
         updateShiftState(lastShiftState, isNumMode)
         ImageViewCompat.setImageTintList(binding.labelEmoji, ColorStateList.valueOf(color))
         ImageViewCompat.setImageTintList(binding.labelDelIcon, ColorStateList.valueOf(color))
+        ImageViewCompat.setImageTintList(binding.subIconEnter, ColorStateList.valueOf(color))
         updateKeyBackgrounds()
     }
 
