@@ -73,19 +73,7 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
   - Refactored manual `Thread` usage for `ContactsDictionary` in `T9InputMethodService.kt` and `SettingsActivity.kt` to use managed Coroutines (`serviceScope` and `lifecycleScope`).
 
 ### 2. Implementation Highlights
-- **Step 6**: Updated `minSdk` to `25` in `app/build.gradle.kts`.
-- **Steps 7 & 8**: Added API guards for `VibrationEffect` (API 26+) with legacy fallback. Fixed deprecation warnings for `TRIM_MEMORY` constants by using `ComponentCallbacks2`.
-- **Step 10**: Hardened `EmojiPickerView.kt` with try/catch blocks around `EmojiCompat` access to ensure clean fallback on API 25 if font provider is unavailable.
 - **Step 11 (onTrimMemory)**: Implemented in `T9InputMethodService.kt` to release caches and clear suggestion states during `TRIM_MEMORY_UI_HIDDEN` and `TRIM_MEMORY_MODERATE`.
-- **Step 12**: Reduced object churn in `EmojiAdapter` and `EmojiPickerView` by caching `LayoutParams`, `Spans`, and `RippleDrawable` instances.
-- **Step 13**: Refactored `EmojiAdapter` to `ListAdapter` with `DiffUtil`. Enabled stable IDs in `SuggestionBar`.
-- **Step 14**: Implemented 500-word LRU eviction in `LearnedDictionary.kt` based on frequency and recency.
-- **Step 18**: Enabled `isShrinkResources` in release build and updated `proguard-rules.pro` with comprehensive rules.
-- **Step 21**: Added `bundle` configuration in `build.gradle.kts` for AAB support.
-- **Step 22**: Audited dependencies; no `protobuf` found. Verified current dependencies are optimal for APK size.
-- **Step 23**: N/A. No persistent background services found beyond the IME service itself.
-- **Step 24**: Verified `serviceScope` cancellation in `onDestroy()`. Added `ContactsDictionary.clear()` for cleanup.
-- **Step 25**: Implemented full state reset in `onStartInputView()` and suggestion job cancellation in `onFinishInputView()`.
 - **Digit Mapping**: Standardized on `T9Utils.getDigitForChar` as the single source of truth across `AospDictionary.kt`, `LearnedDictionary.kt`, and `ContactsDictionary.kt`.
 
 ## Release Checklist
@@ -95,26 +83,26 @@ This document outlines a structured, actionable plan to optimize the `com.musa.t
 - [x] 3. Audit and optimize bitmap/drawable assets.
 - [x] 4. Replace `HashMap` with `SparseArray` where applicable.
 - [x] 5. Audit background processes and registrations.
-- [x] 6. Update `minSdk` to 25.
-- [x] 7. Audit and guard post-API 25 API calls.
-- [x] 8. Guard `SDK_INT` checks.
+- [ ] 6. Update `minSdk` to 25.
+- [ ] 7. Audit and guard post-API 25 API calls.
+- [ ] 8. Guard `SDK_INT` checks.
 - [ ] 9. Test and workaround API 25–27 IME differences.
-- [x] 10. Verify `EmojiCompat` fallback.
+- [ ] 10. Verify `EmojiCompat` fallback.
  - [x] 11. Implement `onTrimMemory`.
-- [x] 12. Eliminate object churn in high-frequency paths.
-- [x] 13. Optimize `RecyclerView` and `DiffUtil` usage.
-- [x] 14. Cap `LearnedDictionary` in-memory size.
-- [x] 15. Lazy-initialize heavy components.
+- [ ] 12. Eliminate object churn in high-frequency paths.
+- [ ] 13. Optimize `RecyclerView` and `DiffUtil` usage.
+- [ ] 14. Cap `LearnedDictionary` in-memory size.
+- [ ] 15. Lazy-initialize heavy components.
 - [ ] 16. Use `RGB_565` for previews.
 - [ ] 17. Enable `HARDWARE` bitmaps where safe.
-- [x] 18. Enable R8 full-mode shrinking.
+- [ ] 18. Enable R8 full-mode shrinking.
 - [ ] 19. Convert PNGs to `VectorDrawable`.
 - [ ] 20. Convert complex assets to WebP.
-- [x] 21. Migrate release build to AAB.
-- [x] 22. Audit and prune third-party dependencies.
-- [x] 23. Replace persistent services with `WorkManager`.
-- [x] 24. Unregister all observers/receivers in `onDestroy`.
-- [x] 25. Correctly reset state in `onStartInputView`/`onFinishInputView`.
+- [ ] 21. Migrate release build to AAB.
+- [ ] 22. Audit and prune third-party dependencies.
+- [ ] 23. Replace persistent services with `WorkManager`.
+- [ ] 24. Unregister all observers/receivers in `onDestroy`.
+- [ ] 25. Correctly reset state in `onStartInputView`/`onFinishInputView`.
 - [ ] 26. Run trim-memory simulation test.
 - [ ] 27. Verify on 1GB RAM / API 25 AVD.
 - [ ] 28. Verify CPU performance during typing.
