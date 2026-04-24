@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#292929"
+    android:padding="4dp"
+    android:gravity="center">
+
+    <!-- Row 1: Q W E R T Y U I O P (10 keys) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="10dp">
+
+        <TextView android:id="@+id/key_q" style="@style/EmojiSearchKey" android:text="Q" />
+        <TextView android:id="@+id/key_w" style="@style/EmojiSearchKey" android:text="W" />
+        <TextView android:id="@+id/key_e" style="@style/EmojiSearchKey" android:text="E" />
+        <TextView android:id="@+id/key_r" style="@style/EmojiSearchKey" android:text="R" />
+        <TextView android:id="@+id/key_t" style="@style/EmojiSearchKey" android:text="T" />
+        <TextView android:id="@+id/key_y" style="@style/EmojiSearchKey" android:text="Y" />
+        <TextView android:id="@+id/key_u" style="@style/EmojiSearchKey" android:text="U" />
+        <TextView android:id="@+id/key_i" style="@style/EmojiSearchKey" android:text="I" />
+        <TextView android:id="@+id/key_o" style="@style/EmojiSearchKey" android:text="O" />
+        <TextView android:id="@+id/key_p" style="@style/EmojiSearchKey" android:text="P" />
+    </LinearLayout>
+
+    <!-- Row 2: A S D F G H J K L (9 keys, centered) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="10dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp">
+
+        <TextView android:id="@+id/key_a" style="@style/EmojiSearchKey" android:text="A" />
+        <TextView android:id="@+id/key_s" style="@style/EmojiSearchKey" android:text="S" />
+        <TextView android:id="@+id/key_d" style="@style/EmojiSearchKey" android:text="D" />
+        <TextView android:id="@+id/key_f" style="@style/EmojiSearchKey" android:text="F" />
+        <TextView android:id="@+id/key_g" style="@style/EmojiSearchKey" android:text="G" />
+        <TextView android:id="@+id/key_h" style="@style/EmojiSearchKey" android:text="H" />
+        <TextView android:id="@+id/key_j" style="@style/EmojiSearchKey" android:text="J" />
+        <TextView android:id="@+id/key_k" style="@style/EmojiSearchKey" android:text="K" />
+        <TextView android:id="@+id/key_l" style="@style/EmojiSearchKey" android:text="L" />
+    </LinearLayout>
+
+    <!-- Row 3: Z X C V B N M ⌫ (8 keys) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingStart="25dp"
+        android:paddingEnd="5dp">
+
+        <TextView android:id="@+id/key_z" style="@style/EmojiSearchKey" android:text="Z" />
+        <TextView android:id="@+id/key_x" style="@style/EmojiSearchKey" android:text="X" />
+        <TextView android:id="@+id/key_c" style="@style/EmojiSearchKey" android:text="C" />
+        <TextView android:id="@+id/key_v" style="@style/EmojiSearchKey" android:text="V" />
+        <TextView android:id="@+id/key_b" style="@style/EmojiSearchKey" android:text="B" />
+        <TextView android:id="@+id/key_n" style="@style/EmojiSearchKey" android:text="N" />
+        <TextView android:id="@+id/key_m" style="@style/EmojiSearchKey" android:text="M" />
+
+        <ImageView
+            android:id="@+id/key_backspace"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
+            android:background="@drawable/emoji_search_key_bg"
+            android:src="@drawable/ic_delete"
+            android:scaleType="centerInside"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+</LinearLayout>
