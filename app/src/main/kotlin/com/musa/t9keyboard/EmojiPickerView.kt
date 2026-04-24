@@ -178,7 +178,7 @@ class EmojiPickerView @JvmOverloads constructor(
             // Results Row
             searchResultsRow = LinearLayout(context).apply {
                 orientation = HORIZONTAL
-                val lp = LayoutParams((resources.displayMetrics.widthPixels * 0.8f).toInt(), dpToPx(60)).apply {
+                val lp = LayoutParams((resources.displayMetrics.widthPixels * 0.8f).toInt(), dpToPx(56)).apply {
                     gravity = Gravity.CENTER_HORIZONTAL
                     topMargin = dpToPx(20)
                     bottomMargin = dpToPx(20)
@@ -189,6 +189,8 @@ class EmojiPickerView @JvmOverloads constructor(
                     cornerRadius = dpToPx(30).toFloat()
                 }
                 gravity = Gravity.CENTER
+                clipChildren = false
+                clipToPadding = false
                 visibility = GONE
             }
             addView(searchResultsRow)
@@ -370,7 +372,7 @@ class EmojiPickerView @JvmOverloads constructor(
                     marginEnd = spacing
                 }
                 text = emoji
-                textSize = 35f
+                textSize = 24f
                 gravity = Gravity.CENTER
                 isClickable = true
                 isFocusable = true
