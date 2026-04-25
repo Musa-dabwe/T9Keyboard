@@ -178,10 +178,10 @@ class EmojiPickerView @JvmOverloads constructor(
             // Results Row
             searchResultsRow = LinearLayout(context).apply {
                 orientation = HORIZONTAL
-                val lp = LayoutParams((resources.displayMetrics.widthPixels * 0.8f).toInt(), dpToPx(56)).apply {
+                val lp = LayoutParams((resources.displayMetrics.widthPixels * 0.85f).toInt(), dpToPx(52)).apply {
                     gravity = Gravity.CENTER_HORIZONTAL
-                    topMargin = dpToPx(20)
-                    bottomMargin = dpToPx(20)
+                    topMargin = dpToPx(6)
+                    bottomMargin = dpToPx(6)
                 }
                 layoutParams = lp
                 background = android.graphics.drawable.GradientDrawable().apply {
