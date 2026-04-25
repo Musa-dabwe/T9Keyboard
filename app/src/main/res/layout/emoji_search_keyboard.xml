@@ -4,16 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#292929"
-    android:padding="4dp"
+    android:padding="2dp"
     android:gravity="center">
 
     <!-- Row 1: Q W E R T Y U I O P (10 keys) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="46dp"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="10dp">
+        android:layout_marginBottom="6dp">
 
         <TextView android:id="@+id/key_q" style="@style/EmojiSearchKey" android:text="Q" />
         <TextView android:id="@+id/key_w" style="@style/EmojiSearchKey" android:text="W" />
@@ -30,10 +30,10 @@
     <!-- Row 2: A S D F G H J K L (9 keys, centered) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="46dp"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="10dp"
+        android:layout_marginBottom="6dp"
         android:paddingStart="10dp"
         android:paddingEnd="10dp">
 
@@ -51,7 +51,7 @@
     <!-- Row 3: Z X C V B N M ⌫ (8 keys) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="46dp"
         android:orientation="horizontal"
         android:gravity="center"
         android:paddingStart="25dp"
