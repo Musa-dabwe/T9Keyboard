@@ -40,6 +40,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var contactSuggestionsEnabled = false
     private var xt9Enabled = false
     private var isInputSensitive = false
+    private var currentPackageName: String = ""
     private var isEmojiSearchActive = false
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -116,12 +117,14 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
+        currentPackageName = attribute?.packageName ?: ""
         isInputSensitive = T9Utils.isInputTypeSensitive(attribute)
         resetImeState(attribute, resetShift = true)
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        currentPackageName = info?.packageName ?: ""
         isInputSensitive = T9Utils.isInputTypeSensitive(info)
         resetImeState(info, resetShift = false)
 
@@ -347,7 +350,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             orchestrator.emojiPickerView?.exitSearchMode()
         }
         try {
-            val currentPackage = currentInputBinding?.packageName ?: ""
+            val currentPackage = currentPackageName
             val shouldLearn = !isInputSensitive && !preferences.isAppBlacklisted(currentPackage)
 
             if (xt9Enabled) {
@@ -707,7 +710,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private fun finalizeCurrentComposing(moveCursorToEnd: Boolean = true) {
         if (editorState.composingText.isEmpty() && editorState.xt9DigitSequence.isEmpty()) return
 
-        val currentPackage = currentInputBinding?.packageName ?: ""
+        val currentPackage = currentPackageName
         val shouldLearn = !isInputSensitive && !preferences.isAppBlacklisted(currentPackage)
 
         var committedWord: String? = null
