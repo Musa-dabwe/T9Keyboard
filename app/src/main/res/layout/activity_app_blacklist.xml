@@ -42,7 +42,6 @@
         android:layout_height="match_parent"
         android:paddingHorizontal="16dp"
         android:clipToPadding="false"
-        android:paddingBottom="32dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+        android:paddingBottom="32dp" />
 
 </LinearLayout>
