@@ -212,6 +212,11 @@ class SettingsActivity : AppCompatActivity() {
             LearnedDictionary.clear()
             Toast.makeText(this, "Learned dictionary cleared", Toast.LENGTH_SHORT).show()
         }
+
+        binding.rowPrivacy.setOnClickListener {
+            val intent = Intent(this, AppBlacklistActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun updateToggle(imageView: ImageView, isEnabled: Boolean) {
@@ -323,7 +328,8 @@ class SettingsActivity : AppCompatActivity() {
             binding.headerLayout,
             binding.headerTheme,
             binding.headerIntegrations,
-            binding.headerEmoji
+            binding.headerEmoji,
+            binding.headerPrivacy
         )
         headers.forEach { it.setTextColor(color) }
         binding.btnClearDict.strokeColor = ColorStateList.valueOf(color)

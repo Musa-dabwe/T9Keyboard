@@ -2,9 +2,31 @@ package com.musa.t9keyboard
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.harrytmthy.safebox.SafeBox
 
 class PreferencesManager(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("t9_prefs", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences
+
+    init {
+        val PREFS_NAME = "t9_prefs"
+        val plainPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (plainPrefs.all.isNotEmpty()) {
+            val safePrefs = SafeBox.create(context, PREFS_NAME)
+            val editor = safePrefs.edit()
+            plainPrefs.all.forEach { (k, v) ->
+                when (v) {
+                    is Int -> editor.putInt(k, v)
+                    is Long -> editor.putLong(k, v)
+                    is String -> editor.putString(k, v)
+                    is Boolean -> editor.putBoolean(k, v)
+                    is Float -> editor.putFloat(k, v)
+                }
+            }
+            editor.apply()
+            plainPrefs.edit().clear().apply()
+        }
+        prefs = SafeBox.create(context, PREFS_NAME)
+    }
 
     companion object {
         const val KEY_HAPTIC_ENABLED = "haptic_enabled"
@@ -23,6 +45,7 @@ class PreferencesManager(context: Context) {
         const val KEY_RECENT_EMOJIS = "recent_emojis"
         const val KEY_AUTOCORRECT_ENABLED = "autocorrect_enabled"
         const val KEY_AUTOCORRECT_SENSITIVITY = "autocorrect_sensitivity"
+        const val KEY_BLACKLISTED_APPS = "blacklisted_apps"
     }
 
     var autocorrectEnabled: Boolean
@@ -88,4 +111,22 @@ class PreferencesManager(context: Context) {
     var deletionSpeed: Int
         get() = prefs.getInt(KEY_DELETION_SPEED, 100)
         set(value) = prefs.edit().putInt(KEY_DELETION_SPEED, value).apply()
+
+    var blacklistedApps: Set<String>
+        get() = prefs.getStringSet(KEY_BLACKLISTED_APPS, emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet(KEY_BLACKLISTED_APPS, value).apply()
+
+    fun isAppBlacklisted(packageName: String): Boolean {
+        return blacklistedApps.contains(packageName)
+    }
+
+    fun toggleAppBlacklist(packageName: String) {
+        val current = blacklistedApps.toMutableSet()
+        if (current.contains(packageName)) {
+            current.remove(packageName)
+        } else {
+            current.add(packageName)
+        }
+        blacklistedApps = current
+    }
 }

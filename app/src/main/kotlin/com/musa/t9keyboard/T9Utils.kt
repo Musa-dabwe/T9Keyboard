@@ -55,6 +55,13 @@ object T9Utils {
             return true
         }
 
+        // Check for sensitive field hints/labels
+        val hint = info.hintText?.toString()?.lowercase() ?: ""
+        val label = info.label?.toString()?.lowercase() ?: ""
+        val combined = "$hint $label"
+        val sensitiveKeywords = listOf("password", "pin", "credit", "card", "cvv", "ssn", "social", "secret")
+        if (sensitiveKeywords.any { combined.contains(it) }) return true
+
         return false
     }
 }

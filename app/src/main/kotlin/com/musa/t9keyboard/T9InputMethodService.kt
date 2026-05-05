@@ -347,13 +347,16 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             orchestrator.emojiPickerView?.exitSearchMode()
         }
         try {
+            val currentPackage = currentInputBinding?.packageName ?: ""
+            val shouldLearn = !isInputSensitive && !preferences.isAppBlacklisted(currentPackage)
+
             if (xt9Enabled) {
                 val originalWord = editorState.currentXt9Predictions.find { applyShiftState(it) == suggestion }
                     ?: if (applyShiftState(editorState.xt9RawSequence.toString()) == suggestion) editorState.xt9RawSequence.toString() else suggestion
 
                 icManager.commitText(suggestion, 1)
                 icManager.commitText(" ", 1)
-                if (!isInputSensitive) {
+                if (shouldLearn) {
                     LearnedDictionary.learnWordStrong(originalWord, editorState.lastCommittedWord)
                 }
                 editorState.lastCommittedWord = originalWord
@@ -364,7 +367,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 icManager.setComposingText(suggestion, 1)
                 icManager.finishComposingText()
                 icManager.commitText(" ", 1)
-                if (!isInputSensitive) {
+                if (shouldLearn) {
                     try {
                         LearnedDictionary.learnWordStrong(suggestion, editorState.lastCommittedWord)
                     } catch (e: Exception) {
@@ -704,13 +707,16 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private fun finalizeCurrentComposing(moveCursorToEnd: Boolean = true) {
         if (editorState.composingText.isEmpty() && editorState.xt9DigitSequence.isEmpty()) return
 
+        val currentPackage = currentInputBinding?.packageName ?: ""
+        val shouldLearn = !isInputSensitive && !preferences.isAppBlacklisted(currentPackage)
+
         var committedWord: String? = null
         if (xt9Enabled && editorState.xt9DigitSequence.isNotEmpty()) {
             val wordToCommit = if (editorState.currentXt9Predictions.isNotEmpty()) editorState.currentXt9Predictions[0] else editorState.xt9RawSequence.toString()
             val finalWord = applyShiftState(wordToCommit)
             if (moveCursorToEnd) icManager.commitText(finalWord, 1) else icManager.finishComposingText()
             committedWord = finalWord
-            if (!isInputSensitive) {
+            if (shouldLearn) {
                 try {
                     LearnedDictionary.learnWord(wordToCommit, editorState.lastCommittedWord)
                 } catch (e: Exception) {
@@ -726,7 +732,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             if (moveCursorToEnd) icManager.setComposingText(word, 1)
             icManager.finishComposingText()
             committedWord = word
-            if (!isInputSensitive) {
+            if (shouldLearn) {
                 try {
                     LearnedDictionary.learnWord(word, editorState.lastCommittedWord)
                 } catch (e: Exception) {

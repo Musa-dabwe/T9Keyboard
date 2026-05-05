@@ -780,6 +780,60 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- PRIVACY -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@color/settings_card_background"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:id="@+id/header_privacy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:text="Privacy"
+                            android:textColor="@color/accent_blue"
+                            android:textSize="14sp" />
+
+                        <RelativeLayout
+                            android:id="@+id/row_privacy"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:id="@+id/txt_privacy_title"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="App Blacklist"
+                                    android:textColor="@color/settings_text_primary"
+                                    android:textSize="16sp" />
+                                <TextView
+                                    android:id="@+id/txt_privacy_subtitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Prevent learning words from specific apps"
+                                    android:textColor="@color/settings_text_secondary"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+                        </RelativeLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- DICTIONARY -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_clear_dict"

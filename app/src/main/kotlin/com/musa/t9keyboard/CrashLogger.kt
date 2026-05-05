@@ -11,9 +11,16 @@ object CrashLogger {
     private const val MAX_LINES = 200
     private val TAG = "CrashLogger"
 
+    // Only strip lowercase natural language words (6+ chars), leave class names/methods/paths alone
+    private fun sanitizeMessage(message: String): String {
+        return message.replace(Regex("\\b[a-z]{6,}\\b"), "***")
+    }
+
     fun log(tag: String, throwable: Throwable, context: Context) {
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-        val logEntry = "[$timestamp] $tag: ${Log.getStackTraceString(throwable)}"
+        val rawMessage = throwable.message ?: ""
+        val sanitizedMessage = sanitizeMessage(rawMessage)
+        val logEntry = "[$timestamp] $tag: ${throwable::class.java.simpleName}: $sanitizedMessage"
 
         try {
             // Internal storage filesDir is private to the app (MODE_PRIVATE behavior)

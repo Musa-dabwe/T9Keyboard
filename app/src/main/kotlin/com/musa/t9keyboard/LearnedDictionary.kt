@@ -2,6 +2,7 @@ package com.musa.t9keyboard
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.harrytmthy.safebox.SafeBox
 
 object LearnedDictionary {
     private val learnedWords = mutableMapOf<String, Int>()
@@ -9,6 +10,7 @@ object LearnedDictionary {
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
     private lateinit var prefs: SharedPreferences
     private const val EXPIRATION_MS = 180L * 86_400_000L
+    private const val PREFS_NAME = "learned_words"
 
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
@@ -23,7 +25,24 @@ object LearnedDictionary {
 
     @Synchronized
     fun load(context: Context) {
-        prefs = context.getSharedPreferences("learned_words", Context.MODE_PRIVATE)
+        // One-time migration from plain SharedPreferences to SafeBox
+        val plainPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (plainPrefs.all.isNotEmpty()) {
+            val safePrefs = SafeBox.create(context, PREFS_NAME)
+            val editor = safePrefs.edit()
+            plainPrefs.all.forEach { (k, v) ->
+                when (v) {
+                    is Int -> editor.putInt(k, v)
+                    is Long -> editor.putLong(k, v)
+                    is String -> editor.putString(k, v)
+                    is Boolean -> editor.putBoolean(k, v)
+                }
+            }
+            editor.apply()
+            plainPrefs.edit().clear().apply()
+        }
+
+        prefs = SafeBox.create(context, PREFS_NAME)
         learnedWords.clear()
         lastTypedMap.clear()
         nextWordMap.clear()
