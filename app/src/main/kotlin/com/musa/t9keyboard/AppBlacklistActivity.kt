@@ -50,27 +50,53 @@ class AppBlacklistActivity : AppCompatActivity() {
     private fun loadInstalledApps() {
         val pm = packageManager
         val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER)
-        val resolveInfos = pm.queryIntentActivities(intent, 0)
+
+        // Defensive flags: PackageManager.ResolveInfoFlags.of(0) on API 33+, 0 on older
+        val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            android.content.pm.PackageManager.ResolveInfoFlags.of(0)
+        } else {
+            0
+        }
+        val resolveInfos = pm.queryIntentActivities(intent, flags)
 
         appList.clear()
-        resolveInfos.forEach { info ->
-            val packageName = info.activityInfo.packageName
-            if (packageName != this.packageName) {
-                val appName = info.loadLabel(pm).toString()
-                val icon = info.loadIcon(pm)
-                val isBlacklisted = preferences.isAppBlacklisted(packageName)
-                appList.add(AppInfo(packageName, appName, icon, isBlacklisted))
+
+        if (resolveInfos.isNotEmpty()) {
+            resolveInfos.forEach { info ->
+                val packageName = info.activityInfo.packageName
+                if (packageName != this.packageName) {
+                    val appName = info.loadLabel(pm).toString()
+                    val icon = info.loadIcon(pm)
+                    val isBlacklisted = preferences.isAppBlacklisted(packageName)
+                    appList.add(AppInfo(packageName, appName, icon, isBlacklisted))
+                }
+            }
+        } else {
+            // Fallback: use getInstalledApplications() for Android 11+ package visibility
+            val apps = pm.getInstalledApplications(0)
+            apps.forEach { appInfo ->
+                if (appInfo.packageName != this.packageName) {
+                    val appName = pm.getApplicationLabel(appInfo).toString()
+                    val icon = pm.getApplicationIcon(appInfo)
+                    val isBlacklisted = preferences.isAppBlacklisted(appInfo.packageName)
+                    appList.add(AppInfo(appInfo.packageName, appName, icon, isBlacklisted))
+                }
             }
         }
+
         appList.sortBy { it.appName.lowercase() }
-        adapter.submitList(appList.toList())
+        runOnUiThread {
+            adapter.submitList(appList.toList())
+        }
     }
 
     private fun updateAppList() {
         val updated = appList.map {
             it.copy(isBlacklisted = preferences.isAppBlacklisted(it.packageName))
         }
-        adapter.submitList(updated)
+        runOnUiThread {
+            adapter.submitList(updated)
+        }
     }
 }
 
