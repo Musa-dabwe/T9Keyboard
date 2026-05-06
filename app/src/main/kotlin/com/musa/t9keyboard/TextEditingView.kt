@@ -51,6 +51,7 @@ class TextEditingView @JvmOverloads constructor(
     var onSymClick: (() -> Unit)? = null
     var onEmojiClick: (() -> Unit)? = null
     var onFeedbackRequested: (() -> Unit)? = null
+    var onSwipeDownListener: (() -> Unit)? = null
 
     private var isSelectionMode = false
     private var accentColor = Color.parseColor("#00BFA5")
@@ -71,7 +72,7 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun setupUI() {
         val ubuntu = FontUtils.getUbuntu(context)
-        addView(TextView(context).apply {
+        val topBar = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(36))
             text = "TEXT EDITING"
             setTextColor(Color.parseColor("#888888"))
@@ -80,7 +81,9 @@ class TextEditingView @JvmOverloads constructor(
             gravity = Gravity.CENTER
             setAllCaps(true)
             letterSpacing = 0.05f
-        })
+            setOnTouchListener(SwipeDownListener(context) { onSwipeDownListener?.invoke() })
+        }
+        addView(topBar)
 
         val gridLayout = LinearLayout(context).apply {
             orientation = VERTICAL

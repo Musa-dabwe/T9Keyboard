@@ -29,6 +29,20 @@
         android:visibility="visible"
         android:background="@android:color/transparent" />
 
+    <TextView
+        android:id="@+id/paste_bubble"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="13sp"
+        android:background="@drawable/paste_bubble_bg"
+        android:visibility="gone"
+        android:layout_marginEnd="4dp" />
+
     <!-- Suggestion Strip -->
     <LinearLayout
         android:id="@+id/suggestionStripLayout"
