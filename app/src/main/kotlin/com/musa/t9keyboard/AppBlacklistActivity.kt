@@ -1,5 +1,6 @@
 package com.musa.t9keyboard
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -9,10 +10,14 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.databinding.ActivityAppBlacklistBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AppInfo(val packageName: String, val appName: String, val icon: Drawable, val isBlacklisted: Boolean)
 
@@ -21,7 +26,7 @@ class AppBlacklistActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAppBlacklistBinding
     private lateinit var preferences: PreferencesManager
     private lateinit var adapter: AppBlacklistAdapter
-    private val appList = mutableListOf<AppInfo>()
+    private var appList = listOf<AppInfo>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +37,14 @@ class AppBlacklistActivity : AppCompatActivity() {
 
         setupToolbar()
         setupRecyclerView()
-        loadInstalledApps()
+
+        lifecycleScope.launch {
+            val apps = withContext(Dispatchers.IO) {
+                loadInstalledApps()
+            }
+            appList = apps
+            adapter.submitList(apps)
+        }
     }
 
     private fun setupToolbar() {
@@ -47,29 +59,31 @@ class AppBlacklistActivity : AppCompatActivity() {
         binding.recyclerApps.adapter = adapter
     }
 
-    private fun loadInstalledApps() {
+    private fun loadInstalledApps(): List<AppInfo> {
         val pm = packageManager
-        val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER)
-        val resolveInfos = pm.queryIntentActivities(intent, 0)
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
 
-        appList.clear()
-        resolveInfos.forEach { info ->
-            val packageName = info.activityInfo.packageName
-            if (packageName != this.packageName) {
-                val appName = info.loadLabel(pm).toString()
-                val icon = info.loadIcon(pm)
-                val isBlacklisted = preferences.isAppBlacklisted(packageName)
-                appList.add(AppInfo(packageName, appName, icon, isBlacklisted))
-            }
+        return try {
+            pm.queryIntentActivities(intent, 0)
+                .filter { it.activityInfo.packageName != this.packageName }
+                .map { info ->
+                    val packageName = info.activityInfo.packageName
+                    val appName = info.loadLabel(pm).toString()
+                    val icon = info.loadIcon(pm)
+                    val isBlacklisted = preferences.isAppBlacklisted(packageName)
+                    AppInfo(packageName, appName, icon, isBlacklisted)
+                }
+                .sortedBy { it.appName.lowercase() }
+        } catch (e: Exception) {
+            emptyList()
         }
-        appList.sortBy { it.appName.lowercase() }
-        adapter.submitList(appList.toList())
     }
 
     private fun updateAppList() {
         val updated = appList.map {
             it.copy(isBlacklisted = preferences.isAppBlacklisted(it.packageName))
         }
+        appList = updated
         adapter.submitList(updated)
     }
 }

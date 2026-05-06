@@ -72,5 +72,6 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("androidx.emoji2:emoji2:1.6.0")
     implementation("androidx.emoji2:emoji2-views:1.6.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("io.github.harrytmthy:safebox:1.3.0")
 }
