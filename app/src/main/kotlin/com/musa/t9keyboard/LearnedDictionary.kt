@@ -3,9 +3,21 @@ package com.musa.t9keyboard
 import android.content.Context
 import android.content.SharedPreferences
 import com.harrytmthy.safebox.SafeBox
+import java.util.TreeMap
 
 object LearnedDictionary {
     private val learnedWords = mutableMapOf<String, Int>()
+    private val learnedT9Index = TreeMap<String, MutableList<String>>()
+    private var onMutationListener: (() -> Unit)? = null
+
+    fun setOnMutationListener(listener: (() -> Unit)?) {
+        onMutationListener = listener
+    }
+
+    private fun notifyMutation() {
+        onMutationListener?.invoke()
+    }
+
     private val lastTypedMap = mutableMapOf<String, Long>()
     private val nextWordMap = mutableMapOf<String, MutableMap<String, Int>>()
     private lateinit var prefs: SharedPreferences
@@ -44,6 +56,7 @@ object LearnedDictionary {
 
         prefs = SafeBox.create(context, PREFS_NAME)
         learnedWords.clear()
+        learnedT9Index.clear()
         lastTypedMap.clear()
         nextWordMap.clear()
 
@@ -53,6 +66,10 @@ object LearnedDictionary {
                 val word = key.substring(5)
                 val freq = value as Int
                 learnedWords[word] = freq
+                val digits = getT9Sequence(word)
+                if (digits.isNotEmpty()) {
+                    learnedT9Index.getOrPut(digits) { mutableListOf() }.add(word)
+                }
 
                 // Load or initialize last typed timestamp
                 val timestamp = prefs.getLong("last_typed_$word", -1L)
@@ -95,6 +112,11 @@ object LearnedDictionary {
         }
         toRemove.forEach { word ->
             learnedWords.remove(word)
+            val digits = getT9Sequence(word)
+            learnedT9Index[digits]?.remove(word)
+            if (learnedT9Index[digits]?.isEmpty() == true) {
+                learnedT9Index.remove(digits)
+            }
             lastTypedMap.remove(word)
             nextWordMap.entries.forEach { it.value.remove(word) }
         }
@@ -105,6 +127,7 @@ object LearnedDictionary {
                 editor.remove("last_typed_$word")
             }
             editor.apply()
+            notifyMutation()
         }
     }
 
@@ -114,8 +137,15 @@ object LearnedDictionary {
         val lowerWord = word.lowercase().trim()
         if (lowerWord.isEmpty()) return
 
-        val newFreq = (learnedWords[lowerWord] ?: 0) + 1
+        val oldFreq = learnedWords[lowerWord]
+        val newFreq = (oldFreq ?: 0) + 1
         learnedWords[lowerWord] = newFreq
+        if (oldFreq == null) {
+            val digits = getT9Sequence(lowerWord)
+            if (digits.isNotEmpty()) {
+                learnedT9Index.getOrPut(digits) { mutableListOf() }.add(lowerWord)
+            }
+        }
 
         val now = System.currentTimeMillis()
         lastTypedMap[lowerWord] = now
@@ -144,6 +174,7 @@ object LearnedDictionary {
         }
 
         save()
+        notifyMutation()
         } catch (e: Exception) {
             // Context might not be available here directly, use a dummy or find a way to get it
             // For now, we'll rely on the caller to log if needed or inject context
@@ -183,15 +214,17 @@ object LearnedDictionary {
         } else emptyMap()
 
         val candidates = mutableListOf<AospDictionary.WordSuggestion>()
-
         val now = System.currentTimeMillis()
-        // Match learned words against the digit sequence constraints
-        learnedWords.forEach { (word, freq) ->
-            val lastTyped = lastTypedMap[word] ?: 0L
-            if (now - lastTyped > EXPIRATION_MS) return@forEach
 
-            val wordT9 = getT9Sequence(word)
-            if (wordT9.startsWith(digitSequence)) {
+        // Use subMap to efficiently find all sequences that start with the digitSequence
+        val potentialMatches = learnedT9Index.subMap(digitSequence, digitSequence + "\uFFFF")
+
+        for (words in potentialMatches.values) {
+            for (word in words) {
+                val freq = learnedWords[word] ?: 0
+                val lastTyped = lastTypedMap[word] ?: 0L
+                if (now - lastTyped > EXPIRATION_MS) continue
+
                 var matches = true
                 val stripped = word.filter { it in 'a'..'z' }
                 for (i in constraints.indices) {
@@ -253,10 +286,12 @@ object LearnedDictionary {
     @Synchronized
     fun clear() {
         learnedWords.clear()
+        learnedT9Index.clear()
         lastTypedMap.clear()
         nextWordMap.clear()
         if (::prefs.isInitialized) {
             prefs.edit().clear().apply()
         }
+        notifyMutation()
     }
 }

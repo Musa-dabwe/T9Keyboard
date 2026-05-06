@@ -3,34 +3,30 @@ package com.musa.t9keyboard
 import android.view.inputmethod.EditorInfo
 
 object T9Utils {
-    fun getDigitForChar(c: Char): Char {
-        return when (c.lowercaseChar()) {
-            'a', 'b', 'c' -> '2'
-            'd', 'e', 'f' -> '3'
-            'g', 'h', 'i' -> '4'
-            'j', 'k', 'l' -> '5'
-            'm', 'n', 'o' -> '6'
-            'p', 'q', 'r', 's' -> '7'
-            't', 'u', 'v' -> '8'
-            'w', 'x', 'y', 'z' -> '9'
-            '.', ',', '?', '!' -> '1'
-            else -> ' '
+    private val DIGIT_MAP: Map<Char, String> = mapOf(
+        '2' to "abc",
+        '3' to "def",
+        '4' to "ghi",
+        '5' to "jkl",
+        '6' to "mno",
+        '7' to "pqrs",
+        '8' to "tuv",
+        '9' to "wxyz",
+        '1' to ".,?!"
+    )
+
+    private val CHAR_TO_DIGIT: Map<Char, Char> = mutableMapOf<Char, Char>().apply {
+        DIGIT_MAP.forEach { (digit, letters) ->
+            letters.forEach { put(it, digit) }
         }
     }
 
+    fun getDigitForChar(c: Char): Char {
+        return CHAR_TO_DIGIT[c.lowercaseChar()] ?: ' '
+    }
+
     fun getFirstCharForDigit(digit: Char): Char {
-        return when (digit) {
-            '2' -> 'a'
-            '3' -> 'd'
-            '4' -> 'g'
-            '5' -> 'j'
-            '6' -> 'm'
-            '7' -> 'p'
-            '8' -> 't'
-            '9' -> 'w'
-            '1' -> '.'
-            else -> ' '
-        }
+        return DIGIT_MAP[digit]?.firstOrNull() ?: ' '
     }
 
     fun isInputTypeSensitive(info: EditorInfo?): Boolean {
