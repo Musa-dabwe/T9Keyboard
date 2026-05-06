@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.musa.t9keyboard.databinding.ActivityAppBlacklistBinding
@@ -56,6 +57,7 @@ class AppBlacklistActivity : AppCompatActivity() {
             preferences.toggleAppBlacklist(packageName)
             updateAppList()
         }
+        binding.recyclerApps.layoutManager = LinearLayoutManager(this)
         binding.recyclerApps.adapter = adapter
     }
 
