@@ -8,6 +8,20 @@ class SuggestionEngine(
     private val onSuggestionsReady: (List<String>, String?) -> Unit
 ) {
 
+    private val suggestionCache = object : LinkedHashMap<String, Pair<List<String>, String?>>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<List<String>, String?>>?): Boolean {
+            return size > 32
+        }
+    }
+
+    init {
+        LearnedDictionary.setOnMutationListener {
+            synchronized(suggestionCache) {
+                suggestionCache.clear()
+            }
+        }
+    }
+
     private var suggestionJob: Job? = null
     private var nextWordJob: Job? = null
 
@@ -23,6 +37,15 @@ class SuggestionEngine(
         val xt9DigitSeq = editorState.xt9DigitSequence.toString()
         val xt9RawSeq = editorState.xt9RawSequence.toString()
 
+        val cacheKey = "$xt9Enabled|$composing|$xt9DigitSeq|$xt9RawSeq|$lastWord|${constraints.joinToString(",")}"
+        synchronized(suggestionCache) {
+            val cached = suggestionCache[cacheKey]
+            if (cached != null) {
+                onSuggestionsReady(cached.first, cached.second)
+                return
+            }
+        }
+
         suggestionJob = serviceScope.launch {
             val result = withContext(Dispatchers.Default) {
                 if (xt9Enabled) {
@@ -30,6 +53,9 @@ class SuggestionEngine(
                 } else {
                     processMultiTapSuggestions(composing, constraints, lastWord)
                 }
+            }
+            synchronized(suggestionCache) {
+                suggestionCache[cacheKey] = result
             }
             onSuggestionsReady(result.first, result.second)
         }
@@ -51,14 +77,29 @@ class SuggestionEngine(
         val aosp = AospDictionary.getSuggestions(constraints)
         val containing = if (targetLength >= 2) AospDictionary.getWordsContaining(composing) else emptyList()
 
-        val allCandidates = if (contactsEnabled) {
+        val mergedCandidates = HashMap<String, AospDictionary.WordSuggestion>()
+        fun merge(list: List<AospDictionary.WordSuggestion>) {
+            list.forEach {
+                val existing = mergedCandidates[it.word.lowercase()]
+                if (existing == null || it.frequency > existing.frequency) {
+                    mergedCandidates[it.word.lowercase()] = it
+                }
+            }
+        }
+
+        merge(learned)
+        merge(aosp)
+        merge(containing)
+
+        if (contactsEnabled) {
             val seq = constraints.map { if (it.length == 1 && it[0].isDigit()) it else T9Utils.getDigitForChar(it[0]).toString() }.joinToString("")
             val contacts = ContactsDictionary.getSuggestionsForSequence(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
             val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-            (learned + contacts + aosp + contactPrefixes + containing).distinctBy { it.word.lowercase() }
-        } else {
-            (learned + aosp + containing).distinctBy { it.word.lowercase() }
+            merge(contacts)
+            merge(contactPrefixes)
         }
+
+        val allCandidates = mergedCandidates.values.toList()
 
         val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
         val exactMatches = allCandidates.filter { it.word.length == targetLength }
@@ -98,13 +139,30 @@ class SuggestionEngine(
         val aospPrefix = AospDictionary.getWordsStartingWith(digitSeq).filter { it.word.length > targetLength }
         val containing = if (targetLength >= 2) AospDictionary.getWordsContaining(rawSeq) else emptyList()
 
-        val allCandidates = if (contactsEnabled) {
+        val mergedCandidates = HashMap<String, AospDictionary.WordSuggestion>()
+        fun merge(list: List<AospDictionary.WordSuggestion>) {
+            list.forEach {
+                val existing = mergedCandidates[it.word.lowercase()]
+                if (existing == null || it.frequency > existing.frequency) {
+                    mergedCandidates[it.word.lowercase()] = it
+                }
+            }
+        }
+
+        merge(learnedExact)
+        merge(aospExact)
+        merge(learnedPrefix)
+        merge(aospPrefix)
+        merge(containing)
+
+        if (contactsEnabled) {
             val contactsExact = ContactsDictionary.getSuggestionsForSequence(digitSeq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
             val contactsPrefix = ContactsDictionary.getSuggestionsForPrefix(digitSeq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-            (learnedExact + contactsExact + aospExact + learnedPrefix + contactsPrefix + aospPrefix + containing)
-        } else {
-            (learnedExact + aospExact + learnedPrefix + aospPrefix + containing)
-        }.distinctBy { it.word.lowercase() }
+            merge(contactsExact)
+            merge(contactsPrefix)
+        }
+
+        val allCandidates = mergedCandidates.values.toList()
 
         val learnedSet = (learnedExact + learnedPrefix).map { it.word.lowercase() }.toHashSet()
 

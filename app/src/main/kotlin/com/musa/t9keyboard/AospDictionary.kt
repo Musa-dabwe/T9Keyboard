@@ -14,6 +14,8 @@ object AospDictionary {
     }
 
     private val t9Map = TreeMap<String, MutableList<WordEntry>>()
+    private val exactT9Map = HashMap<String, MutableList<WordEntry>>()
+    private val wordToDigits = HashMap<String, String>()
     private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
     private val allWordEntries = mutableListOf<WordEntry>()
 
@@ -33,6 +35,8 @@ object AospDictionary {
     suspend fun loadFromAssets(context: Context) = withContext(Dispatchers.IO) {
         synchronized(this@AospDictionary) {
             t9Map.clear()
+            exactT9Map.clear()
+            wordToDigits.clear()
             wordMap.clear()
             allWordEntries.clear()
         }
@@ -67,6 +71,8 @@ object AospDictionary {
                             val digits = getT9Sequence(word)
                             if (digits.isNotEmpty()) {
                                 t9Map.getOrPut(digits) { mutableListOf() }.add(entry)
+                                exactT9Map.getOrPut(digits) { mutableListOf() }.add(entry)
+                                wordToDigits[word.lowercase()] = digits
                             }
                         }
                     }
@@ -104,8 +110,8 @@ object AospDictionary {
 
     @Synchronized
     fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
-        if (t9Map.isEmpty()) return emptyList()
-        val entries = t9Map[t9sequence] ?: emptyList<WordEntry>()
+        if (exactT9Map.isEmpty()) return emptyList()
+        val entries = exactT9Map[t9sequence] ?: emptyList<WordEntry>()
         val results = entries.map { WordSuggestion(it.word, it.frequency) }.toMutableList()
 
         return results.sortedByDescending { it.frequency }
@@ -142,7 +148,7 @@ object AospDictionary {
 
     @Synchronized
     fun getSuggestions(constraints: List<String>): List<WordSuggestion> {
-        if (t9Map.isEmpty()) return emptyList()
+        if (exactT9Map.isEmpty()) return emptyList()
         if (constraints.isEmpty()) return emptyList()
 
         val digitSequence = constraints.map {
@@ -152,7 +158,7 @@ object AospDictionary {
         // Optimization: if sequence is long, don't do prefix searching to avoid iterating keys
         if (digitSequence.length > 12) {
              val results = mutableListOf<WordSuggestion>()
-             t9Map[digitSequence]?.forEach { entry ->
+             exactT9Map[digitSequence]?.forEach { entry ->
                  var matches = true
                  for (i in constraints.indices) {
                      val constraint = constraints[i]
