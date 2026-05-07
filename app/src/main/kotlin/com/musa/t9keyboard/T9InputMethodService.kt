@@ -9,6 +9,7 @@ import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.Toast
+import android.text.InputType
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
@@ -42,6 +43,8 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var isInputSensitive = false
     private var currentPackageName: String = ""
     private var isEmojiSearchActive = false
+    private val pasteManager = PasteClipboardManager(this)
+    private var pasteBubble: android.widget.TextView? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -127,6 +130,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         currentPackageName = info?.packageName ?: ""
         isInputSensitive = T9Utils.isInputTypeSensitive(info)
         resetImeState(info, resetShift = false)
+        updatePasteBubble(info)
 
         contactPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
         contactSuggestionsEnabled = preferences.contactSuggestionsEnabled
@@ -172,18 +176,24 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
                 setOnSuggestionClickListener { s -> onSuggestionClick(s) }
                 setOnToolbarActionClickListener { a -> onToolbarActionClick(a) }
+                pasteBubble = findViewById(R.id.paste_bubble)
+                pasteBubble?.setOnClickListener { onPasteBubbleTapped() }
             }
             orchestrator.symbolsView = SymbolsView(themedContext).apply {
                 onSymbolClickListener = { s -> commitTextWithFinalization(s) }
                 onBackClickListener = { onBackClick() }
+                pasteBubble?.visibility = View.GONE
                 onDeleteClickListener = { onActionClick(KeyboardView.KeyboardAction.DEL) }
                 onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+                onSwipeDownListener = { onBackClick() }
             }
             orchestrator.emojiPickerView = EmojiPickerView(themedContext).apply {
                 onEmojiClickListener = { e -> onEmojiClick(e) }
                 onBackspaceClick = { this@T9InputMethodService.onBackspaceClick() }
                 onBackClickListener = { onBackClick() }
+                pasteBubble?.visibility = View.GONE
                 onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+                onSwipeDownListener = { onBackClick() }
                 onSearchModeListener = { active -> isEmojiSearchActive = active }
             }
             orchestrator.textEditingView = TextEditingView(themedContext).apply {
@@ -193,6 +203,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 onSymClick = { this@T9InputMethodService.onSymClick() }
                 onEmojiClick = { this@T9InputMethodService.onEmojiClick() }
                 onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+                onSwipeDownListener = { onBackClick() }
             }
 
             orchestrator.markViewReady()
@@ -293,6 +304,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 }
                 KeyboardView.KeyboardAction.SYM -> {
                     orchestrator.symbolsView?.let { orchestrator.showView(it) }
+                    pasteBubble?.visibility = View.GONE
                 }
                 KeyboardView.KeyboardAction.NUM -> {
                     orchestrator.keyboardView?.toggleNumMode()
@@ -305,6 +317,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 }
                 KeyboardView.KeyboardAction.EMOJI -> {
                     orchestrator.emojiPickerView?.let {
+                        pasteBubble?.visibility = View.GONE
                         it.resetScroll()
                         orchestrator.showView(it)
                     }
@@ -583,6 +596,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     override fun onBackClick() {
+        updatePasteBubble(currentInputEditorInfo)
         if (isEmojiSearchActive) {
             orchestrator.emojiPickerView?.exitSearchMode()
         } else {
@@ -770,6 +784,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     private fun showTextEditingPanel() {
+        pasteBubble?.visibility = View.GONE
         updateEditingSelectionState()
         orchestrator.textEditingView?.let { orchestrator.showView(it) }
     }
@@ -894,5 +909,49 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         }
         isWindowVisible = false
         orchestrator.setWindowVisible(false)
+    }
+
+    private fun isCurrentFieldSensitive(info: EditorInfo?): Boolean {
+        if (info == null) return true
+        val type = info.inputType
+        val variation = type and android.text.InputType.TYPE_MASK_VARIATION
+        val cls = type and android.text.InputType.TYPE_MASK_CLASS
+
+        return when {
+            // All password variations
+            variation == android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD -> true
+            variation == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD -> true
+            variation == android.text.InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> true
+            // Numeric PIN / password
+            cls == android.text.InputType.TYPE_CLASS_NUMBER &&
+                variation == android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD -> true
+            // No input type set at all (TYPE_NULL) — unknown field, treat as sensitive
+            type == android.text.InputType.TYPE_NULL -> true
+            else -> false
+        }
+    }
+
+    private fun updatePasteBubble(info: EditorInfo?) {
+        val bubble = pasteBubble ?: return
+
+        // Security gate — sensitive field or blacklisted app
+        if (isCurrentFieldSensitive(info) || preferences.isAppBlacklisted(currentPackageName)) {
+            bubble.visibility = View.GONE
+            return
+        }
+
+        val preview = pasteManager.getClipPreview()
+        if (preview != null) {
+            bubble.text = preview
+            bubble.visibility = View.VISIBLE
+        } else {
+            bubble.visibility = View.GONE
+        }
+    }
+
+    private fun onPasteBubbleTapped() {
+        val text = pasteManager.getFullClipText() ?: return
+        icManager.commitText(text, 1)
+        pasteBubble?.visibility = View.GONE
     }
 }
