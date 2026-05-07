@@ -25,6 +25,7 @@ class SymbolsView @JvmOverloads constructor(
     var onDeleteClickListener: (() -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
     var onFeedbackRequested: (() -> Unit)? = null
+    var onSwipeDownListener: (() -> Unit)? = null
 
     private val delHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var delRunnable: Runnable? = null
@@ -48,6 +49,7 @@ class SymbolsView @JvmOverloads constructor(
     }
 
     private fun setupTopBar() {
+        binding.topBar.setOnTouchListener(SwipeDownListener(context) { onSwipeDownListener?.invoke() })
         binding.btnBack.setOnClickListener {
             onFeedbackRequested?.invoke()
             onBackClickListener?.invoke()

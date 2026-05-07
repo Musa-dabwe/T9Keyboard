@@ -42,6 +42,7 @@ class EmojiPickerView @JvmOverloads constructor(
     var onBackspaceClick: (() -> Unit)? = null
     var onBackClickListener: (() -> Unit)? = null
     var onFeedbackRequested: (() -> Unit)? = null
+    var onSwipeDownListener: (() -> Unit)? = null
     var onSearchModeListener: ((Boolean) -> Unit)? = null
 
     private var deletionSpeed: Int = 100
@@ -164,6 +165,7 @@ class EmojiPickerView @JvmOverloads constructor(
     private fun setupViews() {
         removeAllViews()
         val topBar = LinearLayout(context).apply {
+            setOnTouchListener(SwipeDownListener(context) { onSwipeDownListener?.invoke() })
             orientation = HORIZONTAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
             setBackgroundColor(Color.parseColor("#111111"))
