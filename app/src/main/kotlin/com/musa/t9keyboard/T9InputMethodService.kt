@@ -43,7 +43,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var isInputSensitive = false
     private var currentPackageName: String = ""
     private var isEmojiSearchActive = false
-    private val pasteManager = PasteClipboardManager(this)
+    private val pasteManager: PasteClipboardManager by lazy { PasteClipboardManager(this) }
     private var pasteBubble: android.widget.TextView? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)

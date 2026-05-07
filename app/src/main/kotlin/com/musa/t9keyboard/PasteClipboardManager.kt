@@ -12,8 +12,9 @@ class PasteClipboardManager(private val context: Context) {
         const val PREVIEW_MAX_LENGTH = 30
     }
 
-    private val clipboard =
+    private val clipboard: ClipboardManager by lazy {
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
 
     /**
      * Cheaply checks if a pasteable, non-sensitive text clip exists.
