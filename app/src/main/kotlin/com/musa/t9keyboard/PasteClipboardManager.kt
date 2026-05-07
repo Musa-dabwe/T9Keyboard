@@ -5,7 +5,10 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 
-class PasteClipboardManager(private val context: Context) {
+class PasteClipboardManager(
+    private val context: Context,
+    private val onClipboardChanged: () -> Unit
+) {
 
     companion object {
         const val PREVIEW_MIN_LENGTH = 5
@@ -14,6 +17,18 @@ class PasteClipboardManager(private val context: Context) {
 
     private val clipboard: ClipboardManager by lazy {
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
+
+    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener {
+        onClipboardChanged()
+    }
+
+    fun register() {
+        clipboard.addPrimaryClipChangedListener(clipListener)
+    }
+
+    fun unregister() {
+        clipboard.removePrimaryClipChangedListener(clipListener)
     }
 
     /**

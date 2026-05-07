@@ -43,7 +43,8 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private var isInputSensitive = false
     private var currentPackageName: String = ""
     private var isEmojiSearchActive = false
-    private val pasteManager: PasteClipboardManager by lazy { PasteClipboardManager(this) }
+    private var clipboardUsed = false
+    private val pasteManager: PasteClipboardManager by lazy { PasteClipboardManager(this) { clipboardUsed = false } }
     private var pasteBubble: android.widget.TextView? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -55,11 +56,13 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     )
 
     override fun onDestroy() {
+        pasteManager.unregister()
         super.onDestroy()
         (serviceScope.coroutineContext[Job])?.cancel()
     }
 
     override fun onCreate() {
+        pasteManager.register()
         super.onCreate()
         serviceScope.launch {
             AospDictionary.loadFromAssets(this@T9InputMethodService)
@@ -935,7 +938,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         val bubble = pasteBubble ?: return
 
         // Security gate — sensitive field or blacklisted app
-        if (isCurrentFieldSensitive(info) || preferences.isAppBlacklisted(currentPackageName)) {
+        if (isCurrentFieldSensitive(info) || preferences.isAppBlacklisted(currentPackageName) || clipboardUsed) {
             bubble.visibility = View.GONE
             return
         }
@@ -953,5 +956,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         val text = pasteManager.getFullClipText() ?: return
         icManager.commitText(text, 1)
         pasteBubble?.visibility = View.GONE
+        clipboardUsed = true
     }
 }
