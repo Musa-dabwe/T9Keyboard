@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/setup_background"
+    android:fillViewport="true">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Main content column -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_horizontal">
+
+            <!-- Header -->
+            <TextView
+                android:id="@+id/tv_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Welcome to T9Keyboard"
+                android:fontFamily="@font/ubuntu_sans_mono_bold"
+                android:textSize="28sp"
+                android:textColor="@color/setup_accent"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Description -->
+            <TextView
+                android:id="@+id/tv_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="A modern OpenSource android T9 IME Keyboard with an AOSP English dictionary featuring +250,000 words, Predictive typing with xT9 mode, Multi tap mode, a s**t ton of Emojis and a text Editing panel."
+                android:fontFamily="@font/ubuntu_sans_mono"
+                android:textSize="14sp"
+                android:textColor="#FFFFFFFF"
+                android:lineSpacingMultiplier="1.3"
+                android:layout_marginBottom="32dp" />
+
+            <!-- Button Row -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="48dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_activate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Activate"
+                    android:fontFamily="@font/ubuntu_sans_mono"
+                    android:textColor="#FFFFFFFF"
+                    android:backgroundTint="@color/setup_accent"
+                    app:cornerRadius="25dp"
+                    android:layout_marginEnd="20dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_set_default"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Set Default"
+                    android:fontFamily="@font/ubuntu_sans_mono"
+                    android:textColor="#FFFFFFFF"
+                    android:backgroundTint="@color/setup_accent"
+                    app:cornerRadius="25dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Footer: author credit bottom-left, FAB bottom-right -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal"
+            android:padding="24dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_author"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="by musathepoet\n©2026"
+                android:fontFamily="@font/ubuntu_sans_mono"
+                android:textSize="11sp"
+                android:textColor="#99FFFFFF" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_close"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:backgroundTint="@color/setup_accent"
+                app:tint="#FFFFFFFF"
+                app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+                app:fabSize="normal" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</ScrollView>
