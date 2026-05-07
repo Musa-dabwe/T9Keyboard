@@ -58,6 +58,7 @@ class EmojiPickerView @JvmOverloads constructor(
     private val searchQuery = StringBuilder()
     private var searchTextView: TextView? = null
     private var searchResultsRow: LinearLayout? = null
+    private var searchResultsContainer: View? = null
     private var searchKeyboard: View? = null
     private val handler = Handler(Looper.getMainLooper())
     private var cursorVisible = true
@@ -178,24 +179,11 @@ class EmojiPickerView @JvmOverloads constructor(
             addView(topBar)
 
             // Results Row
-            searchResultsRow = LinearLayout(context).apply {
-                orientation = HORIZONTAL
-                val lp = LayoutParams((resources.displayMetrics.widthPixels * 0.85f).toInt(), dpToPx(52)).apply {
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    topMargin = dpToPx(6)
-                    bottomMargin = dpToPx(6)
-                }
-                layoutParams = lp
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(Color.parseColor("#B3FFFFFF"))
-                    cornerRadius = dpToPx(30).toFloat()
-                }
-                gravity = Gravity.CENTER
-                clipChildren = false
-                clipToPadding = false
-                visibility = GONE
-            }
-            addView(searchResultsRow)
+            val resultsLayout = inflate(context, R.layout.emoji_search_results, null)
+            searchResultsContainer = resultsLayout
+            searchResultsRow = resultsLayout.findViewById(R.id.emoji_search_results_row)
+            searchResultsContainer?.visibility = GONE
+            addView(searchResultsContainer)
 
             // QWERTY Keyboard
             searchKeyboard = inflate(context, R.layout.emoji_search_keyboard, null).apply {
@@ -343,7 +331,7 @@ class EmojiPickerView @JvmOverloads constructor(
         searchQuery.deleteCharAt(searchQuery.length - 1)
         updateSearchDisplayText()
         if (searchQuery.isEmpty()) {
-            searchResultsRow?.visibility = GONE
+            searchResultsContainer?.visibility = GONE
         } else {
             performFuzzySearch(searchQuery.toString())
         }
@@ -351,14 +339,14 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun performFuzzySearch(query: String) {
         if (query.isEmpty()) {
-            searchResultsRow?.visibility = GONE
+            searchResultsContainer?.visibility = GONE
             return
         }
         val results = EmojiSearchEngine.search(query, maxResults = 5).filter { isEmojiSupported(it) }
         if (results.isEmpty()) {
-            searchResultsRow?.visibility = GONE
+            searchResultsContainer?.visibility = GONE
         } else {
-            searchResultsRow?.visibility = VISIBLE
+            searchResultsContainer?.visibility = VISIBLE
             updateSearchResultsRow(results)
         }
     }
@@ -366,18 +354,10 @@ class EmojiPickerView @JvmOverloads constructor(
     private fun updateSearchResultsRow(emojis: List<String>) {
         val row = searchResultsRow ?: return
         row.removeAllViews()
-        val spacing = dpToPx(16)
         emojis.forEach { emoji ->
-            val textView = EmojiTextView(context).apply {
-                layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                    marginStart = spacing
-                    marginEnd = spacing
-                }
+            val textView = inflate(context, R.layout.emoji_search_item, null) as EmojiTextView
+            textView.apply {
                 text = emoji
-                textSize = 24f
-                gravity = Gravity.CENTER
-                isClickable = true
-                isFocusable = true
                 setOnClickListener {
                     onFeedbackRequested?.invoke()
                     onEmojiClickListener?.invoke(emoji)
