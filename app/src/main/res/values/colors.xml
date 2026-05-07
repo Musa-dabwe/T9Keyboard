@@ -26,4 +26,9 @@
     <color name="accent_red">#F44336</color>
     <color name="accent_orange">#FF9800</color>
     <color name="accent_purple">#B39DDB</color>
+
+    <!-- Setup Screen Colors -->
+    <color name="setup_background">#FF24292E</color>
+    <color name="setup_accent">#FFF44436</color>
+    <color name="setup_success">#FF21C100</color>
 </resources>

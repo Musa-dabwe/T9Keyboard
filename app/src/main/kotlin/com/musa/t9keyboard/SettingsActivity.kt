@@ -26,6 +26,7 @@ import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import androidx.core.app.ActivityCompat
+import com.musa.t9keyboard.utils.ImeUtils
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -70,6 +71,13 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         preferences = PreferencesManager(this)
+
+        if (!preferences.setupComplete && !ImeUtils.isFullyConfigured(this)) {
+            startActivity(Intent(this, SetupActivity::class.java))
+            finish()
+            return
+        }
+
         LearnedDictionary.load(this)
         dialogHelper = SettingsDialogHelper(this, preferences, accentColors)
 

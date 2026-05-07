@@ -46,7 +46,12 @@ class PreferencesManager(context: Context) {
         const val KEY_AUTOCORRECT_ENABLED = "autocorrect_enabled"
         const val KEY_AUTOCORRECT_SENSITIVITY = "autocorrect_sensitivity"
         const val KEY_BLACKLISTED_APPS = "blacklisted_apps"
+        const val KEY_SETUP_COMPLETE = "setup_complete"
     }
+
+    var setupComplete: Boolean
+        get() = prefs.getBoolean(KEY_SETUP_COMPLETE, false)
+        set(value) = prefs.edit().putBoolean(KEY_SETUP_COMPLETE, value).apply()
 
     var autocorrectEnabled: Boolean
         get() = prefs.getBoolean(KEY_AUTOCORRECT_ENABLED, false)
