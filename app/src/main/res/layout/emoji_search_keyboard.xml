@@ -55,7 +55,7 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:paddingStart="25dp"
-        android:paddingEnd="15dp">
+        android:paddingEnd="5dp">
 
         <TextView android:id="@+id/key_z" style="@style/EmojiSearchKey" android:text="Z" />
         <TextView android:id="@+id/key_x" style="@style/EmojiSearchKey" android:text="X" />
