@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:background="#292929"
     android:padding="2dp"
-    android:gravity="center">
+    android:gravity="bottom">
 
     <!-- Row 1: Q W E R T Y U I O P (10 keys) -->
     <LinearLayout
