@@ -4,9 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#292929"
-    android:paddingTop="2dp"
-    android:paddingBottom="12dp"
-    android:gravity="bottom">
+    android:padding="2dp"
+    android:gravity="top">
     
     <!-- Row 1: Q W E R T Y U I O P (10 keys) -->
     <LinearLayout
