@@ -182,12 +182,13 @@ class EmojiPickerView @JvmOverloads constructor(
             val resultsLayout = inflate(context, R.layout.emoji_search_results, null)
             searchResultsContainer = resultsLayout
             searchResultsRow = resultsLayout.findViewById(R.id.emoji_search_results_row)
-            searchResultsContainer?.visibility = GONE
+            searchResultsContainer?.visibility = VISIBLE
             addView(searchResultsContainer)
+            showRecentInSearchResults()
 
             // QWERTY Keyboard
             searchKeyboard = inflate(context, R.layout.emoji_search_keyboard, null).apply {
-                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
+                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
             }
             setupSearchKeyboard(searchKeyboard!!)
             addView(searchKeyboard)
@@ -331,7 +332,7 @@ class EmojiPickerView @JvmOverloads constructor(
         searchQuery.deleteCharAt(searchQuery.length - 1)
         updateSearchDisplayText()
         if (searchQuery.isEmpty()) {
-            searchResultsContainer?.visibility = GONE
+            showRecentInSearchResults()
         } else {
             performFuzzySearch(searchQuery.toString())
         }
@@ -339,16 +340,24 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun performFuzzySearch(query: String) {
         if (query.isEmpty()) {
-            searchResultsContainer?.visibility = GONE
+            showRecentInSearchResults()
             return
         }
         val results = EmojiSearchEngine.search(query, maxResults = 5).filter { isEmojiSupported(it) }
         if (results.isEmpty()) {
-            searchResultsContainer?.visibility = GONE
+            showRecentInSearchResults()
         } else {
             searchResultsContainer?.visibility = VISIBLE
             updateSearchResultsRow(results)
         }
+    }
+
+    private fun showRecentInSearchResults() {
+        val recentEmojisStr = preferences.recentEmojis
+        val recent = if (recentEmojisStr.isEmpty()) emptyList() else recentEmojisStr.split(",")
+            .filter { isEmojiSupported(it) }
+            .take(5)
+        updateSearchResultsRow(recent)
     }
 
     private fun updateSearchResultsRow(emojis: List<String>) {
