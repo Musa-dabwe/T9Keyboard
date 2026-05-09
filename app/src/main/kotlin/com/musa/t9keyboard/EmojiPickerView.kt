@@ -182,9 +182,9 @@ class EmojiPickerView @JvmOverloads constructor(
             val resultsLayout = inflate(context, R.layout.emoji_search_results, null)
             searchResultsContainer = resultsLayout
             searchResultsRow = resultsLayout.findViewById(R.id.emoji_search_results_row)
-            searchResultsContainer?.visibility = VISIBLE
+            // searchResultsContainer is always visible
             addView(searchResultsContainer)
-            showRecentInSearchResults()
+            showSearchHint()
 
             // QWERTY Keyboard
             searchKeyboard = inflate(context, R.layout.emoji_search_keyboard, null).apply {
@@ -332,7 +332,7 @@ class EmojiPickerView @JvmOverloads constructor(
         searchQuery.deleteCharAt(searchQuery.length - 1)
         updateSearchDisplayText()
         if (searchQuery.isEmpty()) {
-            showRecentInSearchResults()
+            showSearchHint()
         } else {
             performFuzzySearch(searchQuery.toString())
         }
@@ -340,24 +340,30 @@ class EmojiPickerView @JvmOverloads constructor(
 
     private fun performFuzzySearch(query: String) {
         if (query.isEmpty()) {
-            showRecentInSearchResults()
+            showSearchHint()
             return
         }
         val results = EmojiSearchEngine.search(query, maxResults = 5).filter { isEmojiSupported(it) }
         if (results.isEmpty()) {
-            showRecentInSearchResults()
+            showSearchHint()
         } else {
-            searchResultsContainer?.visibility = VISIBLE
+            // searchResultsContainer is always visible
             updateSearchResultsRow(results)
         }
     }
 
-    private fun showRecentInSearchResults() {
-        val recentEmojisStr = preferences.recentEmojis
-        val recent = if (recentEmojisStr.isEmpty()) emptyList() else recentEmojisStr.split(",")
-            .filter { isEmojiSupported(it) }
-            .take(5)
-        updateSearchResultsRow(recent)
+    private fun showSearchHint() {
+        val row = searchResultsRow ?: return
+        row.removeAllViews()
+        val hint = TextView(context).apply {
+            text = "Type to search emoji"
+            textSize = 14f
+            setTextColor(0x99FFFFFF.toInt())
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(16), 0, 0, 0)
+            typeface = FontUtils.getUbuntu(context)
+        }
+        row.addView(hint)
     }
 
     private fun updateSearchResultsRow(emojis: List<String>) {
