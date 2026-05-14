@@ -14,6 +14,7 @@ class ViewOrchestrator(
     var symbolsView: SymbolsView? = null
     var emojiPickerView: EmojiPickerView? = null
     var textEditingView: TextEditingView? = null
+    var emojiSearchPanelView: EmojiSearchPanelView? = null
 
     var isViewReady = false
         private set
@@ -44,7 +45,7 @@ class ViewOrchestrator(
     }
 
     private fun updateKeyboardHeight(height: Int) {
-        val views = listOfNotNull(keyboardView, symbolsView, emojiPickerView, textEditingView)
+        val views = listOfNotNull(keyboardView, symbolsView, emojiPickerView, textEditingView, emojiSearchPanelView)
         views.forEach { view ->
             val params = view.layoutParams ?: FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -65,20 +66,16 @@ class ViewOrchestrator(
     fun showView(view: View, force: Boolean = false) {
         val c = container ?: return
 
-        // Skip adding if it's already the only child
         if (c.childCount == 1 && c.getChildAt(0) === view) {
             return
         }
 
-        // Suppress redundant view switches when window is not visible,
-        // but allow the first view to be added even if hidden.
         if (!force && !isWindowVisible && c.childCount > 0) {
             return
         }
 
         c.removeAllViews()
 
-        // Ensure height is applied before adding
         if (lastAppliedHeight > 0) {
             val params = view.layoutParams ?: FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
