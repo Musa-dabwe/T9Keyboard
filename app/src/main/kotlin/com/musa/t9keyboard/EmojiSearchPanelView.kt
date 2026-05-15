@@ -35,6 +35,7 @@ class EmojiSearchPanelView @JvmOverloads constructor(
 
     init {
         orientation = VERTICAL
+        setBackgroundColor(Color.parseColor("#292929"))
         isFocusable = true
         isFocusableInTouchMode = true
         inflate(context, R.layout.emoji_search_panel, this)
