@@ -197,7 +197,24 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 pasteBubble?.visibility = View.GONE
                 onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
                 onSwipeDownListener = { onBackClick() }
-                onSearchModeListener = { active -> isEmojiSearchActive = active }
+                onSearchModeListener = { active ->
+                    isEmojiSearchActive = active
+                    if (active) onEmojiSearchTriggered()
+                }
+            }
+            orchestrator.emojiSearchPanelView = EmojiSearchPanelView(themedContext).apply {
+                listener = object : EmojiSearchPanelView.Listener {
+                    override fun onEmojiSelected(emoji: String) {
+                        onEmojiClick(emoji)
+                    }
+                    override fun onCloseRequested() {
+                        isEmojiSearchActive = false
+                        orchestrator.emojiPickerView?.let { orchestrator.showView(it) }
+                    }
+                    override fun onFeedbackRequested() {
+                        this@T9InputMethodService.onFeedbackRequested()
+                    }
+                }
             }
             orchestrator.textEditingView = TextEditingView(themedContext).apply {
                 onAction = { a -> onEditAction(a) }
@@ -598,13 +615,24 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         onActionClick(KeyboardView.KeyboardAction.DEL)
     }
 
-    override fun onBackClick() {
-        updatePasteBubble(currentInputEditorInfo)
-        if (isEmojiSearchActive) {
-            orchestrator.emojiPickerView?.exitSearchMode()
-        } else {
-            orchestrator.keyboardView?.let { orchestrator.showView(it) }
+    private fun onEmojiSearchTriggered() {
+        isEmojiSearchActive = true
+        orchestrator.emojiSearchPanelView?.let {
+            val colorRes = accentColorResIds[preferences.accentColorIndex]
+            val color = ContextCompat.getColor(this, colorRes)
+            it.setAccentColor(color)
+            it.resetQuery()
+            orchestrator.showView(it)
         }
+    }
+
+    override fun onBackClick() {
+        if (isEmojiSearchActive) {
+            isEmojiSearchActive = false
+            orchestrator.emojiPickerView?.let { orchestrator.showView(it) }
+            return
+        }
+        orchestrator.keyboardView?.let { orchestrator.showView(it) }
     }
 
     override fun onFeedbackRequested() {

@@ -14,6 +14,7 @@ class ViewOrchestrator(
     var symbolsView: SymbolsView? = null
     var emojiPickerView: EmojiPickerView? = null
     var textEditingView: TextEditingView? = null
+    var emojiSearchPanelView: EmojiSearchPanelView? = null
 
     var isViewReady = false
         private set
@@ -44,7 +45,7 @@ class ViewOrchestrator(
     }
 
     private fun updateKeyboardHeight(height: Int) {
-        val views = listOfNotNull(keyboardView, symbolsView, emojiPickerView, textEditingView)
+        val views = listOfNotNull(keyboardView, symbolsView, emojiPickerView, textEditingView, emojiSearchPanelView)
         views.forEach { view ->
             val params = view.layoutParams ?: FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
