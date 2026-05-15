@@ -28,7 +28,7 @@ class KeyboardView @JvmOverloads constructor(
         }
 
     enum class KeyboardAction {
-        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, COMMA, EMOJI, PERIOD, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9, SHOW_TEXT_EDITING, ABC
+        SHIFT, CAPS_LOCK, DEL, ENTER, SPACE, SYM, NUM, COMMA, EMOJI, PERIOD, SETTINGS, SWITCH_KEYBOARD, TOGGLE_XT9, SHOW_TEXT_EDITING
     }
 
     init {
