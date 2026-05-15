@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.musa.t9keyboard.EmojiSearchPanelView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/emojiSearchPanel"
-    android:layout_width="match_parent"
-    android:layout_height="304dp"
-    android:orientation="vertical"
-    android:background="#292929">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- Top Bar -->
     <LinearLayout
@@ -132,4 +126,4 @@
         </LinearLayout>
     </LinearLayout>
 
-</com.musa.t9keyboard.EmojiSearchPanelView>
+</merge>
