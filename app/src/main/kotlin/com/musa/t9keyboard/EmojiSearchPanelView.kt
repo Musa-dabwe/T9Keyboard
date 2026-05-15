@@ -28,26 +28,16 @@ class EmojiSearchPanelView @JvmOverloads constructor(
     private lateinit var underline: View
     private lateinit var resultsRecycler: RecyclerView
     private lateinit var deleteBtn: ImageButton
-    private val gestureDetector: GestureDetector
-    private val preferences = PreferencesManager(context)
+    private lateinit var gestureDetector: GestureDetector
 
     private val queryBuilder = StringBuilder()
     private var resultsAdapter: EmojiResultAdapter? = null
-
-    companion object {
-        private const val EMPTY_SENTINEL = "\u0000"
-    }
 
     init {
         orientation = VERTICAL
         setBackgroundColor(Color.parseColor("#292929"))
         isFocusable = true
         isFocusableInTouchMode = true
-
-        gestureDetector = GestureDetector(context, SwipeDownListener(context) {
-            listener?.onCloseRequested()
-        })
-
         inflate(context, R.layout.emoji_search_panel, this)
         bindViews()
         setupLetterKeys()
@@ -67,7 +57,8 @@ class EmojiSearchPanelView @JvmOverloads constructor(
     fun resetQuery() {
         queryBuilder.setLength(0)
         queryText.text = ""
-        performSearch()
+        resultsAdapter?.submitList(emptyList())
+        resultsRecycler.visibility = GONE
     }
 
     private fun bindViews() {
@@ -119,40 +110,31 @@ class EmojiSearchPanelView @JvmOverloads constructor(
         }
     }
 
-    private fun getRecentEmojis(): List<String> {
-        val recentStr = preferences.recentEmojis
-        if (recentStr.isEmpty()) return emptyList()
-        return recentStr.split(",").take(20)
-    }
-
     private fun performSearch() {
         val query = queryBuilder.toString()
         if (query.isEmpty()) {
-            val recent = getRecentEmojis()
-            if (recent.isNotEmpty()) {
-                resultsAdapter?.submitList(recent)
-                queryText.hint = "Search emoji…"
-            } else {
-                resultsAdapter?.submitList(listOf(EMPTY_SENTINEL))
-            }
+            resultsAdapter?.submitList(emptyList())
+            resultsRecycler.visibility = GONE
         } else {
             val results = EmojiSearchEngine.search(query, maxResults = 20)
-            if (results.isNotEmpty()) {
-                resultsAdapter?.submitList(results)
-            } else {
-                resultsAdapter?.submitList(listOf(EMPTY_SENTINEL))
-            }
+            resultsAdapter?.submitList(results)
+            resultsRecycler.visibility = if (results.isNotEmpty()) VISIBLE else GONE
         }
     }
 
     private fun setupSwipeToClose() {
+        val swipeListener = SwipeDownListener(context) { listener?.onCloseRequested() }
+        gestureDetector = GestureDetector(context, swipeListener)
+
         setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
+            // Return false so child views still receive touch events
             false
         }
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        // Forward to gesture detector so swipe fires even over child views
         gestureDetector.onTouchEvent(ev)
         return false
     }
@@ -183,18 +165,9 @@ class EmojiSearchPanelView @JvmOverloads constructor(
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            if (item == EMPTY_SENTINEL) {
-                holder.textView.text = "No emojis found"
-                holder.textView.textSize = 14f
-                holder.textView.setTextColor(Color.parseColor("#888888"))
-                holder.textView.setOnClickListener(null)
-            } else {
-                holder.textView.text = item
-                holder.textView.textSize = 24f
-                holder.textView.setTextColor(Color.WHITE)
-                holder.textView.setOnClickListener { onClick(item) }
-            }
+            val emoji = items[position]
+            holder.textView.text = emoji
+            holder.textView.setOnClickListener { onClick(emoji) }
         }
 
         override fun getItemCount() = items.size
