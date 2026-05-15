@@ -24,4 +24,5 @@ interface EmojiActionListener {
     fun onBackspaceClick()
     fun onBackClick()
     fun onFeedbackRequested()
+    fun onSearchTriggered()
 }
