@@ -11,3 +11,12 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+
+# Generated snapshots
+tree.md
+app_build_gradle_diff.txt
+
+# Runtime logs and temp files
+*.log
+*.tmp
+*.md
