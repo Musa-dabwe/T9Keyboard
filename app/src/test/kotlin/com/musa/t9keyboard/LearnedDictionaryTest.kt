@@ -91,23 +91,11 @@ class LearnedDictionaryTest {
         val context = LearnedDictionary.getSuggestions(listOf("2", "2", "6", "2", "6", "2"), "eat")
         val bananaWithContext = context.find { it.word == "banana" }!!
 
-        // Verify boost multiplier (bigramFreq * 3)
-        // Note: learnWord was called twice for "banana" (once alone, once with "eat"), so freq=2.
-        // Bigram freq is 1.
-        // Decayed boost is (256 + 2) * 1.0 = 258.
-        // AOSP freq is 0 (mocked/not loaded).
-        // Total freq without bigram = 258.
-        // Total freq with bigram = 258 + (1 * 3) = 261.
-
         assertEquals("Bigram boost multiplier should be 3", bananaNoContext.frequency + 3, bananaWithContext.frequency)
 
         // Verify ranking: bigram match should rank higher than a more frequent non-bigram word
-        // Learn "apple" many times
         repeat(10) { LearnedDictionary.learnWord("apple") }
 
-        // "apple" (27753) and "apple" (27753) have the same T9 sequence: 27753
-        // Wait, "apple" is 27753. "apply" is 27759.
-        // Let's use words with same T9: "bat" and "cat" (228)
         LearnedDictionary.clear()
         LearnedDictionary.load(mockContext)
 
@@ -119,9 +107,6 @@ class LearnedDictionaryTest {
 
         val suggestions = LearnedDictionary.getSuggestions(listOf("2", "2", "8"), "black")
 
-        // "bat": (256+5)*1.0 = 261
-        // "cat": (256+3)*1.0 + (1*3) = 259 + 3 = 262
-        // "cat" should be first despite lower base frequency
         assertEquals("cat", suggestions[0].word)
     }
 
@@ -131,12 +116,10 @@ class LearnedDictionaryTest {
         val now = System.currentTimeMillis()
 
         // 1. Recent word (<= 7 days) -> multiplier 1.0
-        // Decayed boost = (256 + 1) * 1.0 = 257
         val suggestions1 = LearnedDictionary.getSuggestions(listOf("7", "3", "2", "3", "6", "8"))
         assertEquals(257, suggestions1.find { it.word == "recent" }?.frequency)
 
         // 2. 15 days ago (<= 30 days) -> multiplier 0.75
-        // Decayed boost = (256 + 1) * 0.75 = 192.75 -> 192
         LearnedDictionary.clear()
         prefMap["freq_recent"] = 1
         prefMap["last_typed_recent"] = now - (15L * 86_400_000L)
@@ -145,7 +128,6 @@ class LearnedDictionaryTest {
         assertEquals(192, suggestions2.find { it.word == "recent" }?.frequency)
 
         // 3. 45 days ago (<= 90 days) -> multiplier 0.5
-        // Decayed boost = (256 + 1) * 0.5 = 128.5 -> 128
         LearnedDictionary.clear()
         prefMap["freq_recent"] = 1
         prefMap["last_typed_recent"] = now - (45L * 86_400_000L)
@@ -154,15 +136,12 @@ class LearnedDictionaryTest {
         assertEquals(128, suggestions3.find { it.word == "recent" }?.frequency)
 
         // 4. 100 days ago (> 90 days) -> multiplier 0.25
-        // We use freq=2 to avoid the "forgetting mechanism" (which removes freq=1 after 90 days)
-        // Decayed boost = (256 + 2) * 0.25 = 258 * 0.25 = 64.5 -> 64
         LearnedDictionary.clear()
         prefMap["freq_recent"] = 2
         prefMap["last_typed_recent"] = now - (100L * 86_400_000L)
         LearnedDictionary.load(mockContext)
         val suggestions4 = LearnedDictionary.getSuggestions(listOf("7", "3", "2", "3", "6", "8"))
         val freq4 = suggestions4.find { it.word == "recent" }?.frequency ?: 0
-        // freq4 might include AOSP base freq if "recent" is in AOSP dictionary.
         assertTrue("Decayed frequency should be at least 64, was $freq4", freq4 >= 64)
     }
 
@@ -176,7 +155,8 @@ class LearnedDictionaryTest {
 
         LearnedDictionary.load(mockContext)
 
-        assertFalse("Old low-frequency word should be forgotten", LearnedDictionary.contains("oldword"))
+        val suggestions = LearnedDictionary.getSuggestions(listOf("6", "5", "3", "9", "6", "7", "3")) // "oldword"
+        assertNull("Old low-frequency word should be forgotten", suggestions.find { it.word == "oldword" })
 
         LearnedDictionary.clear()
         prefMap.clear()
@@ -184,15 +164,7 @@ class LearnedDictionaryTest {
         prefMap["freq_activeword"] = 1
         prefMap["last_typed_activeword"] = System.currentTimeMillis()
         LearnedDictionary.load(mockContext)
-        assertTrue("Recent word should be kept", LearnedDictionary.contains("activeword"))
-    }
-
-    @Test
-    fun testAutocorrectImmunity() {
-        LearnedDictionary.learnWord("customword")
-        assertTrue("Learned word should be valid", LearnedDictionary.isValidWord("customword"))
-
-        // The implementation of isValidWord calls contains() which checks learnedWords map.
-        // This is the "immunity flag" in this architecture.
+        val suggestions2 = LearnedDictionary.getSuggestions(listOf("2", "2", "8", "4", "8", "3", "9", "6", "7", "3")) // "activeword"
+        assertNotNull("Recent word should be kept", suggestions2.find { it.word == "activeword" })
     }
 }

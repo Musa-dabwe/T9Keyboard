@@ -52,15 +52,4 @@ class SettingsDialogHelper(private val context: Context, private val preferences
             }
             .show()
     }
-
-    fun showSensitivityDialog(onSelected: (Int) -> Unit) {
-        val options = arrayOf("Conservative", "Normal", "Aggressive")
-        AlertDialog.Builder(context)
-            .setTitle("Select Sensitivity")
-            .setSingleChoiceItems(options, preferences.autocorrectSensitivity) { dialog, which ->
-                onSelected(which)
-                dialog.dismiss()
-            }
-            .show()
-    }
 }

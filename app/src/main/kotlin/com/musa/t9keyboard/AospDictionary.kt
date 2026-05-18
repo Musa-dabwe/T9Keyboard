@@ -104,9 +104,6 @@ object AospDictionary {
         return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
     }
 
-    fun isValidWord(word: String): Boolean {
-        return contains(word)
-    }
 
     @Synchronized
     fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {

@@ -1,5 +1,6 @@
 package com.musa.t9keyboard
 
+import com.musa.t9keyboard.BuildConfig
 import android.content.Context
 import android.provider.ContactsContract
 import android.util.Log
@@ -73,7 +74,7 @@ object ContactsDictionary {
             }
         }
         isLoaded = true
-        Log.d("ContactsDictionary", "Loaded ${uniqueWords.size} contact name tokens")
+        if (BuildConfig.DEBUG) Log.d("ContactsDictionary", "Loaded ${uniqueWords.size} contact name tokens")
     }
 
     private fun isValidWord(word: String): Boolean {
@@ -112,9 +113,6 @@ object ContactsDictionary {
         return prefixMap[digitSeq] ?: emptyList()
     }
 
-    fun isEmpty(): Boolean {
-        return t9Map.isEmpty()
-    }
 
     fun isLoaded(): Boolean = isLoaded
 

@@ -4,12 +4,4 @@
     <string name="ime_name">T9 Keyboard</string>
     <string name="settings_name">T9 Keyboard Settings</string>
 
-    <string name="haptic_feedback">Haptic feedback</string>
-    <string name="haptic_intensity">Haptic intensity (ms)</string>
-    <string name="key_press_sound">Key press sound</string>
-    <string name="key_press_volume">Key press sound volume</string>
-    <string name="multi_tap_timeout">Multi-tap timeout (ms)</string>
-    <string name="key_label_font_size">Key label font size (sp)</string>
-    <string name="suggestion_font_size">Suggestion font size (sp)</string>
-    <string name="clear_dictionary">Clear learned dictionary</string>
 </resources>
