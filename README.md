@@ -179,4 +179,4 @@ Key security measures implemented:
 *   **Internal Telemetry**: Secure error logging with `CrashLogger` using private internal storage (`filesDir`).
 *   **Scoped Permissions**: Minimal use of `READ_CONTACTS` with localized tokenization and clear user opt-out.
 
-For detailed findings and mitigation strategies, see the [SECURITY_REPORT.md](SECURITY_REPORT.md).
+For detailed findings and mitigation strategies, see the [SECURITY_REPORT.md](docs/audits/SECURITY_REPORT.md).

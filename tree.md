@@ -10,12 +10,7 @@
 │       │   ├── AndroidManifest.xml
 │       │   ├── assets/
 │       │   │   ├── en_us_bigrams.txt
-│       │   │   ├── en_us_words.txt
-│       │   │   ├── main_en_US.combined.txt
-│       │   │   └── ubuntu.ttf
-│       │   ├── font/
-│       │   │   ├── ubuntu_sans_mono.ttf
-│       │   │   └── ubuntu_sans_mono_bold.ttf
+│       │   │   └── en_us_words.txt
 │       │   ├── kotlin/com/musa/t9keyboard/
 │       │   │   ├── utils/
 │       │   │   │   ├── FontUtils.kt
@@ -34,6 +29,7 @@
 │       │   │   ├── EmojiPickerView.kt
 │       │   │   ├── EmojiSearchData.kt
 │       │   │   ├── EmojiSearchEngine.kt
+│       │   │   ├── EmojiSearchPanelView.kt
 │       │   │   ├── InputConnectionManager.kt
 │       │   │   ├── KeyLabelRenderer.kt
 │       │   │   ├── KeyTouchHandler.kt
@@ -56,24 +52,31 @@
 │       │   │   └── ViewOrchestrator.kt
 │       │   └── res/
 │       │       ├── drawable/
+│       │       ├── font/
 │       │       ├── layout/
 │       │       ├── menu/
 │       │       ├── values/
 │       │       └── xml/
 │       └── test/
+├── docs/
+│   └── audits/
+│       ├── DEAD_CODE_REPORT.md
+│       ├── DEPENDENCY_REPORT.md
+│       ├── OPTIMIZATION.md
+│       ├── README.md
+│       ├── REFACTOR_LOG.md
+│       └── SECURITY_REPORT.md
 ├── gradle/
 │   ├── wrapper/
 │   └── libs.versions.toml
 ├── tools/
+│   ├── raw/
+│   │   └── main_en_US.combined.txt
 │   └── convert_dict.py
 ├── BUILD.md
 ├── CHANGELOG.md
-├── DEPENDENCY_REPORT.md
-├── OPTIMIZATION.md
 ├── README.md
-├── REFACTOR_LOG.md
 ├── SECURITY.md
-├── SECURITY_REPORT.md
 ├── build.gradle.kts
 ├── gradle.properties
 ├── gradlew
