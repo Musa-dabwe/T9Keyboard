@@ -273,15 +273,6 @@ object LearnedDictionary {
             .take(3)
     }
 
-    @Synchronized
-    fun contains(word: String): Boolean {
-        return learnedWords.containsKey(word.lowercase().trim())
-    }
-
-    @Synchronized
-    fun isValidWord(word: String): Boolean {
-        return contains(word)
-    }
 
     @Synchronized
     fun clear() {

@@ -23,29 +23,34 @@ _Branch: audit/dead-code-review_
 - **Reason:** No callers found in the codebase.
 - **Note:** Public visibility — may be intentional API surface. Confirm before removal.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [UNUSED_FUNCTION] — `LearnedDictionary.kt`
 - **Function:** `public fun isValidWord(word: String): Boolean`
 - **Reason:** No production callers found (referenced only in `LearnedDictionaryTest.kt`).
 - **Note:** Public visibility — may be intentional API surface. Confirm before removal.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [UNUSED_FUNCTION] — `LearnedDictionary.kt`
 - **Function:** `public fun contains(word: String): Boolean`
 - **Reason:** No production callers found (referenced only in `LearnedDictionaryTest.kt`).
 - **Note:** Public visibility — may be intentional API surface. Confirm before removal.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [UNUSED_FUNCTION] — `ContactsDictionary.kt`
 - **Function:** `public fun isEmpty(): Boolean`
 - **Reason:** No callers found in the codebase.
 - **Note:** Public visibility — may be intentional API surface. Confirm before removal.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [UNUSED_FUNCTION] — `SettingsDialogHelper.kt`
 - **Function:** `public fun showSensitivityDialog(onSelected: (Int) -> Unit)`
 - **Reason:** Autocorrect remnant. It references `preferences.autocorrectSensitivity` (which is also dead). No callers found in the codebase.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [DUPLICATE_RESPONSIBILITY] — `EmojiData.kt` & `EmojiSearchData.kt`
 - **Details:**
@@ -53,16 +58,19 @@ _Branch: audit/dead-code-review_
   - `EmojiSearchData.kt` is referenced by `EmojiSearchEngine.kt` for keyword-based search.
 - **Reason:** Both files contain large static emoji datasets.
 - **Recommendation:** Consolidate emoji data into a single source of truth to reduce binary size and maintenance overhead.
+_Status: Deferred — separate task required_
 
 #### [DEAD_PREFERENCE_KEY] — `PreferencesManager.kt`
 - **Key:** `KEY_AUTOCORRECT_ENABLED`, `KEY_AUTOCORRECT_SENSITIVITY`
 - **Reason:** Autocorrect was removed; these keys are never used in the UI or logic. They only exist as field accessors in `PreferencesManager`.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [DEBUG_ONLY_LEAK] — `ContactsDictionary.kt`
 - **Code:** `Log.d("ContactsDictionary", "Loaded ${uniqueWords.size} contact name tokens")` (Line 83)
 - **Reason:** This debug log is active in all builds and not gated by `BuildConfig.DEBUG`.
 - **Recommendation:** Wrap in `if (BuildConfig.DEBUG)` or remove.
+_Status: Gated with BuildConfig.DEBUG in cleanup/dead-code-removal_
 - **Note:** `ContactsDictionary` is actively used by `T9InputMethodService` (loading) and `SuggestionEngine` (querying) for contact name suggestions.
 
 ### Assets & Fonts
@@ -70,6 +78,7 @@ _Branch: audit/dead-code-review_
 #### [ORPHANED_RESOURCE] — `app/src/main/assets/main_en_US.combined.txt`
 - **Reason:** This is a raw dictionary file used by `tools/convert_dict.py`. It is not loaded by the application at runtime.
 - **Recommendation:** Keep in `tools/` if needed for developers, or remove from `assets/` to reduce APK size.
+_Status: Removed from assets and moved to tools/raw in cleanup/dead-code-removal_
 
 #### [DUPLICATE_RESPONSIBILITY] — `app/src/main/assets/ubuntu.ttf` & `app/src/main/res/font/ubuntu_sans_mono.ttf`
 - **Details:**
@@ -77,41 +86,50 @@ _Branch: audit/dead-code-review_
   - `activity_setup.xml` references `@font/ubuntu_sans_mono` and `@font/ubuntu_sans_mono_bold`.
 - **Reason:** These files are identical. `ubuntu.ttf` is NOT referenced in any layout or XML.
 - **Recommendation:** Use a single location for the font (preferably `res/font/`) and update `FontUtils.kt` to use `ResourcesCompat.getFont()`.
+_Status: Deferred — separate task required_
 
 ### Resources (res/)
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/drawable/ic_arrow_alt_from_left.xml`
 - **Reason:** No static or dynamic references found.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/drawable/ic_arrow_alt_from_right.xml`
 - **Reason:** No static or dynamic references found.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/drawable/toggle_on.xml`
 - **Reason:** Superseded by `ic_toggle_on.xml`. No references found.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/drawable/toggle_off.xml`
 - **Reason:** Superseded by `ic_toggle_off.xml`. No references found.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/drawable/key_background_pressed.xml`
 - **Reason:** No direct references found. `key_background_selector.xml` incorrectly references `key_background_normal` for the pressed state.
 - **Recommendation:** Fix the selector or remove this file.
+_Status: ON HOLD — pending key_background_selector.xml bug fix_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/drawable/key_background_active.xml`
 - **Reason:** No references found.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/menu/settings_menu.xml`
 - **Reason:** No `onCreateOptionsMenu` or `inflate(R.menu...)` found in any Activity.
 - **Recommendation:** Remove.
+_Status: Removed in cleanup/dead-code-removal_
 
 #### [ORPHANED_RESOURCE] — `app/src/main/res/values/strings.xml` (Keys)
 - **Keys:** `haptic_feedback`, `haptic_intensity`, `key_press_sound`, `key_press_volume`, `multi_tap_timeout`, `key_label_font_size`, `suggestion_font_size`, `clear_dictionary`
 - **Reason:** These 8 string keys are defined but never referenced in Kotlin or Layouts. UI labels in `activity_settings.xml` are hardcoded. A check of `res/xml/` (including `method.xml`, `backup_rules.xml`, `data_extraction_rules.xml`) also yielded zero references to these keys.
 - **Recommendation:** Use these strings in the layout or remove them.
+_Status: Removed in cleanup/dead-code-removal_
 
 ### Manifest & Activities
 
