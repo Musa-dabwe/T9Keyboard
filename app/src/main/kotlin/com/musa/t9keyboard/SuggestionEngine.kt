@@ -94,10 +94,24 @@ class SuggestionEngine(
 
         val mergedCandidates = HashMap<String, AospDictionary.WordSuggestion>()
         fun merge(list: List<AospDictionary.WordSuggestion>) {
-            list.forEach {
-                val existing = mergedCandidates[it.word.lowercase()]
-                if (existing == null || it.frequency > existing.frequency) {
-                    mergedCandidates[it.word.lowercase()] = it
+            list.forEach { suggestion ->
+                val key = suggestion.word.lowercase()
+                val existing = mergedCandidates[key]
+
+                if (existing == null) {
+                    mergedCandidates[key] = suggestion
+                } else {
+                    // Keep suggestion with higher category priority
+                    val shouldReplace = when {
+                        suggestion.category == WordCategory.PROTECTED && existing.category != WordCategory.PROTECTED -> true
+                        suggestion.category == existing.category && suggestion.frequency > existing.frequency -> true
+                        suggestion.category == WordCategory.BASE && existing.category == WordCategory.LEARNED -> true
+                        else -> false
+                    }
+
+                    if (shouldReplace) {
+                        mergedCandidates[key] = suggestion
+                    }
                 }
             }
         }
@@ -108,23 +122,37 @@ class SuggestionEngine(
 
         if (contactsEnabled) {
             val seq = constraints.map { if (it.length == 1 && it[0].isDigit()) it else T9Utils.getDigitForChar(it[0]).toString() }.joinToString("")
-            val contacts = ContactsDictionary.getSuggestionsForSequence(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-            val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
+            val contacts = ContactsDictionary.getSuggestionsForSequence(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1, WordCategory.BASE) }
+            val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1, WordCategory.BASE) }
             merge(contacts)
             merge(contactPrefixes)
         }
 
         val allCandidates = mergedCandidates.values.toList()
 
-        val learnedSet = learned.map { it.word.lowercase() }.toHashSet()
+        // Sort by category priority first, then by learned status, then frequency
         val exactMatches = allCandidates.filter { it.word.length == targetLength }
-            .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
-                .thenByDescending { it.frequency })
+            .sortedWith(
+                compareBy<AospDictionary.WordSuggestion> { suggestion ->
+                    when (suggestion.category) {
+                        WordCategory.PROTECTED -> 0  // Highest priority
+                        WordCategory.BASE -> 1
+                        WordCategory.LEARNED -> 2    // Lowest priority
+                    }
+                }.thenByDescending { it.frequency }
+            )
 
         val longerMatches = allCandidates.filter { it.word.length > targetLength }
-            .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
-                .thenByDescending { learnedSet.contains(it.word.lowercase()) }
-                .thenByDescending { it.frequency })
+            .sortedWith(
+                compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                    .thenBy { suggestion ->
+                        when (suggestion.category) {
+                            WordCategory.PROTECTED -> 0
+                            WordCategory.BASE -> 1
+                            WordCategory.LEARNED -> 2
+                        }
+                    }.thenByDescending { it.frequency }
+            )
 
         val anchored = if (exactMatches.isNotEmpty()) exactMatches[0].word else composing
         val others = (exactMatches.drop(if (exactMatches.isNotEmpty()) 1 else 0) + longerMatches)
@@ -156,10 +184,24 @@ class SuggestionEngine(
 
         val mergedCandidates = HashMap<String, AospDictionary.WordSuggestion>()
         fun merge(list: List<AospDictionary.WordSuggestion>) {
-            list.forEach {
-                val existing = mergedCandidates[it.word.lowercase()]
-                if (existing == null || it.frequency > existing.frequency) {
-                    mergedCandidates[it.word.lowercase()] = it
+            list.forEach { suggestion ->
+                val key = suggestion.word.lowercase()
+                val existing = mergedCandidates[key]
+
+                if (existing == null) {
+                    mergedCandidates[key] = suggestion
+                } else {
+                    // Keep suggestion with higher category priority
+                    val shouldReplace = when {
+                        suggestion.category == WordCategory.PROTECTED && existing.category != WordCategory.PROTECTED -> true
+                        suggestion.category == existing.category && suggestion.frequency > existing.frequency -> true
+                        suggestion.category == WordCategory.BASE && existing.category == WordCategory.LEARNED -> true
+                        else -> false
+                    }
+
+                    if (shouldReplace) {
+                        mergedCandidates[key] = suggestion
+                    }
                 }
             }
         }
@@ -171,24 +213,37 @@ class SuggestionEngine(
         merge(containing)
 
         if (contactsEnabled) {
-            val contactsExact = ContactsDictionary.getSuggestionsForSequence(digitSeq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
-            val contactsPrefix = ContactsDictionary.getSuggestionsForPrefix(digitSeq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1) }
+            val contactsExact = ContactsDictionary.getSuggestionsForSequence(digitSeq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1, WordCategory.BASE) }
+            val contactsPrefix = ContactsDictionary.getSuggestionsForPrefix(digitSeq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1, WordCategory.BASE) }
             merge(contactsExact)
             merge(contactsPrefix)
         }
 
         val allCandidates = mergedCandidates.values.toList()
 
-        val learnedSet = (learnedExact + learnedPrefix).map { it.word.lowercase() }.toHashSet()
-
+        // Sort by category priority first, then frequency
         val exactMatches = allCandidates.filter { it.word.length == targetLength }
-            .sortedWith(compareByDescending<AospDictionary.WordSuggestion> { learnedSet.contains(it.word.lowercase()) }
-                .thenByDescending { it.frequency })
+            .sortedWith(
+                compareBy<AospDictionary.WordSuggestion> { suggestion ->
+                    when (suggestion.category) {
+                        WordCategory.PROTECTED -> 0  // Highest priority
+                        WordCategory.BASE -> 1
+                        WordCategory.LEARNED -> 2    // Lowest priority
+                    }
+                }.thenByDescending { it.frequency }
+            )
 
         val longerMatches = allCandidates.filter { it.word.length > targetLength }
-            .sortedWith(compareBy<AospDictionary.WordSuggestion> { it.word.length }
-                .thenByDescending { learnedSet.contains(it.word.lowercase()) }
-                .thenByDescending { it.frequency })
+            .sortedWith(
+                compareBy<AospDictionary.WordSuggestion> { it.word.length }
+                    .thenBy { suggestion ->
+                        when (suggestion.category) {
+                            WordCategory.PROTECTED -> 0
+                            WordCategory.BASE -> 1
+                            WordCategory.LEARNED -> 2
+                        }
+                    }.thenByDescending { it.frequency }
+            )
 
         val predictions = (exactMatches + longerMatches).map { it.word }
         val finalPredictions = if (predictions.isEmpty()) listOf(rawSeq) else predictions

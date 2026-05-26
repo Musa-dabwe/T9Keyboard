@@ -116,6 +116,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         serviceScope.launch {
             AospDictionary.loadFromAssets(this@T9InputMethodService)
             AospBigrams.loadFromAssets(this@T9InputMethodService)
+            ProperNounRegistry.load(this@T9InputMethodService)
         }
         LearnedDictionary.load(this)
 
@@ -436,8 +437,16 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             val shouldLearn = !isInputSensitive && !preferences.isAppBlacklisted(currentPackage)
 
             if (xt9Enabled) {
-                val originalWord = editorState.currentXt9Predictions.find { applyShiftState(it) == suggestion }
-                    ?: if (applyShiftState(editorState.xt9RawSequence.toString()) == suggestion) editorState.xt9RawSequence.toString() else suggestion
+                // Find original word by comparing lowercase forms
+                val originalWord = editorState.currentXt9Predictions.find {
+                    applyShiftState(it) == suggestion
+                } ?: editorState.currentXt9Predictions.find {
+                    it.lowercase() == suggestion.lowercase()
+                } ?: if (applyShiftState(editorState.xt9RawSequence.toString()) == suggestion) {
+                    editorState.xt9RawSequence.toString()
+                } else {
+                    suggestion.lowercase() // Fallback to lowercase for learning
+                }
 
                 icManager.commitText(suggestion, 1)
                 icManager.commitText(" ", 1)
@@ -917,10 +926,23 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     private fun applyShiftState(text: String): String {
+        // Pronoun "I" is ALWAYS uppercase
+        if (text.lowercase() == "i") {
+            return "I"
+        }
+
+        // Proper nouns preserve their stored case
+        if (ProperNounRegistry.contains(text) || ContactsDictionary.containsName(text)) {
+            return text // Already stored with correct capitalization
+        }
+
+        // Apply shift state for all other words
         return when (shiftManager.currentState) {
-            ShiftState.ONE_SHOT -> text.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            ShiftState.ONE_SHOT -> text.replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase() else it.toString()
+            }
             ShiftState.CAPS_LOCK -> text.uppercase()
-            else -> text
+            else -> text.lowercase() // Ensure lowercase in normal state
         }
     }
 

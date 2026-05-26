@@ -126,4 +126,17 @@ object ContactsDictionary {
         prefixMap.clear()
         isLoaded = false
     }
+
+    /**
+     * Check if a name exists in loaded contacts.
+     * @param name Name to check (case-insensitive)
+     * @return true if the name exists in contacts
+     */
+    @Synchronized
+    fun containsName(name: String): Boolean {
+        val normalized = name.lowercase()
+        // Check all values in both t9Map and prefixMap
+        val allWords = (t9Map.values.flatten() + prefixMap.values.flatten()).toSet()
+        return allWords.any { it.lowercase() == normalized }
+    }
 }
