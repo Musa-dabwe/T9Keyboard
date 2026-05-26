@@ -23,6 +23,13 @@ object LearnedDictionary {
     private lateinit var prefs: SharedPreferences
     private const val EXPIRATION_MS = 180L * 86_400_000L
     private const val PREFS_NAME = "learned_words"
+    private const val MAX_LEARNED_WORDS = 10_000
+    private const val MAX_BIGRAM_ENTRIES = 5_000 // Already enforced
+
+    enum class TrimLevel {
+        MODERATE,   // Remove freq=1 words older than 30 days
+        AGGRESSIVE  // Remove freq≤2 words older than 60 days
+    }
 
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
@@ -137,6 +144,18 @@ object LearnedDictionary {
         val lowerWord = word.lowercase().trim()
         if (lowerWord.isEmpty()) return
 
+        // Enforce MAX_LEARNED_WORDS cap with LRU eviction
+        if (learnedWords.size >= MAX_LEARNED_WORDS && !learnedWords.containsKey(lowerWord)) {
+            val lruWord = lastTypedMap.entries
+                .filter { learnedWords.containsKey(it.key) }
+                .minByOrNull { it.value }
+                ?.key
+
+            if (lruWord != null) {
+                evictWord(lruWord)
+            }
+        }
+
         val oldFreq = learnedWords[lowerWord]
         val newFreq = (oldFreq ?: 0) + 1
         learnedWords[lowerWord] = newFreq
@@ -185,6 +204,25 @@ object LearnedDictionary {
     fun learnWordStrong(word: String, previousWord: String?) {
         learnWord(word, previousWord)
         learnWord(word, previousWord)
+    }
+
+    /**
+     * Evicts a single word from all data structures and persistent storage.
+     */
+    private fun evictWord(word: String) {
+        learnedWords.remove(word)
+        val digits = getT9Sequence(word)
+        learnedT9Index[digits]?.remove(word)
+        if (learnedT9Index[digits]?.isEmpty() == true) {
+            learnedT9Index.remove(digits)
+        }
+        lastTypedMap.remove(word)
+        nextWordMap.entries.forEach { it.value.remove(word) }
+
+        prefs.edit().apply {
+            remove("freq_$word")
+            remove("last_typed_$word")
+        }.apply()
     }
 
     private fun save() {
@@ -284,5 +322,47 @@ object LearnedDictionary {
             prefs.edit().clear().apply()
         }
         notifyMutation()
+    }
+
+    /**
+     * Trims memory by removing low-frequency or stale words.
+     * Called from T9InputMethodService.onTrimMemory().
+     */
+    @Synchronized
+    fun trimMemory(pruneLevel: TrimLevel) {
+        val now = System.currentTimeMillis()
+        val toRemove = mutableListOf<String>()
+
+        when (pruneLevel) {
+            TrimLevel.MODERATE -> {
+                val thirtyDays = 30L * 86_400_000L
+                learnedWords.forEach { (word, freq) ->
+                    val lastTyped = lastTypedMap[word] ?: 0L
+                    if (freq == 1 && (now - lastTyped) > thirtyDays) {
+                        toRemove.add(word)
+                    }
+                }
+            }
+
+            TrimLevel.AGGRESSIVE -> {
+                val sixtyDays = 60L * 86_400_000L
+                learnedWords.forEach { (word, freq) ->
+                    val lastTyped = lastTypedMap[word] ?: 0L
+                    if (freq <= 2 && (now - lastTyped) > sixtyDays) {
+                        toRemove.add(word)
+                    }
+                }
+            }
+        }
+
+        if (toRemove.isNotEmpty()) {
+            toRemove.forEach { word -> evictWord(word) }
+            notifyMutation()
+
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d("LearnedDictionary",
+                    "trimMemory($pruneLevel): Removed ${toRemove.size} words")
+            }
+        }
     }
 }

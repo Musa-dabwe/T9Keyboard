@@ -21,6 +21,7 @@ object ContactsDictionary {
         'w' to '9', 'x' to '9', 'y' to '9', 'z' to '9'
     )
 
+    @Synchronized
     fun load(context: Context) {
         if (isLoaded) return
         clear()
@@ -105,17 +106,21 @@ object ContactsDictionary {
         return word.map { getDigitForChar(it) }.joinToString("")
     }
 
+    @Synchronized
     fun getSuggestionsForSequence(digitSeq: String): List<String> {
         return t9Map[digitSeq] ?: emptyList()
     }
 
+    @Synchronized
     fun getSuggestionsForPrefix(digitSeq: String): List<String> {
         return prefixMap[digitSeq] ?: emptyList()
     }
 
 
+    @Synchronized
     fun isLoaded(): Boolean = isLoaded
 
+    @Synchronized
     fun clear() {
         t9Map.clear()
         prefixMap.clear()
