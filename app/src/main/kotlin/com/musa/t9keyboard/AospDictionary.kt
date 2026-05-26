@@ -8,6 +8,12 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.TreeMap
 
+enum class WordCategory {
+    PROTECTED,  // Single-letter words (I, a)
+    BASE,       // Multi-character base dictionary words
+    LEARNED     // User-learned words not in base dictionary
+}
+
 object AospDictionary {
     data class WordEntry(val stripped: String, val frequency: Int, val display: String) {
         val word: String get() = if (display.isNotEmpty()) display else stripped
@@ -19,7 +25,11 @@ object AospDictionary {
     private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
     private val allWordEntries = mutableListOf<WordEntry>()
 
-    data class WordSuggestion(val word: String, val frequency: Int)
+    data class WordSuggestion(
+        val word: String,
+        val frequency: Int,
+        val category: WordCategory = WordCategory.BASE
+    )
 
     private val digitMap = mapOf(
         'a' to '2', 'b' to '2', 'c' to '2',
@@ -104,12 +114,26 @@ object AospDictionary {
         return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
     }
 
+    @Synchronized
+    fun containsWord(word: String): Boolean = contains(word)
+
+    private fun categorizeWord(word: String): WordCategory {
+        val stripped = word.lowercase().filter { it in 'a'..'z' }
+        return if (stripped.length == 1) {
+            WordCategory.PROTECTED
+        } else {
+            WordCategory.BASE
+        }
+    }
+
 
     @Synchronized
     fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
         if (exactT9Map.isEmpty()) return emptyList()
         val entries = exactT9Map[t9sequence] ?: emptyList<WordEntry>()
-        val results = entries.map { WordSuggestion(it.word, it.frequency) }.toMutableList()
+        val results = entries.map {
+            WordSuggestion(it.word, it.frequency, categorizeWord(it.word))
+        }.toMutableList()
 
         return results.sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
@@ -122,7 +146,9 @@ object AospDictionary {
         val potentialMatches = t9Map.subMap(prefix, prefix + "\uFFFF")
         return potentialMatches.values
             .flatMap { entries ->
-                entries.map { WordSuggestion(it.word, it.frequency) }
+                entries.map {
+                    WordSuggestion(it.word, it.frequency, categorizeWord(it.word))
+                }
             }
             .sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
@@ -137,7 +163,9 @@ object AospDictionary {
             .asSequence()
             .filter { it.word.lowercase().contains(lowerLiteral) }
             .take(30)
-            .map { WordSuggestion(it.word, it.frequency) }
+            .map {
+                WordSuggestion(it.word, it.frequency, categorizeWord(it.word))
+            }
             .sortedByDescending { it.frequency }
             .distinctBy { it.word.lowercase() }
             .toList()
@@ -166,7 +194,9 @@ object AospDictionary {
                          }
                      }
                  }
-                 if (matches) results.add(WordSuggestion(entry.word, entry.frequency))
+                 if (matches) {
+                     results.add(WordSuggestion(entry.word, entry.frequency, categorizeWord(entry.word)))
+                 }
              }
              return results
         }
@@ -188,7 +218,7 @@ object AospDictionary {
                     }
                 }
                 if (matches) {
-                    results.add(WordSuggestion(entry.word, entry.frequency))
+                    results.add(WordSuggestion(entry.word, entry.frequency, categorizeWord(entry.word)))
                 }
             }
         }

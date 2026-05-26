@@ -96,6 +96,9 @@ object LearnedDictionary {
             }
         }
         cleanup()
+
+        // Run migration if needed
+        migrateCapitalization(context)
     }
 
     private fun recencyMultiplier(word: String): Float {
@@ -141,11 +144,16 @@ object LearnedDictionary {
     @Synchronized
     fun learnWord(word: String, previousWord: String? = null) {
         try {
-        val lowerWord = word.lowercase().trim()
-        if (lowerWord.isEmpty()) return
+        // Determine storage key: preserve case for proper nouns, lowercase otherwise
+        val storageKey = if (ProperNounRegistry.contains(word) || ContactsDictionary.containsName(word)) {
+            word.trim()  // Preserve original case
+        } else {
+            word.lowercase().trim()
+        }
+        if (storageKey.isEmpty()) return
 
         // Enforce MAX_LEARNED_WORDS cap with LRU eviction
-        if (learnedWords.size >= MAX_LEARNED_WORDS && !learnedWords.containsKey(lowerWord)) {
+        if (learnedWords.size >= MAX_LEARNED_WORDS && !learnedWords.containsKey(storageKey)) {
             val lruWord = lastTypedMap.entries
                 .filter { learnedWords.containsKey(it.key) }
                 .minByOrNull { it.value }
@@ -156,25 +164,25 @@ object LearnedDictionary {
             }
         }
 
-        val oldFreq = learnedWords[lowerWord]
+        val oldFreq = learnedWords[storageKey]
         val newFreq = (oldFreq ?: 0) + 1
-        learnedWords[lowerWord] = newFreq
+        learnedWords[storageKey] = newFreq
         if (oldFreq == null) {
-            val digits = getT9Sequence(lowerWord)
+            val digits = getT9Sequence(storageKey)
             if (digits.isNotEmpty()) {
-                learnedT9Index.getOrPut(digits) { mutableListOf() }.add(lowerWord)
+                learnedT9Index.getOrPut(digits) { mutableListOf() }.add(storageKey)
             }
         }
 
         val now = System.currentTimeMillis()
-        lastTypedMap[lowerWord] = now
-        prefs.edit().putLong("last_typed_$lowerWord", now).apply()
+        lastTypedMap[storageKey] = now
+        prefs.edit().putLong("last_typed_$storageKey", now).apply()
 
         if (previousWord != null) {
             val lowerPrev = previousWord.lowercase().trim()
             if (lowerPrev.isNotEmpty()) {
                 val nextMap = nextWordMap.getOrPut(lowerPrev) { mutableMapOf() }
-                nextMap[lowerWord] = (nextMap[lowerWord] ?: 0) + 1
+                nextMap[storageKey] = (nextMap[storageKey] ?: 0) + 1
 
                 if (nextWordMap.size > 5000) {
                     val evictKey = nextWordMap.minByOrNull { entry ->
@@ -279,7 +287,8 @@ object LearnedDictionary {
                     val aospBaseFreq = AospDictionary.getWordFrequency(word)
                     val decayedBoost = (256 + freq) * recencyMultiplier(word)
                     val finalFreq = aospBaseFreq + decayedBoost.toInt()
-                    candidates.add(AospDictionary.WordSuggestion(word, finalFreq))
+                    val category = categorizeLearnedWord(word)
+                    candidates.add(AospDictionary.WordSuggestion(word, finalFreq, category))
                 }
             }
         }
@@ -293,6 +302,14 @@ object LearnedDictionary {
 
     private fun getT9Sequence(word: String): String {
         return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
+    }
+
+    private fun categorizeLearnedWord(word: String): WordCategory {
+        return if (AospDictionary.containsWord(word)) {
+            if (word.length == 1) WordCategory.PROTECTED else WordCategory.BASE
+        } else {
+            WordCategory.LEARNED
+        }
     }
 
     @Synchronized
@@ -322,6 +339,60 @@ object LearnedDictionary {
             prefs.edit().clear().apply()
         }
         notifyMutation()
+    }
+
+    /**
+     * One-time migration: Downcase all learned words that are not proper nouns.
+     * Merges frequencies if both capitalized and lowercase versions exist.
+     * Called once on app upgrade to Phase 1b.
+     */
+    @Synchronized
+    private fun migrateCapitalization(context: Context) {
+        val migrationKey = "capitalization_migration_v1_complete"
+        if (prefs.getBoolean(migrationKey, false)) {
+            return // Already migrated
+        }
+
+        val allKeys = prefs.all.keys.filter { it.startsWith("freq_") }
+        val wordsToMigrate = mutableMapOf<String, MutableList<String>>()
+
+        // Group words by their lowercase form
+        allKeys.forEach { key ->
+            val originalWord = key.substring(5)
+            if (!ProperNounRegistry.contains(originalWord) && !ContactsDictionary.containsName(originalWord)) {
+                val lowercaseForm = originalWord.lowercase()
+                if (lowercaseForm != originalWord) {
+                    wordsToMigrate.getOrPut(lowercaseForm) { mutableListOf() }.add(originalWord)
+                }
+            }
+        }
+
+        // Migrate each group
+        val editor = prefs.edit()
+        wordsToMigrate.forEach { (lowercaseForm, originalForms) ->
+            var totalFreq = prefs.getInt("freq_$lowercaseForm", 0)
+            var latestTimestamp = prefs.getLong("last_typed_$lowercaseForm", 0L)
+
+            originalForms.forEach { originalForm ->
+                totalFreq += prefs.getInt("freq_$originalForm", 0)
+                val timestamp = prefs.getLong("last_typed_$originalForm", 0L)
+                if (timestamp > latestTimestamp) {
+                    latestTimestamp = timestamp
+                }
+
+                editor.remove("freq_$originalForm")
+                editor.remove("last_typed_$originalForm")
+            }
+
+            editor.putInt("freq_$lowercaseForm", totalFreq)
+            editor.putLong("last_typed_$lowercaseForm", latestTimestamp)
+        }
+
+        editor.putBoolean(migrationKey, true)
+        editor.apply()
+
+        // Reload in-memory maps
+        load(context)
     }
 
     /**
