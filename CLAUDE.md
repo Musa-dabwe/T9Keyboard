@@ -1,7 +1,7 @@
 # T9 Keyboard - Claude Code Project Rules
 
-**Last Updated**: 2026-05-25
-**Audit Date**: 2026-05-25
+**Last Updated**: 2026-05-26
+**Audit Date**: 2026-05-26
 
 This document defines coding standards, architectural patterns, and development guidelines for the T9 Keyboard Android IME project.
 
@@ -819,18 +819,57 @@ fun `learnWord does not store words in sensitive fields`() { }
 ### Manual Testing Checklist
 
 #### Before Each Release
-- [ ] Test on 1GB RAM device/emulator (API 25)
-- [ ] Profile memory with Android Studio Profiler
-- [ ] Test multi-tap timing edge cases
-- [ ] Test XT9 prediction accuracy
-- [ ] Verify sensitive input suppression (password fields)
-- [ ] Test app blacklist functionality
-- [ ] Verify dictionary expiration (set timestamp to 181 days ago)
-- [ ] Test emoji picker scrolling performance
-- [ ] Verify contact suggestions (with permission granted/denied)
-- [ ] Test theme switching (Light/Dark/System)
-- [ ] Test all accent colors
-- [ ] Verify haptic and audio feedback
+- [ ] **Test on 1GB RAM device/emulator (API 25)** - NOT COMPLETE
+  - Requires physical device testing for accurate results
+
+- [x] **Profile memory with Android Studio Profiler** - COMPLETE
+  - Memory profiling completed successfully
+
+- [x] **Test multi-tap timing edge cases** - COMPLETE
+  - Multi-tap timing works well, no edge cases found
+
+- [ ] **Test XT9 prediction accuracy** - NOT COMPLETE
+  - **CRITICAL ISSUE**: Learned words conflicting with frequency words
+  - **Bug**: Tapping 4 (GHI) shows 'g' instead of 'I' (letter/word conflict)
+  - **Required Fix**: Implement proper frequency conflict resolution
+  - **Capitalization Issue**: Inconsistent capitalization rules
+    - **Required Rule**: Only capitalize:
+      - Names (user-defined, contacts)
+      - Languages and country names
+      - Deity names
+      - Special words (e.g., "I" as pronoun)
+    - **Incorrect**: Auto-capitalizing common words like "As", "Love"
+
+- [x] **Verify sensitive input suppression (password fields)** - COMPLETE
+  - Password field detection working correctly
+
+- [ ] **Test app blacklist functionality** - NOT COMPLETE
+  - Requires further testing and validation
+
+- [ ] **Verify dictionary expiration** - NEEDS PARAMETER REFINEMENT
+  - **Current**: Hard-coded 180-day expiration
+  - **Required**: Add user-configurable expiration settings
+  - **New Setting Required**: "Dictionary Word Expiration" in Settings screen
+    - Option A: 24 hours
+    - Option B: 7 days
+    - Option C: 14 days
+    - Option D: 31 days (default)
+  - **Implementation**: Update `EXPIRATION_MS` constant dynamically based on setting
+
+- [x] **Test emoji picker scrolling performance** - COMPLETE
+  - Scrolling performance is excellent
+
+- [x] **Verify contact suggestions (with permission granted/denied)** - COMPLETE
+  - Contact suggestions working well in both states
+
+- [x] **Test theme switching (Light/Dark/System)** - COMPLETE
+  - Theme switching works flawlessly
+
+- [x] **Test all accent colors** - COMPLETE
+  - All accent colors rendering correctly
+
+- [x] **Verify haptic and audio feedback** - COMPLETE
+  - Haptic and audio feedback working perfectly
 
 ---
 
@@ -1026,6 +1065,10 @@ T9Keyboard/
 2. **Hardcoded Values**: Long-press delay (150ms) hardcoded in multiple views
 3. **Emoji Search**: UI exists but backend implementation incomplete
 4. **API 25 Support**: Target minSdk=25 but currently set to 26
+5. **XT9 Frequency Conflict**: Learned words conflicting with base dictionary frequency (e.g., 'g' showing instead of 'I' when tapping 4)
+6. **Capitalization Rules**: Inconsistent word capitalization - need defined rules for proper nouns only
+7. **Dictionary Expiration**: Hard-coded 180-day expiration needs user-configurable settings (24h, 7d, 14d, 31d)
+8. **App Blacklist Testing**: Incomplete validation of app blacklist functionality
 
 #### Build Configuration
 - **Status**: ✅ Modern and Correct
@@ -1046,15 +1089,19 @@ T9Keyboard/
 
 #### High Priority
 1. ✅ Create CLAUDE.md with coding standards (COMPLETED)
-2. 🔧 Add `QUERY_ALL_PACKAGES` permission or `<queries>` block for App Blacklist
-3. 🔧 Implement `onTrimMemory` for memory pressure handling
-4. 🔧 Profile on 1GB RAM device and optimize accordingly
+2. 🔴 **FIX XT9 frequency conflict resolution** - Learned words overriding single-letter words (CRITICAL)
+3. 🔴 **Implement capitalization rules** - Define proper noun detection logic (CRITICAL)
+4. 🔧 Add user-configurable dictionary expiration settings (24h/7d/14d/31d with 31d default)
+5. 🔧 Add `QUERY_ALL_PACKAGES` permission or `<queries>` block for App Blacklist
+6. 🔧 Implement `onTrimMemory` for memory pressure handling
+7. 🔧 Profile on 1GB RAM device and optimize accordingly
 
 #### Medium Priority
-1. 📝 Refactor long methods in `T9InputMethodService` (command pattern)
-2. 📝 Extract hardcoded timing constants to constants file
-3. 🧪 Add instrumented tests for UI components
-4. 📚 Implement emoji search backend
+1. 🧪 Complete app blacklist functionality testing
+2. 📝 Refactor long methods in `T9InputMethodService` (command pattern)
+3. 📝 Extract hardcoded timing constants to constants file
+4. 🧪 Add instrumented tests for UI components
+5. 📚 Implement emoji search backend
 
 #### Low Priority
 1. 🎨 Consider converting remaining PNGs to VectorDrawables
@@ -1079,6 +1126,7 @@ The project is production-ready with minor improvements recommended for optimal 
 | Date | Auditor | Changes |
 |------|---------|---------|
 | 2026-05-25 | Claude Code | Initial comprehensive codebase audit and CLAUDE.md creation |
+| 2026-05-26 | Claude Code | Updated manual testing checklist with results, identified critical XT9 frequency conflict and capitalization issues, added dictionary expiration configurability requirement |
 
 ---
 
@@ -1124,6 +1172,6 @@ The project is production-ready with minor improvements recommended for optimal 
 
 ---
 
-**Last Updated**: 2026-05-25
-**Document Version**: 1.0
+**Last Updated**: 2026-05-26
+**Document Version**: 1.1
 **Maintained By**: Claude Code Assistant
