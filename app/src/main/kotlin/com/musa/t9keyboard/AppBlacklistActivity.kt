@@ -39,12 +39,12 @@ class AppBlacklistActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
 
-        lifecycleScope.launch {
-            val apps = withContext(Dispatchers.IO) {
-                loadInstalledApps()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val apps = loadInstalledApps()
+            withContext(Dispatchers.Main) {
+                appList = apps
+                adapter.submitList(apps)
             }
-            appList = apps
-            adapter.submitList(apps)
         }
     }
 

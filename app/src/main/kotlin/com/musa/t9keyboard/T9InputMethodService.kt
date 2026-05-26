@@ -1,5 +1,6 @@
 package com.musa.t9keyboard
 
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.view.KeyEvent
@@ -22,7 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditActionListener, EmojiActionListener {
+class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditActionListener, EmojiActionListener, ComponentCallbacks2 {
 
     private var container: FrameLayout? = null
     private lateinit var orchestrator: ViewOrchestrator
@@ -59,6 +60,54 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         pasteManager.unregister()
         super.onDestroy()
         (serviceScope.coroutineContext[Job])?.cancel()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+
+        try {
+            when (level) {
+                ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+                    // Keyboard UI hidden - moderate cleanup
+                    suggestionEngine.clearCache()
+                    ContactsDictionary.clear()
+
+                    if (BuildConfig.DEBUG) {
+                        CrashLogger.log("onTrimMemory",
+                            Exception("TRIM_MEMORY_UI_HIDDEN - cleared caches"),
+                            this)
+                    }
+                }
+
+                ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
+                    // System memory pressure - aggressive cleanup
+                    suggestionEngine.clearCache()
+                    ContactsDictionary.clear()
+                    LearnedDictionary.trimMemory(LearnedDictionary.TrimLevel.MODERATE)
+
+                    if (BuildConfig.DEBUG) {
+                        CrashLogger.log("onTrimMemory",
+                            Exception("TRIM_MEMORY_MODERATE - pruned learned words"),
+                            this)
+                    }
+                }
+
+                ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
+                    // Critical memory pressure - maximum cleanup
+                    suggestionEngine.clearCache()
+                    ContactsDictionary.clear()
+                    LearnedDictionary.trimMemory(LearnedDictionary.TrimLevel.AGGRESSIVE)
+
+                    if (BuildConfig.DEBUG) {
+                        CrashLogger.log("onTrimMemory",
+                            Exception("TRIM_MEMORY_COMPLETE - aggressive pruning"),
+                            this)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            CrashLogger.log("onTrimMemory", e, this)
+        }
     }
 
     override fun onCreate() {

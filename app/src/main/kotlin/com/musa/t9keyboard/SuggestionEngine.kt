@@ -22,6 +22,21 @@ class SuggestionEngine(
         }
     }
 
+    /**
+     * Clears the internal suggestion cache.
+     * Called during memory pressure to free up resources.
+     */
+    fun clearCache() {
+        synchronized(suggestionCache) {
+            val cacheSize = suggestionCache.size
+            suggestionCache.clear()
+
+            if (BuildConfig.DEBUG && cacheSize > 0) {
+                android.util.Log.d("SuggestionEngine", "Cleared $cacheSize cache entries")
+            }
+        }
+    }
+
     private var suggestionJob: Job? = null
     private var nextWordJob: Job? = null
 
