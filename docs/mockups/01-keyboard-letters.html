@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · Letters (XT9) — T9 Keyboard Mockup</title>
+<style>
+  :root{
+    --keyboard-bg:#1a1a1a; --key-surface:#0d0d0d; --key-border:rgba(255,255,255,.08);
+    --key-pressed:#2979ff; --accent:#558dff; --on-accent:#ffffff;
+    --text-primary:#e1e2ed; --hint-color:#8c90a0; --toolbar-bg:#1d1f27;
+    --canvas:#0b0c10; --panel:#15171c; --panel-border:#262932;
+    --danger:#ff6b6b; --ok:#5fd68a;
+    --font:'Hanken Grotesk',ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font);}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 24px 96px;}
+  a.back{color:var(--hint-color);font-size:13px;text-decoration:none;}
+  a.back:hover{color:var(--accent);}
+  h1{font-size:22px;margin:14px 0 4px;}
+  .sub{color:var(--hint-color);font-size:14px;margin:0 0 24px;max-width:70ch;}
+
+  .controls{display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:var(--panel);
+    border:1px solid var(--panel-border);border-radius:14px;padding:14px 16px;margin-bottom:28px;}
+  .ctl-group{display:flex;align-items:center;gap:8px;}
+  .ctl-label{font-size:12px;color:var(--hint-color);letter-spacing:.03em;text-transform:uppercase;}
+  .swatch{width:26px;height:26px;border-radius:99px;border:2px solid transparent;cursor:pointer;
+    display:inline-block;transition:transform .1s;}
+  .swatch.active{border-color:#fff;transform:scale(1.12);}
+  .toggle{display:flex;background:#000;border-radius:99px;padding:3px;border:1px solid var(--panel-border);}
+  .toggle button{border:0;background:transparent;color:var(--hint-color);font-family:inherit;font-size:12.5px;
+    font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;}
+  .toggle button.active{background:var(--accent);color:#fff;}
+  .contrast-readout{font-size:12px;color:var(--hint-color);}
+  .contrast-readout b{color:var(--text-primary);}
+  .contrast-readout.fail b{color:var(--danger);}
+  .contrast-readout.pass b{color:var(--ok);}
+
+  .stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;}
+  .device{width:390px;flex:0 0 auto;border-radius:32px;overflow:hidden;background:#000;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);border:6px solid #050505;}
+  .host{background:#10131b;padding:16px 18px;}
+  .host .to{color:var(--hint-color);font-size:12px;margin-bottom:2px;}
+  .host .name{font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;}
+  .cursor-blink{width:2px;height:16px;background:var(--accent);display:inline-block;animation:blink 1s infinite;}
+  @keyframes blink{50%{opacity:0}}
+
+  .ime{background:var(--keyboard-bg);}
+  .toolbar{height:36px;display:flex;align-items:center;background:var(--toolbar-bg);padding:0 4px;gap:2px;}
+  .tb-icon{width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;
+    color:var(--hint-color);flex:0 0 auto;transition:color .15s;}
+  .tb-icon.is-active{color:var(--accent);}
+  .tb-icon svg{width:18px;height:18px;}
+  .paste-bubble{font-size:11px;color:var(--text-primary);background:#272a32;border-radius:10px;
+    padding:6px 12px;margin:0 4px;flex:0 0 auto;}
+  .suggestion-strip{flex:1;display:flex;align-items:center;overflow:hidden;gap:2px;}
+  .anchored{background:var(--accent);color:var(--on-accent);font-size:13px;font-weight:600;
+    padding:0 12px;height:36px;display:flex;align-items:center;white-space:nowrap;}
+  .sugg{color:#fff;font-size:13px;padding:0 12px;white-space:nowrap;}
+  .xt9-chip{font-size:12px;font-weight:700;padding:5px 12px;margin-right:2px;flex:0 0 auto;
+    border-radius:4px;color:var(--accent);background:color-mix(in srgb, var(--accent) 20%, transparent);}
+  .xt9-chip.proposed{border-radius:99px;border:1px solid var(--panel-border);color:var(--hint-color);background:transparent;}
+  .xt9-chip.proposed.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);}
+
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:6px;}
+  .row{display:contents;}
+  .key{background:var(--key-surface);border:1px solid var(--key-border);border-radius:16px;
+    height:58px;position:relative;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;transition:transform .05s,background-color .05s;}
+  .key:active,.key.pressed{transform:scale(.95);background:var(--key-pressed)!important;border-color:transparent;}
+  .key .label{font-size:18px;font-weight:700;letter-spacing:.02em;color:var(--text-primary);}
+  .key .hint{position:absolute;top:4px;right:8px;font-size:10px;font-weight:500;color:var(--hint-color);}
+  .key .hint.emoji-hint{font-size:14px;line-height:1;opacity:1;}
+  .key .hint.emoji-hint.fixed{font-size:9px;opacity:.55;filter:grayscale(.4);}
+  .key.accent{background:var(--accent);border-color:transparent;}
+  .key.accent .label{color:var(--on-accent);}
+  .key.accent svg{color:var(--on-accent);}
+  .key.space{grid-column:span 2;}
+  .key svg{width:22px;height:22px;}
+  .key .hint.removed{opacity:0;}
+  .key .hint.dot{font-size:16px;top:2px;right:6px;}
+
+  .side-notes{flex:1 1 340px;min-width:280px;display:flex;flex-direction:column;gap:12px;}
+  .finding{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:14px 16px;}
+  .finding .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 8px;border-radius:99px;margin-bottom:8px;background:rgba(255,107,107,.15);color:var(--danger);}
+  .finding .tag.design{background:rgba(85,141,255,.15);color:var(--accent);}
+  .finding h3{margin:0 0 4px;font-size:14.5px;}
+  .finding p{margin:0;font-size:13px;color:#b9bcc6;}
+  .finding code{background:#000;border:1px solid var(--panel-border);border-radius:4px;padding:1px 5px;font-size:12px;color:#ffd479;}
+  .hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; Back to review hub</a>
+  <h1>01 · Main grid — Letters (XT9 mode)</h1>
+  <p class="sub">Live rebuild of <code style="color:#ffd479;">keyboard_view.xml</code> at real dimens (16dp radius, 6dp gap, 8dp edge, 18sp/10sp type). Use the controls to compare the shipped state against the proposed fixes, and cycle accent colors to see the contrast problem.</p>
+
+  <div class="controls">
+    <div class="ctl-group">
+      <span class="ctl-label">View</span>
+      <div class="toggle" id="stateToggle">
+        <button data-state="shipped" class="active">As shipped</button>
+        <button data-state="proposed">Proposed</button>
+      </div>
+    </div>
+    <div class="ctl-group">
+      <span class="ctl-label">Accent</span>
+      <span class="swatch active" data-color="#558dff" style="background:#558dff"></span>
+      <span class="swatch" data-color="#ffc107" style="background:#ffc107"></span>
+      <span class="swatch" data-color="#00bfa5" style="background:#00bfa5"></span>
+      <span class="swatch" data-color="#f44336" style="background:#f44336"></span>
+      <span class="swatch" data-color="#b39ddb" style="background:#b39ddb"></span>
+    </div>
+    <div class="ctl-group contrast-readout" id="contrastReadout"></div>
+  </div>
+
+  <div class="stage">
+    <div class="device">
+      <div class="host">
+        <div class="to">To: Alexander</div>
+        <div class="name">Precision Input <span class="cursor-blink"></span></div>
+      </div>
+      <div class="ime">
+        <div class="toolbar">
+          <div class="tb-icon" id="settingsIcon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04,-0.3 0.06,-0.61 0.06,-0.94c0,-0.32 -0.02,-0.64 -0.07,-0.94l2.03,-1.58c0.18,-0.14 0.23,-0.41 0.12,-0.61l-1.92,-3.32c-0.12,-0.22 -0.37,-0.29 -0.59,-0.22l-2.39,0.96c-0.5,-0.38 -1.03,-0.7 -1.62,-0.94L14.4,2.81c-0.04,-0.24 -0.24,-0.41 -0.48,-0.41h-3.84c-0.24,0 -0.43,0.17 -0.47,0.41L9.25,5.35C8.66,5.59 8.13,5.91 7.63,6.29L5.24,5.33c-0.22,-0.08 -0.47,0 -0.59,0.22L2.74,8.87C2.62,9.08 2.66,9.34 2.86,9.48l2.03,1.58C4.84,11.36 4.81,11.69 4.81,12c0,0.31 0.02,0.65 0.07,0.94l-2.03,1.58c-0.18,0.14 -0.23,0.41 -0.12,0.61l1.92,3.32c0.12,0.22 0.37,0.29 0.59,0.22l2.39,-0.96c0.5,0.38 1.03,0.7 1.62,0.94l0.36,2.54c0.05,0.24 0.24,0.41 0.48,0.41h3.84c0.24,0 0.44,-0.17 0.47,-0.41l0.36,-2.54c0.59,-0.24 1.13,-0.56 1.62,-0.94l2.39,0.96c0.22,0.08 0.47,0 0.59,-0.22l1.92,-3.32c0.12,-0.22 0.07,-0.47 -0.12,-0.61L19.14,12.94zM12,15.6c-1.98,0 -3.6,-1.62 -3.6,-3.6s1.62,-3.6 3.6,-3.6s3.6,1.62 3.6,3.6S13.98,15.6 12,15.6z"/></svg>
+          </div>
+          <div class="tb-icon" id="editIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.15,7.94L8.28,19.81c-1.06,1.07-4.23,1.56-5,0.85-0.77-0.71-0.21-3.88,0.85-4.95L15.9,3.84c0.55-0.52,1.28-0.81,2.04-0.8s1.48,0.31,2.01,0.85c0.54,0.53,0.84,1.26,0.85,2.02c0.01,0.76-0.28,1.49-0.8,2.04Z"/><path d="M21,21H12"/></svg>
+          </div>
+          <div class="paste-bubble">Here's a…</div>
+          <div class="suggestion-strip">
+            <div class="anchored">predict</div>
+            <div class="sugg">prediction</div>
+            <div class="sugg">predicted</div>
+          </div>
+          <div class="xt9-chip" id="xt9Chip">xt9</div>
+        </div>
+
+        <div class="grid" id="grid">
+          <!-- Row 1 -->
+          <div class="key"><span class="label">.,!?</span><span class="hint">1</span></div>
+          <div class="key"><span class="label">AB</span><span class="hint">2</span></div>
+          <div class="key"><span class="label">CD</span><span class="hint">3</span></div>
+          <div class="key"><span class="label">EF</span><span class="hint">4</span></div>
+          <div class="key accent">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="m24,5a3,3 0,0 0 -3,-3h-13.242l-7.758,10 7.758,10h13.242a3,3 0,0 0 3,-3zm-6.041,9.543-1.414,1.414-2.545,-2.543-2.543,2.543-1.414,-1.414,2.543,-2.543-2.543,-2.543,1.414,-1.414,2.543,2.543,2.543,-2.543,1.414,1.414,-2.543,2.543z"/></svg>
+          </div>
+          <!-- Row 2 -->
+          <div class="key"><span class="label">GH</span><span class="hint">5</span></div>
+          <div class="key"><span class="label">IJ</span><span class="hint">6</span></div>
+          <div class="key"><span class="label">KL</span><span class="hint">7</span></div>
+          <div class="key"><span class="label">MN</span><span class="hint">8</span></div>
+          <div class="key"><span class="label" style="font-size:14px">SYM</span></div>
+          <!-- Row 3 -->
+          <div class="key"><span class="label">OP</span><span class="hint">9</span></div>
+          <div class="key"><span class="label">QR</span><span class="hint">0</span></div>
+          <div class="key"><span class="label">ST</span><span class="hint">*</span></div>
+          <div class="key"><span class="label">UV</span><span class="hint">#</span></div>
+          <div class="key accent"><span class="label" style="font-size:14px">SHIFT</span></div>
+          <!-- Row 4 -->
+          <div class="key"><span class="label">WX</span><span class="hint">123</span></div>
+          <div class="key space"><span class="label">SPACE</span><span class="hint" id="spaceHint">0</span></div>
+          <div class="key"><span class="label">YZ</span><span class="hint">/</span></div>
+          <div class="key">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,7v4H5.83l3.58,-3.59L8,6l-6,6 6,6 1.41,-1.41L5.83,13H21V7h-2z"/></svg>
+            <span class="hint emoji-hint" id="enterHint">🙂</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-notes">
+      <div class="finding">
+        <span class="tag">Bug</span>
+        <h3>QR / SPACE both show "0"</h3>
+        <p><b>As shipped:</b> both keys display <code>0</code> simultaneously — visible in the screenshot. <b>Proposed:</b> QR keeps <code>0</code> (it's the real numeric-page digit); SPACE's hint switches to <code>.</code> and its long-press now inserts a period instead of a redundant digit.</p>
+      </div>
+      <div class="finding">
+        <span class="tag design">Accessibility</span>
+        <h3>Adaptive on-accent content color</h3>
+        <p>Cycle the accent swatches above. <b>As shipped:</b> Backspace/Shift content is hard-coded white — try yellow or teal and watch it nearly disappear. <b>Proposed:</b> content color is picked from the accent's relative luminance (WCAG), flipping to near-black when the accent is light.</p>
+        <p id="contrastNote" style="margin-top:8px;"></p>
+      </div>
+      <div class="finding">
+        <span class="tag design">Hierarchy</span>
+        <h3>Enter's emoji hint toned down</h3>
+        <p><b>As shipped:</b> the 🙂 hint renders at full emoji weight, heavier than every digit hint on the board. <b>Proposed:</b> shrunk and desaturated to sit at the same visual level as <code>1–9</code>.</p>
+      </div>
+      <div class="finding">
+        <span class="tag design">Spec drift</span>
+        <h3>Toolbar: muted until active</h3>
+        <p><b>As shipped:</b> Settings and Edit icons are always accent-tinted (<code>SuggestionBar.setAccentColor()</code> tints both unconditionally). <b>Proposed:</b> both default to the muted hint color; Edit switches to accent only while the editing panel is open. The <code>xt9</code> chip becomes a pill outline so it reads as a toggle even when off.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var state = 'shipped';
+  var accent = '#558dff';
+
+  function luminance(hex){
+    var c = hex.replace('#','');
+    var r = parseInt(c.substr(0,2),16)/255, g = parseInt(c.substr(2,2),16)/255, b = parseInt(c.substr(4,2),16)/255;
+    function lin(v){ return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }
+    return 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b);
+  }
+  function contrastVsWhite(hex){
+    var L = luminance(hex);
+    return (1.0 + 0.05) / (L + 0.05);
+  }
+  function onAccentColor(hex){
+    return luminance(hex) > 0.45 ? '#12141a' : '#ffffff';
+  }
+
+  function apply(){
+    document.documentElement.style.setProperty('--accent', accent);
+    var onAccent = state === 'proposed' ? onAccentColor(accent) : '#ffffff';
+    document.documentElement.style.setProperty('--on-accent', onAccent);
+
+    var ratio = contrastVsWhite(accent);
+    var readout = document.getElementById('contrastReadout');
+    var pass = ratio >= 4.5;
+    readout.className = 'ctl-group contrast-readout ' + (pass ? 'pass' : 'fail');
+    readout.innerHTML = 'White-on-accent contrast: <b>' + ratio.toFixed(2) + ':1</b> (' + (pass ? 'passes' : 'fails') + ' WCAG AA 4.5:1)';
+
+    var note = document.getElementById('contrastNote');
+    if (state === 'proposed') {
+      note.innerHTML = 'Content color now switches to <b style="color:#fff">' + onAccent + '</b> based on accent luminance.';
+    } else {
+      note.innerHTML = pass ? 'Currently passing at this accent — try a lighter swatch.' : '<b style="color:var(--danger)">Failing —</b> white content on this accent is hard to read.';
+    }
+
+    document.getElementById('spaceHint').textContent = state === 'proposed' ? '.' : '0';
+    document.getElementById('enterHint').classList.toggle('fixed', state === 'proposed');
+
+    var settingsIcon = document.getElementById('settingsIcon');
+    var editIcon = document.getElementById('editIcon');
+    if (state === 'proposed') {
+      settingsIcon.classList.remove('is-active');
+      editIcon.classList.remove('is-active');
+    } else {
+      settingsIcon.classList.add('is-active');
+      editIcon.classList.add('is-active');
+    }
+
+    var chip = document.getElementById('xt9Chip');
+    chip.classList.toggle('proposed', state === 'proposed');
+    chip.classList.toggle('on', state === 'proposed');
+  }
+
+  document.getElementById('stateToggle').addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    state = btn.dataset.state;
+    this.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active', b === btn); });
+    apply();
+  });
+
+  document.querySelectorAll('.swatch').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      accent = sw.dataset.color;
+      document.querySelectorAll('.swatch').forEach(function(s){ s.classList.toggle('active', s === sw); });
+      apply();
+    });
+  });
+
+  document.querySelectorAll('.key').forEach(function(k){
+    k.addEventListener('mousedown', function(){ k.classList.add('pressed'); });
+    ['mouseup','mouseleave'].forEach(function(ev){ k.addEventListener(ev, function(){ k.classList.remove('pressed'); }); });
+  });
+
+  apply();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · Emoji search — T9 Keyboard Mockup</title>
+<style>
+  :root{
+    --keyboard-bg:#1a1a1a; --key-surface:#0d0d0d; --key-border:rgba(255,255,255,.08);
+    --accent:#558dff; --text-primary:#e1e2ed; --hint-color:#8c90a0; --toolbar-bg:#1d1f27;
+    --canvas:#0b0c10; --panel:#15171c; --panel-border:#262932; --danger:#ff6b6b;
+    --font:'Hanken Grotesk',ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font);}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 24px 96px;}
+  a.back{color:var(--hint-color);font-size:13px;text-decoration:none;}
+  a.back:hover{color:var(--accent);}
+  h1{font-size:22px;margin:14px 0 4px;}
+  .sub{color:var(--hint-color);font-size:14px;margin:0 0 24px;max-width:70ch;}
+  code{background:#000;border:1px solid var(--panel-border);border-radius:4px;padding:1px 5px;font-size:12px;color:#ffd479;}
+
+  .stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;}
+  .device{width:390px;flex:0 0 auto;border-radius:32px;overflow:hidden;background:#000;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);border:6px solid #050505;}
+  .ime{background:var(--keyboard-bg);}
+
+  .search-top{background:var(--toolbar-bg);padding-bottom:2px;}
+  .results-row{height:44px;display:flex;align-items:center;gap:6px;padding:0 10px;overflow:hidden;}
+  .results-row span{font-size:22px;}
+  .query-row{padding:8px 10px 10px;}
+  .query-text{font-size:22px;color:var(--text-primary);min-height:28px;}
+  .query-text .ph{color:#666;}
+  .underline{height:2px;border-radius:2px;background:var(--accent);margin-top:4px;}
+
+  .kb{padding:6px;}
+  .krow{display:flex;gap:6px;margin-bottom:6px;justify-content:center;}
+  .krow:last-child{margin-bottom:0;}
+  .kkey{flex:1;height:42px;border-radius:16px;background:var(--key-surface);border:1px solid var(--key-border);
+    display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--text-primary);max-width:13.5%;}
+  .krow.offset1{padding:0 5%;}
+  .krow.offset2{padding-left:9%;}
+  .kkey.wide{flex:1.5;max-width:20%;}
+  .kkey svg{width:18px;height:18px;color:var(--text-primary);}
+
+  .side-notes{flex:1 1 340px;min-width:280px;display:flex;flex-direction:column;gap:12px;}
+  .finding{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:14px 16px;}
+  .finding .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 8px;border-radius:99px;margin-bottom:8px;background:rgba(255,107,107,.15);color:var(--danger);}
+  .finding h3{margin:0 0 4px;font-size:14.5px;}
+  .finding p{margin:0;font-size:13px;color:#b9bcc6;}
+  .compare{display:flex;gap:8px;margin-top:10px;}
+  .compare > div{flex:1;border-radius:10px;padding:10px;text-align:center;font-size:12px;color:var(--hint-color);}
+  .compare .shipped{background:#111;border:1px solid var(--panel-border);}
+  .compare .shipped .bar{height:3px;background:#e91e63;border-radius:2px;margin-top:8px;}
+  .compare .fixed{background:var(--key-surface);border:1px solid var(--key-border);border-radius:16px;}
+  .compare .fixed .bar{height:2px;background:var(--accent);border-radius:2px;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; Back to review hub</a>
+  <h1>05 · Emoji search</h1>
+  <p class="sub">Rebuilt from <code>emoji_search_panel.xml</code> + <code>emoji_search_keyboard.xml</code>: a horizontally-scrolling result strip, a live query line, and a reduced 26-letter QWERTY reached by tapping the search icon on the emoji picker.</p>
+
+  <div class="stage">
+    <div class="device">
+      <div class="ime">
+        <div class="search-top">
+          <div class="results-row">
+            <span>😀</span><span>😄</span><span>😁</span><span>😆</span><span>😅</span><span>🤣</span>
+          </div>
+          <div class="query-row">
+            <div class="query-text">smile<span class="ph">|</span></div>
+            <div class="underline"></div>
+          </div>
+        </div>
+        <div class="kb">
+          <div class="krow">
+            <div class="kkey">Q</div><div class="kkey">W</div><div class="kkey">E</div><div class="kkey">R</div><div class="kkey">T</div>
+            <div class="kkey">Y</div><div class="kkey">U</div><div class="kkey">I</div><div class="kkey">O</div><div class="kkey">P</div>
+          </div>
+          <div class="krow offset1">
+            <div class="kkey">A</div><div class="kkey">S</div><div class="kkey">D</div><div class="kkey">F</div><div class="kkey">G</div>
+            <div class="kkey">H</div><div class="kkey">J</div><div class="kkey">K</div><div class="kkey">L</div>
+          </div>
+          <div class="krow offset2">
+            <div class="kkey">Z</div><div class="kkey">X</div><div class="kkey">C</div><div class="kkey">V</div><div class="kkey">B</div>
+            <div class="kkey">N</div><div class="kkey">M</div>
+            <div class="kkey wide">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="m24,5a3,3 0,0 0 -3,-3h-13.242l-7.758,10 7.758,10h13.242a3,3 0,0 0 3,-3zm-6.041,9.543-1.414,1.414-2.545,-2.543-2.543,2.543-1.414,-1.414,2.543,-2.543-2.543,-2.543,1.414,-1.414,2.543,2.543,2.543,-2.543,1.414,1.414,-2.543,2.543z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-notes">
+      <div class="finding">
+        <span class="tag">Bug</span>
+        <h3>Query underline ignores the user's accent</h3>
+        <p><code>emoji_search_panel.xml</code>: <code>emoji_search_underline</code> background is hard-coded <code>#E91E63</code> (magenta) regardless of the accent color chosen in Settings — every other "active" indicator in the app (anchored suggestion, active SHIFT, active xt9 chip) follows the user's accent, so this one stands out as inconsistent.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">Bug</span>
+        <h3>Search keys use a different shape language</h3>
+        <p><code>EmojiSearchKey</code> style + <code>emoji_search_key_bg.xml</code> use a flat <code>#111111</code> fill with <strong>10dp</strong> corners — the main grid's keys are <strong>16dp</strong> on a <code>#0D0D0D</code> surface with a hairline border. This mockup already applies the 16dp/bordered treatment for comparison.</p>
+        <div class="compare">
+          <div class="shipped">10dp, #111111<div class="bar"></div>fixed pink underline</div>
+          <div class="fixed">16dp, #0d0d0d + border<div class="bar"></div>accent-colored underline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
