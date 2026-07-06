@@ -31,6 +31,21 @@ class InputConnectionManager(private val service: T9InputMethodService) {
         ic?.sendKeyEvent(event)
     }
 
+    /**
+     * Performs the editor's IME_ACTION_* if one is set (Search, Send, Go, ...);
+     * otherwise falls back to a plain Enter key event.
+     */
+    fun performEnter() {
+        val info = service.currentInputEditorInfo
+        val action = (info?.imeOptions ?: EditorInfo.IME_ACTION_NONE) and EditorInfo.IME_MASK_ACTION
+        val noEnterAction = (info?.imeOptions ?: 0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION != 0
+        if (!noEnterAction && action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
+            ic?.performEditorAction(action)
+        } else {
+            sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        }
+    }
+
     fun performContextMenuAction(id: Int) {
         ic?.performContextMenuAction(id)
     }

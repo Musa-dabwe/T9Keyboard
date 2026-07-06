@@ -363,7 +363,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 }
                 KeyboardView.KeyboardAction.ENTER -> {
                     commitTextWithFinalization("")
-                    icManager.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+                    icManager.performEnter()
                 }
                 KeyboardView.KeyboardAction.SHIFT -> {
                     shiftManager.toggle()
