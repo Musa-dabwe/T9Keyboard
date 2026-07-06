@@ -29,8 +29,9 @@
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_margin">3dp</item>
+        <item name="android:layout_margin">@dimen/key_margin</item>
         <item name="android:background">@drawable/key_background_selector</item>
+        <item name="android:stateListAnimator">@animator/key_press</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
     </style>
@@ -39,19 +40,25 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_gravity">center</item>
-        <item name="android:textColor">@color/key_text_color</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/key_label_size</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
         <item name="android:textAllCaps">true</item>
+    </style>
+
+    <style name="KeyActionLabel" parent="KeyPrimaryLabel">
+        <item name="android:textSize">@dimen/key_action_label_size</item>
     </style>
 
     <style name="KeySecondaryLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_gravity">top|end</item>
-        <item name="android:layout_marginTop">4dp</item>
-        <item name="android:layout_marginEnd">6dp</item>
-        <item name="android:textColor">#AAAAAA</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:layout_marginTop">@dimen/key_hint_inset_top</item>
+        <item name="android:layout_marginEnd">@dimen/key_hint_inset_end</item>
+        <item name="android:textColor">@color/hint_color</item>
+        <item name="android:textSize">@dimen/key_hint_size</item>
     </style>
 
     <style name="SymbolCell">
