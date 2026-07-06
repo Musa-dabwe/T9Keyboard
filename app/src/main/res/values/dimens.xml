@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Keyboard grid tokens (mockup: 16px radius, 6px gap, 8px container, 56px keys) -->
+    <dimen name="key_corner_radius">16dp</dimen>
+    <dimen name="grid_gap">6dp</dimen>
+    <!-- Half the grid gap; each key contributes this margin on every side -->
+    <dimen name="key_margin">3dp</dimen>
+    <dimen name="container_margin">8dp</dimen>
+    <!-- container_margin minus key_margin so outer edges total 8dp -->
+    <dimen name="grid_padding">5dp</dimen>
+    <dimen name="key_height">56dp</dimen>
+
+    <!-- Typography -->
+    <dimen name="key_label_size">18sp</dimen>
+    <dimen name="key_action_label_size">14sp</dimen>
+    <dimen name="key_hint_size">10sp</dimen>
+    <dimen name="key_hint_inset_top">4dp</dimen>
+    <dimen name="key_hint_inset_end">8dp</dimen>
+</resources>

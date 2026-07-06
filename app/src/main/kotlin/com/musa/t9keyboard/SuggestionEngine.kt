@@ -121,7 +121,7 @@ class SuggestionEngine(
         merge(containing)
 
         if (contactsEnabled) {
-            val seq = constraints.map { if (it.length == 1 && it[0].isDigit()) it else T9Utils.getDigitForChar(it[0]).toString() }.joinToString("")
+            val seq = constraints.map { if (it.length == 1 && T9Utils.isKeyCode(it[0])) it else T9Utils.getDigitForChar(it[0]).toString() }.joinToString("")
             val contacts = ContactsDictionary.getSuggestionsForSequence(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1, WordCategory.BASE) }
             val contactPrefixes = ContactsDictionary.getSuggestionsForPrefix(seq).map { AospDictionary.WordSuggestion(it, Int.MAX_VALUE - 1, WordCategory.BASE) }
             merge(contacts)

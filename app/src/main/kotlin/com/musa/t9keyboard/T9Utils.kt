@@ -3,17 +3,8 @@ package com.musa.t9keyboard
 import android.view.inputmethod.EditorInfo
 
 object T9Utils {
-    private val DIGIT_MAP: Map<Char, String> = mapOf(
-        '2' to "abc",
-        '3' to "def",
-        '4' to "ghi",
-        '5' to "jkl",
-        '6' to "mno",
-        '7' to "pqrs",
-        '8' to "tuv",
-        '9' to "wxyz",
-        '1' to ".,?!"
-    )
+    // Key code → characters, derived from the single source of truth in KeyboardLayout
+    private val DIGIT_MAP: Map<Char, String> = KeyboardLayout.codeToChars
 
     private val CHAR_TO_DIGIT: Map<Char, Char> = mutableMapOf<Char, Char>().apply {
         DIGIT_MAP.forEach { (digit, letters) ->
@@ -27,6 +18,18 @@ object T9Utils {
 
     fun getFirstCharForDigit(digit: Char): Char {
         return DIGIT_MAP[digit]?.firstOrNull() ?: ' '
+    }
+
+    /**
+     * True if [c] is a key code (an ambiguous whole-key constraint in a T9 sequence),
+     * as opposed to an exact letter constraint. Codes include non-digit symbols
+     * ('*', '#', '+', '/') now that the layout has more than ten letter keys.
+     */
+    fun isKeyCode(c: Char): Boolean = DIGIT_MAP.containsKey(c)
+
+    fun getT9Sequence(word: String): String {
+        return word.lowercase().filter { it in 'a'..'z' }
+            .map { CHAR_TO_DIGIT[it] ?: ' ' }.joinToString("").trim()
     }
 
     fun isInputTypeSensitive(info: EditorInfo?): Boolean {

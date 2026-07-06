@@ -1,10 +1,15 @@
 package com.musa.t9keyboard
 
+import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.widget.PopupWindow
+import android.widget.TextView
 import com.musa.t9keyboard.databinding.KeyboardViewBinding
+import com.musa.t9keyboard.utils.FontUtils
 
 class KeyTouchHandler(
     private val keyboardView: KeyboardView,
@@ -27,46 +32,147 @@ class KeyTouchHandler(
         get() = maxOf(30L, 200L - (deletionSpeed * 1.5).toLong())
 
     private var lastShiftTapTime: Long = 0
+    private var accentColor: Int = android.graphics.Color.parseColor("#558DFF")
 
-    private val keyMap = mapOf(
-        binding.keyAbc.id to "abc",
-        binding.keyDef.id to "def",
-        binding.keyGhi.id to "ghi",
-        binding.keyJkl.id to "jkl",
-        binding.keyMno.id to "mno",
-        binding.keyPqrs.id to "pqrs",
-        binding.keyTuv.id to "tuv",
-        binding.keyWxyz.id to "wxyz",
-        binding.keyPunct.id to ".,!?"
+    // Views in the same order as KeyboardLayout.ALL_KEYS (row-major)
+    private val keyViews: List<View> = listOf(
+        binding.keyPunct, binding.keyAb, binding.keyCd, binding.keyEf, binding.keyDel,
+        binding.keyGh, binding.keyIj, binding.keyKl, binding.keyMn, binding.keySym,
+        binding.keyOp, binding.keyQr, binding.keySt, binding.keyUv, binding.keyShift,
+        binding.keyWx, binding.keySpace, binding.keyYz, binding.keyEnter
     )
 
-    fun setupKeys(isNumMode: Boolean, isXt9Mode: Boolean) {
-        val numberKeys = listOf(
-            binding.keyPunct to '1',
-            binding.keyAbc to '2',
-            binding.keyDef to '3',
-            binding.keyGhi to '4',
-            binding.keyJkl to '5',
-            binding.keyMno to '6',
-            binding.keyPqrs to '7',
-            binding.keyTuv to '8',
-            binding.keyWxyz to '9'
-        )
+    private val defByViewId: Map<Int, KeyDef> =
+        keyViews.zip(KeyboardLayout.ALL_KEYS).associate { (view, def) -> view.id to def }
 
-        numberKeys.forEach { (view, digit) ->
-            view.setOnTouchListener { _, event ->
-                if (event.action == MotionEvent.ACTION_DOWN) onFeedback()
-                false
+    // --- Key preview popup ---
+
+    private val previewText: TextView by lazy {
+        TextView(keyboardView.context).apply {
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 22f
+            typeface = FontUtils.getUbuntu(keyboardView.context)
+        }
+    }
+
+    private val previewPopup: PopupWindow by lazy {
+        val size = dpToPx(56)
+        PopupWindow(previewText, size, size).apply {
+            isTouchable = false
+            isFocusable = false
+            isClippingEnabled = false
+        }
+    }
+
+    private fun showPreview(keyView: View, label: String) {
+        if (label.isEmpty() || label.length > 5) return
+        try {
+            previewText.text = label
+            previewText.background = GradientDrawable().apply {
+                setColor(accentColor)
+                cornerRadius = dpToPx(16).toFloat()
             }
-            view.setOnClickListener { handleLetterKey(view, isNumMode, isXt9Mode) }
-            view.setOnLongClickListener {
-                onFeedback()
-                onMultiTap(digit, 0, true)
-                true
+            val location = IntArray(2)
+            keyView.getLocationInWindow(location)
+            val size = dpToPx(56)
+            val x = location[0] + keyView.width / 2 - size / 2
+            val y = location[1] - size - dpToPx(8)
+            if (previewPopup.isShowing) {
+                previewPopup.update(x, y, size, size)
+            } else {
+                previewPopup.showAtLocation(keyboardView, Gravity.NO_GRAVITY, x, y)
+            }
+        } catch (e: Exception) {
+            // Preview is cosmetic; never let it break input
+        }
+    }
+
+    private fun hidePreview() {
+        try {
+            if (previewPopup.isShowing) previewPopup.dismiss()
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    fun setAccentColor(color: Int) {
+        accentColor = color
+    }
+
+    // --- Key wiring ---
+
+    fun setupKeys(isNumMode: Boolean, isXt9Mode: Boolean) {
+        keyViews.forEach { view ->
+            val def = defByViewId[view.id] ?: return@forEach
+            when (def.type) {
+                KeyType.LETTER, KeyType.SYMBOL_CYCLE -> setupLetterKey(view, def, isNumMode, isXt9Mode)
+                KeyType.BACKSPACE -> setupBackspaceKey(view)
+                KeyType.SYM_PAGE -> setupSymKey(view)
+                KeyType.SHIFT -> setupShiftKey(view, isNumMode)
+                KeyType.SPACE -> setupSpaceKey(view, def, isNumMode)
+                KeyType.ENTER -> setupEnterKey(view)
+                KeyType.NUM_PAGE -> Unit
             }
         }
+    }
 
-        binding.keyShift.setOnClickListener {
+    private fun setupLetterKey(view: View, def: KeyDef, isNumMode: Boolean, isXt9Mode: Boolean) {
+        view.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    onFeedback()
+                    showPreview(v, if (isNumMode) def.numLabel ?: def.label else def.label)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> hidePreview()
+            }
+            false
+        }
+        view.setOnClickListener { handleLetterKey(view, def, isNumMode, isXt9Mode) }
+        view.setOnLongClickListener {
+            onFeedback()
+            hidePreview()
+            when {
+                def.longPressOpensNumPage -> onAction(KeyboardView.KeyboardAction.NUM)
+                def.longPressChar != null -> onMultiTap(def.longPressChar, 0, true)
+                else -> return@setOnLongClickListener false
+            }
+            true
+        }
+    }
+
+    private fun setupBackspaceKey(view: View) {
+        view.setOnClickListener {
+            onFeedback()
+            onAction(KeyboardView.KeyboardAction.DEL)
+        }
+        view.setOnLongClickListener {
+            onFeedback()
+            startRepeatingDel()
+            true
+        }
+        view.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                stopRepeatingDel()
+            }
+            false
+        }
+    }
+
+    private fun setupSymKey(view: View) {
+        view.setOnClickListener {
+            onFeedback()
+            onAction(KeyboardView.KeyboardAction.SYM)
+        }
+        view.setOnLongClickListener {
+            onFeedback()
+            onAction(KeyboardView.KeyboardAction.SWITCH_KEYBOARD)
+            true
+        }
+    }
+
+    private fun setupShiftKey(view: View, isNumMode: Boolean) {
+        view.setOnClickListener {
             onFeedback()
             if (isNumMode) {
                 onAction(KeyboardView.KeyboardAction.NUM)
@@ -80,94 +186,53 @@ class KeyTouchHandler(
                 lastShiftTapTime = currentTime
             }
         }
+        view.setOnLongClickListener(null)
+    }
 
-        binding.keyDel.setOnClickListener {
-            onFeedback()
-            onAction(KeyboardView.KeyboardAction.DEL)
-        }
-
-        binding.keyDel.setOnLongClickListener {
-            onFeedback()
-            startRepeatingDel()
-            true
-        }
-
-        binding.keyDel.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-                stopRepeatingDel()
-            }
-            false
-        }
-
-        binding.keyEnter.setOnClickListener {
-            onFeedback()
-            onAction(KeyboardView.KeyboardAction.ENTER)
-        }
-
-        binding.keyEnter.setOnLongClickListener {
-            onFeedback()
-            onAction(KeyboardView.KeyboardAction.SWITCH_KEYBOARD)
-            true
-        }
-
-        binding.keySpace.setOnTouchListener { _, event ->
+    private fun setupSpaceKey(view: View, def: KeyDef, isNumMode: Boolean) {
+        view.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) onFeedback()
             false
         }
-        binding.keySpace.setOnClickListener {
-            if (isNumMode) onMultiTap('0', 0, true)
-            else onAction(KeyboardView.KeyboardAction.SPACE)
-        }
-        binding.keySpace.setOnLongClickListener {
+        view.setOnClickListener { onAction(KeyboardView.KeyboardAction.SPACE) }
+        view.setOnLongClickListener {
             onFeedback()
-            onMultiTap('0', 0, true)
+            def.longPressChar?.let { onMultiTap(it, 0, true) }
             true
-        }
-
-        binding.keySym.setOnClickListener {
-            onFeedback()
-            onAction(KeyboardView.KeyboardAction.SYM)
-        }
-
-        binding.key123.setOnClickListener {
-            onFeedback()
-            if (isNumMode) onAction(KeyboardView.KeyboardAction.COMMA)
-            else onAction(KeyboardView.KeyboardAction.NUM)
-        }
-
-        binding.keyEmoji.setOnClickListener {
-            onFeedback()
-            if (isNumMode) onAction(KeyboardView.KeyboardAction.PERIOD)
-            else onAction(KeyboardView.KeyboardAction.EMOJI)
         }
     }
 
-    private fun handleLetterKey(view: View, isNumMode: Boolean, isXt9Mode: Boolean) {
+    private fun setupEnterKey(view: View) {
+        view.setOnClickListener {
+            onFeedback()
+            onAction(KeyboardView.KeyboardAction.ENTER)
+        }
+        view.setOnLongClickListener {
+            onFeedback()
+            onAction(KeyboardView.KeyboardAction.EMOJI)
+            true
+        }
+    }
+
+    private fun handleLetterKey(view: View, def: KeyDef, isNumMode: Boolean, isXt9Mode: Boolean) {
         if (isNumMode) {
-            val text = when(view.id) {
-                binding.keyPunct.id -> "1"
-                binding.keyAbc.id -> "2"
-                binding.keyDef.id -> "3"
-                binding.keyGhi.id -> "4"
-                binding.keyJkl.id -> "5"
-                binding.keyMno.id -> "6"
-                binding.keyPqrs.id -> "7"
-                binding.keyTuv.id -> "8"
-                binding.keyWxyz.id -> "9"
-                else -> ""
+            if (isWaitingToCommit) {
+                handler.removeCallbacks(commitRunnable)
+                commitCurrentTap()
             }
-            if (text.isNotEmpty()) {
-                if (isWaitingToCommit) {
-                    handler.removeCallbacks(commitRunnable)
-                    commitCurrentTap()
-                }
-                onMultiTap(text[0], 0, true)
+            when (def.numLabel) {
+                null -> Unit
+                "," -> onAction(KeyboardView.KeyboardAction.COMMA)
+                "." -> onAction(KeyboardView.KeyboardAction.PERIOD)
+                else -> onMultiTap(def.numLabel[0], 0, true)
             }
             return
         }
 
-        val chars = keyMap[view.id] ?: return
-        if (isXt9Mode && view.id != binding.keyPunct.id) {
+        val chars = def.chars
+        if (chars.isEmpty()) return
+
+        if (isXt9Mode && def.type != KeyType.SYMBOL_CYCLE) {
             if (isWaitingToCommit) {
                 handler.removeCallbacks(commitRunnable)
                 commitCurrentTap()
@@ -191,7 +256,7 @@ class KeyTouchHandler(
             tapCount = 0
         }
 
-        val currentChar = chars[tapCount % chars.length]
+        val currentChar = chars[tapCount % chars.size]
         onMultiTap(currentChar, tapCount, false)
         isWaitingToCommit = true
         handler.postDelayed(commitRunnable, multiTapTimeout)
@@ -199,8 +264,9 @@ class KeyTouchHandler(
 
     private fun commitCurrentTap() {
         if (currentKeyId != -1) {
-            val chars = keyMap[currentKeyId] ?: return
-            val currentChar = chars[tapCount % chars.length]
+            val chars = defByViewId[currentKeyId]?.chars ?: return
+            if (chars.isEmpty()) return
+            val currentChar = chars[tapCount % chars.size]
             onMultiTap(currentChar, tapCount, true)
             currentKeyId = -1
             tapCount = 0
@@ -231,8 +297,12 @@ class KeyTouchHandler(
         currentKeyId = -1
         tapCount = 0
         stopRepeatingDel()
+        hidePreview()
     }
 
     fun setMultiTapTimeout(timeout: Long) { this.multiTapTimeout = timeout }
     fun setDeletionSpeed(speed: Int) { this.deletionSpeed = speed }
+
+    private fun dpToPx(dp: Int): Int =
+        (dp * keyboardView.resources.displayMetrics.density + 0.5f).toInt()
 }

@@ -31,17 +31,6 @@ object LearnedDictionary {
         AGGRESSIVE  // Remove freq≤2 words older than 60 days
     }
 
-    private val digitMap = mapOf(
-        'a' to '2', 'b' to '2', 'c' to '2',
-        'd' to '3', 'e' to '3', 'f' to '3',
-        'g' to '4', 'h' to '4', 'i' to '4',
-        'j' to '5', 'k' to '5', 'l' to '5',
-        'm' to '6', 'n' to '6', 'o' to '6',
-        'p' to '7', 'q' to '7', 'r' to '7', 's' to '7',
-        't' to '8', 'u' to '8', 'v' to '8',
-        'w' to '9', 'x' to '9', 'y' to '9', 'z' to '9'
-    )
-
     @Synchronized
     fun load(context: Context) {
         // One-time migration from plain SharedPreferences to SafeBox
@@ -252,7 +241,7 @@ object LearnedDictionary {
         if (constraints.isEmpty()) return emptyList()
 
         val digitSequence = constraints.map {
-            if (it.length == 1 && it[0].isDigit()) it else (digitMap[it[0]] ?: ' ')
+            if (it.length == 1 && T9Utils.isKeyCode(it[0])) it else T9Utils.getDigitForChar(it[0])
         }.joinToString("").trim()
 
         val bigramBoosts = if (previousWord != null) {
@@ -275,7 +264,7 @@ object LearnedDictionary {
                 val stripped = word.filter { it in 'a'..'z' }
                 for (i in constraints.indices) {
                     val constraint = constraints[i]
-                    if (constraint.length == 1 && !constraint[0].isDigit()) {
+                    if (constraint.length == 1 && !T9Utils.isKeyCode(constraint[0])) {
                         if (stripped.length <= i || stripped[i] != constraint[0]) {
                             matches = false
                             break
@@ -300,9 +289,7 @@ object LearnedDictionary {
         }.sortedByDescending { it.frequency }
     }
 
-    private fun getT9Sequence(word: String): String {
-        return word.lowercase().filter { it in 'a'..'z' }.map { digitMap[it] ?: ' ' }.joinToString("").trim()
-    }
+    private fun getT9Sequence(word: String): String = T9Utils.getT9Sequence(word)
 
     private fun categorizeLearnedWord(word: String): WordCategory {
         return if (AospDictionary.containsWord(word)) {

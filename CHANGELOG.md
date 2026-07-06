@@ -1,5 +1,10 @@
 ## [Unreleased]
 ### Added
+- New 5-column × 2-letters-per-key layout defined in `KeyboardLayout.kt` (single source of truth for labels, hints, multi-tap characters, and engine key codes).
+- Key-preview popup: an accent-filled rounded square appears above the touched letter key.
+- Long-press outputs matching each key's corner hint: digits 1–9 and 0, `*` (ST), `#` (UV), `/` (YZ); WX long-press opens the number page; Enter long-press opens the emoji picker; SYM long-press switches keyboards.
+- Enter key performs the editor's `IME_ACTION_*` (Search/Send/Go…) when one is set.
+- `KeyboardLayoutTest` covering grid shape, letter coverage, and key-code mapping invariants.
 - Created `tools/raw/` for raw dictionary processing files.
 
 ### Removed
@@ -15,4 +20,6 @@
 - Updated `LearnedDictionaryTest.kt` to remove calls to deleted functions.
 
 ### Changed
+- Visual redesign ("Obsidian Flux"): `#1A1A1A` keyboard background, `#0D0D0D` key surfaces with a 1dp 5%-white hairline, 16dp corner radius, 6dp grid gap, 8dp container margin; pressed keys flash `#2979FF` and scale to 0.95; backspace and active shift fill with the accent color (`#558DFF` default) with white content.
+- Prediction engine (AOSP/Learned/Contacts dictionaries) reindexed for the 2-letter key pairs; key codes extend beyond digits to `*`, `#`, `+`, `/`.
 - Enter key sub icon replaced with accent-colored dot indicator

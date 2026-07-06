@@ -61,6 +61,7 @@ class KeyboardView @JvmOverloads constructor(
 
     fun setAccentColor(color: Int) {
         labelRenderer.setAccentColor(color, isNumMode, lastShiftState)
+        touchHandler.setAccentColor(color)
     }
 
     fun updateShiftState(state: ShiftState) {

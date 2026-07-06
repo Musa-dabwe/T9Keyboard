@@ -304,7 +304,8 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         val digit = T9Utils.getDigitForChar(char)
         val isPunctuation = (digit == '1')
 
-        if (char.isDigit()) {
+        // Digits and long-press symbols (* # /) commit directly, bypassing composition
+        if (char.isDigit() || char == '*' || char == '#' || char == '/') {
             commitTextWithFinalization(char.toString())
             editorState.lastDigit = ' '
             return
@@ -362,7 +363,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 }
                 KeyboardView.KeyboardAction.ENTER -> {
                     commitTextWithFinalization("")
-                    icManager.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+                    icManager.performEnter()
                 }
                 KeyboardView.KeyboardAction.SHIFT -> {
                     shiftManager.toggle()
