@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · Text editing — T9 Keyboard Mockup</title>
+<style>
+  :root{
+    --keyboard-bg:#1a1a1a; --key-surface:#0d0d0d; --key-border:rgba(255,255,255,.08);
+    --key-pressed:#2979ff; --accent:#558dff;
+    --text-primary:#e1e2ed; --hint-color:#8c90a0;
+    --canvas:#0b0c10; --panel:#15171c; --panel-border:#262932; --danger:#ff6b6b; --ok:#5fd68a;
+    --font:'Hanken Grotesk',ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font);}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 24px 96px;}
+  a.back{color:var(--hint-color);font-size:13px;text-decoration:none;}
+  a.back:hover{color:var(--accent);}
+  h1{font-size:22px;margin:14px 0 4px;}
+  .sub{color:var(--hint-color);font-size:14px;margin:0 0 24px;max-width:70ch;}
+  code{background:#000;border:1px solid var(--panel-border);border-radius:4px;padding:1px 5px;font-size:12px;color:#ffd479;}
+
+  .stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;}
+  .device{width:390px;flex:0 0 auto;border-radius:32px;overflow:hidden;background:#000;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);border:6px solid #050505;}
+  .ime{background:var(--keyboard-bg);}
+  .topbar{height:36px;display:flex;align-items:center;justify-content:center;background:var(--keyboard-bg);
+    font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--hint-color);}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px;}
+  .key{background:var(--key-surface);border:1px solid var(--key-border);border-radius:16px;
+    height:58px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;}
+  .key:active,.key.pressed{transform:scale(.96);background:var(--key-pressed);}
+  .key .label{font-size:13px;font-weight:700;color:var(--text-primary);}
+  .key .label.icon-only{font-size:20px;}
+  .key.wide{grid-column:span 2;}
+  .key.danger .label{color:#ff5252;}
+  .key.active-select{background:var(--accent);}
+  .key.active-select .label{color:#fff;}
+  .key svg{width:20px;height:20px;color:var(--text-primary);}
+
+  .side-notes{flex:1 1 340px;min-width:280px;display:flex;flex-direction:column;gap:12px;}
+  .finding{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:14px 16px;}
+  .finding .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 8px;border-radius:99px;margin-bottom:8px;background:rgba(85,141,255,.15);color:var(--accent);}
+  .finding h3{margin:0 0 4px;font-size:14.5px;}
+  .finding p{margin:0;font-size:13px;color:#b9bcc6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; Back to review hub</a>
+  <h1>06 · Text editing panel</h1>
+  <p class="sub">Rebuilt from <code>TextEditingView.kt</code>'s programmatic 4×4 grid: cursor movement, undo/redo, select/copy/cut/paste, reached from the toolbar's edit icon.</p>
+
+  <div class="stage">
+    <div class="device">
+      <div class="ime">
+        <div class="topbar">TEXT EDITING</div>
+        <div class="grid">
+          <div class="key"><span class="label">Undo ↩</span></div>
+          <div class="key"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.414,15.586H17.586a1,1,0,0,0,0.707,-1.707L12.707,8.293a1,1,0,0,0,-1.414,0L5.707,13.879A1,1,0,0,0,6.414,15.586Z"/></svg></div>
+          <div class="key"><span class="label">Redo ↪</span></div>
+          <div class="key danger"><svg viewBox="0 0 24 24" fill="currentColor" style="color:#ff5252"><path d="m24,5a3,3 0,0 0 -3,-3h-13.242l-7.758,10 7.758,10h13.242a3,3 0,0 0 3,-3zm-6.041,9.543-1.414,1.414-2.545,-2.543-2.543,2.543-1.414,-1.414,2.543,-2.543-2.543,-2.543,1.414,-1.414,2.543,2.543,2.543,-2.543,1.414,1.414,-2.543,2.543z"/></svg></div>
+
+          <div class="key"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.29,18.59,7.71,13a1,1,0,0,1,0,-1.41L13.29,6A1,1,0,0,1,15,6.71V17.88A1,1,0,0,1,13.29,18.59Z"/></svg></div>
+          <div class="key" id="selectKey"><span class="label">Select</span></div>
+          <div class="key"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9,17.88V6.71A1,1,0,0,1,10.71,6l5.58,5.59a1,1,0,0,1,0,1.41l-5.58,5.59A1,1,0,0,1,9,17.88Z"/></svg></div>
+          <div class="key"><span class="label">ABC</span></div>
+
+          <div class="key"><span class="label">Cut</span></div>
+          <div class="key"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.41,9H17.59a1,1,0,0,1,0.7,1.71l-5.58,5.58a1,1,0,0,1,-1.42,0L5.71,10.71A1,1,0,0,1,6.41,9Z"/></svg></div>
+          <div class="key"><span class="label">Copy</span></div>
+          <div class="key"><span class="label">Paste</span></div>
+
+          <div class="key"><span class="label">123</span></div>
+          <div class="key wide"><span class="label">Select all</span></div>
+          <div class="key"><span class="label icon-only">↵</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-notes">
+      <div class="finding">
+        <span class="tag">Consistent</span>
+        <h3>No structural issues found here</h3>
+        <p>This panel already routes its background through <code>@color/keyboard_background</code> and matches the main grid's 16dp/6dp/hairline-border language, so it inherited this redesign's palette correctly — unlike the emoji panels. No changes proposed beyond what's already shipped.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">Note</span>
+        <h3>"Select" highlights while active</h3>
+        <p>Toggling Select fills the key with the accent color (<code>updateSelectKeyVisuals()</code>) to show selection mode is on — click it below to see the same treatment used for active SHIFT and the anchored suggestion elsewhere in the app.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var selectKey = document.getElementById('selectKey');
+  var active = false;
+  selectKey.addEventListener('click', function(){
+    active = !active;
+    selectKey.classList.toggle('active-select', active);
+  });
+  document.querySelectorAll('.key').forEach(function(k){
+    k.addEventListener('mousedown', function(){ k.classList.add('pressed'); });
+    ['mouseup','mouseleave'].forEach(function(ev){ k.addEventListener(ev, function(){ k.classList.remove('pressed'); }); });
+  });
+</script>
+</body>
+</html>

@@ -61,6 +61,12 @@ class SuggestionBar @JvmOverloads constructor(
 
         applyRipple(binding.toolbarSettings)
         applyRipple(binding.toolbarEdit)
+
+        // Settings/Edit are plain navigation actions, not toggles - stay muted regardless
+        // of the user's accent color (only xt9, an actual toggle, uses the accent when on).
+        val muted = ColorStateList.valueOf(Color.parseColor("#8C90A0"))
+        ImageViewCompat.setImageTintList(binding.toolbarSettings, muted)
+        ImageViewCompat.setImageTintList(binding.toolbarEdit, muted)
     }
 
     private fun applyRipple(view: View) {
@@ -145,10 +151,6 @@ class SuggestionBar @JvmOverloads constructor(
         if (binding.anchoredSuggestion.visibility == View.VISIBLE) {
             binding.anchoredSuggestion.setBackgroundColor(color)
         }
-        // Update toolbar icons tint
-        val tint = ColorStateList.valueOf(color)
-        ImageViewCompat.setImageTintList(binding.toolbarSettings, tint)
-        ImageViewCompat.setImageTintList(binding.toolbarEdit, tint)
     }
 
     fun setFontSize(sizeSp: Float) {

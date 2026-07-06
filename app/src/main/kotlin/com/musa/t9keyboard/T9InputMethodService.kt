@@ -292,7 +292,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             if (!isFinished) {
                 orchestrator.emojiPickerView?.updateSearchChar(char, tapCount == 0)
             } else if (isFinished && tapCount == 0) {
-                val isPunctuation = (T9Utils.getDigitForChar(char) == '1')
+                val isPunctuation = (T9Utils.getDigitForChar(char) == KeyboardLayout.punctuationCode)
                 if (char.isDigit() || (xt9Enabled && !isPunctuation)) {
                     orchestrator.emojiPickerView?.appendSearchChar(char)
                 }
@@ -302,17 +302,17 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
         editorState.lastTapTime = System.currentTimeMillis()
         val digit = T9Utils.getDigitForChar(char)
-        val isPunctuation = (digit == '1')
+        val isPunctuation = (digit == KeyboardLayout.punctuationCode)
 
-        // Digits and long-press symbols (* # /) commit directly, bypassing composition
-        if (char.isDigit() || char == '*' || char == '#' || char == '/') {
+        // Digits and long-press symbols (@ * # /) commit directly, bypassing composition
+        if (char.isDigit() || char == '@' || char == '*' || char == '#' || char == '/') {
             commitTextWithFinalization(char.toString())
             editorState.lastDigit = ' '
             return
         }
 
         if (tapCount == 0 && !isFinished) {
-            if (isPunctuation && editorState.lastDigit != '1') {
+            if (isPunctuation && editorState.lastDigit != KeyboardLayout.punctuationCode) {
                 finalizeCurrentComposing()
             }
             if (editorState.composingText.isEmpty() && editorState.xt9DigitSequence.isEmpty()) {
@@ -324,7 +324,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
         if (isPunctuation) {
             handlePunctuationTap(displayChar, tapCount, isFinished)
-            editorState.lastDigit = '1'
+            editorState.lastDigit = KeyboardLayout.punctuationCode
         } else {
             editorState.lastDigit = digit
             if (xt9Enabled) {
@@ -775,7 +775,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             checkAutoCap()
         }
         val digit = T9Utils.getDigitForChar(char)
-        if (digit == ' ' || digit == '1') return
+        if (digit == ' ' || digit == KeyboardLayout.punctuationCode) return
         editorState.xt9DigitSequence.append(digit)
         editorState.xt9RawSequence.append(T9Utils.getFirstCharForDigit(digit))
         suggestionEngine.requestSuggestions(editorState, true)

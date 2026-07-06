@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · Emoji picker — T9 Keyboard Mockup</title>
+<style>
+  :root{
+    --keyboard-bg:#1a1a1a; --key-surface:#0d0d0d; --key-border:rgba(255,255,255,.08);
+    --accent:#558dff; --text-primary:#e1e2ed; --hint-color:#8c90a0;
+    --canvas:#0b0c10; --panel:#15171c; --panel-border:#262932; --danger:#ff6b6b;
+    --font:'Hanken Grotesk',ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--text-primary);font-family:var(--font);}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 24px 96px;}
+  a.back{color:var(--hint-color);font-size:13px;text-decoration:none;}
+  a.back:hover{color:var(--accent);}
+  h1{font-size:22px;margin:14px 0 4px;}
+  .sub{color:var(--hint-color);font-size:14px;margin:0 0 24px;max-width:70ch;}
+  code{background:#000;border:1px solid var(--panel-border);border-radius:4px;padding:1px 5px;font-size:12px;color:#ffd479;}
+
+  .stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;}
+  .device{width:390px;flex:0 0 auto;border-radius:32px;overflow:hidden;background:#000;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);border:6px solid #050505;}
+  .ime{background:var(--keyboard-bg);height:340px;display:flex;flex-direction:column;}
+  .topbar{height:48px;display:flex;align-items:center;background:var(--keyboard-bg);padding:0 8px;flex:0 0 auto;}
+  .topbar .spacer{flex:1;}
+  .topbar .icon-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--text-primary);border-radius:99px;}
+  .topbar .icon-btn svg{width:20px;height:20px;}
+
+  .content{flex:1;overflow:hidden;background:var(--keyboard-bg);position:relative;}
+  .header{grid-column:1/-1;font-size:11px;color:var(--hint-color);text-transform:uppercase;letter-spacing:.04em;
+    padding:10px 8px 6px;}
+  .egrid{display:grid;grid-template-columns:repeat(8,1fr);}
+  .ecell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:8px;}
+  .ecell:active,.ecell.pressed{background:rgba(255,255,255,.08);}
+  .fade{position:absolute;left:0;right:0;bottom:0;height:36px;
+    background:linear-gradient(transparent,var(--keyboard-bg));pointer-events:none;}
+
+  .side-notes{flex:1 1 340px;min-width:280px;display:flex;flex-direction:column;gap:12px;}
+  .finding{background:var(--panel);border:1px solid var(--panel-border);border-radius:12px;padding:14px 16px;}
+  .finding .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 8px;border-radius:99px;margin-bottom:8px;background:rgba(255,107,107,.15);color:var(--danger);}
+  .finding h3{margin:0 0 4px;font-size:14.5px;}
+  .finding p{margin:0;font-size:13px;color:#b9bcc6;}
+  .swatchrow{display:flex;gap:8px;margin-top:10px;}
+  .swatchrow div{flex:1;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#aaa;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; Back to review hub</a>
+  <h1>04 · Emoji picker</h1>
+  <p class="sub">Rebuilt from <code>EmojiPickerView.kt</code>'s flat-list <code>RecyclerView</code>: a "Recent Emoji" section, then each <code>EmojiData</code> category as an inline header, all in one scrolling 8-column grid. This mockup already uses the corrected palette below.</p>
+
+  <div class="stage">
+    <div class="device">
+      <div class="ime">
+        <div class="topbar">
+          <div class="spacer"></div>
+          <div class="icon-btn">
+            <svg viewBox="0 0 512 512" fill="currentColor"><path d="M506.02,475.743L378.865,348.588c74.591-91.227,61.105-225.649-30.122-300.239S123.095-12.757,48.504,78.47S-12.601,304.119,78.626,378.71c78.578,64.249,191.54,64.249,270.118,0l127.155,127.155c8.463,8.173,21.949,7.939,30.122-0.524C513.993,497.086,513.993,483.998,506.02,475.743z M43.604,213.87c0-94.121,76.3-170.421,170.421-170.421s170.421,76.3,170.421,170.421s-76.3,170.421-170.421,170.421C119.948,384.185,43.71,307.947,43.604,213.87z"/></svg>
+          </div>
+          <div class="icon-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,10.5H10.207l2.439-2.439a1.5,1.5,0,0,0-2.121-2.122L6.939,9.525a3.505,3.505,0,0,0,0,4.95l3.586,3.586a1.5,1.5,0,0,0,2.121-2.122L10.207,13.5H19a1.5,1.5,0,0,0,0-3Z"/></svg>
+          </div>
+        </div>
+        <div class="content">
+          <div class="egrid">
+            <div class="header">Recent Emoji</div>
+            <div class="ecell">😀</div><div class="ecell">🔥</div><div class="ecell">👍</div><div class="ecell">🙏</div>
+            <div class="ecell">😂</div><div class="ecell">❤️</div><div class="ecell">🎉</div><div class="ecell">😅</div>
+            <div class="header">Smileys &amp; Emotions</div>
+            <div class="ecell">😀</div><div class="ecell">😃</div><div class="ecell">😄</div><div class="ecell">😁</div>
+            <div class="ecell">😆</div><div class="ecell">😅</div><div class="ecell">🤣</div><div class="ecell">😂</div>
+            <div class="ecell">🙂</div><div class="ecell">🙃</div><div class="ecell">😉</div><div class="ecell">😊</div>
+            <div class="ecell">🥰</div><div class="ecell">😍</div><div class="ecell">🤩</div><div class="ecell">😘</div>
+            <div class="header">People</div>
+            <div class="ecell">👋</div><div class="ecell">🤚</div><div class="ecell">✋</div><div class="ecell">🖖</div>
+            <div class="ecell">👌</div><div class="ecell">✌️</div><div class="ecell">🤞</div><div class="ecell">🤟</div>
+          </div>
+          <div class="fade"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-notes">
+      <div class="finding">
+        <span class="tag">Bug</span>
+        <h3>Hard-coded greys instead of the shared palette</h3>
+        <p><code>EmojiPickerView.kt</code>'s <code>setupViews()</code> literally does <code>setBackgroundColor(Color.parseColor("#111111"))</code> for the top bar and <code>"#2B2B2B"</code> for the recycler — both predate this pass's <code>keyboard_background</code> (<code>#1A1A1A</code>) and <code>key_surface</code> (<code>#0D0D0D</code>) tokens, so this panel doesn't match the rest of the keyboard.</p>
+        <div class="swatchrow">
+          <div style="background:#111111">#111111 (shipped)</div>
+          <div style="background:#2b2b2b">#2b2b2b (shipped)</div>
+          <div style="background:#1a1a1a">#1a1a1a (shared token)</div>
+        </div>
+      </div>
+      <div class="finding">
+        <span class="tag">Proposed</span>
+        <h3>Route through the shared color resources</h3>
+        <p>Replace both <code>Color.parseColor(...)</code> calls with <code>ContextCompat.getColor(context, R.color.keyboard_background)</code>, matching what <code>symbols_view.xml</code> already does. Zero visual risk — it's a straight token swap, and it makes future palette/theme changes apply here automatically instead of needing a second edit.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.ecell').forEach(function(c){
+    c.addEventListener('mousedown', function(){ c.classList.add('pressed'); });
+    ['mouseup','mouseleave'].forEach(function(ev){ c.addEventListener(ev, function(){ c.classList.remove('pressed'); }); });
+  });
+</script>
+</body>
+</html>
