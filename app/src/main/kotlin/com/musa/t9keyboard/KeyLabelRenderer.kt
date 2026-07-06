@@ -55,8 +55,7 @@ class KeyLabelRenderer(
         val ubuntu = FontUtils.getUbuntu(keyboardView.context)
         val allTextViews = letterLabels.flatMap { listOf(it.first, it.second) } + listOf(
             binding.labelShift, binding.labelSym,
-            binding.labelSpace, binding.secondaryLabelSpace,
-            binding.secondaryLabelEnter
+            binding.labelSpace, binding.secondaryLabelSpace
         )
         allTextViews.forEach { it.typeface = ubuntu }
     }
@@ -80,15 +79,16 @@ class KeyLabelRenderer(
     }
 
     fun updateShiftState(state: ShiftState, isNumMode: Boolean) {
+        val isActive = isNumMode || state != ShiftState.OFF
+        updateKeyAccent(binding.keyShift, isActive)
+        binding.labelShift.setTextColor(if (isActive) contentColorOnAccent() else defaultTextColor)
         if (!isNumMode) {
-            updateKeyAccent(binding.keyShift, state != ShiftState.OFF)
             binding.labelShift.text = when (state) {
                 ShiftState.OFF -> "SHIFT"
                 ShiftState.ONE_SHOT -> "SHIFT"
                 ShiftState.CAPS_LOCK -> "CAPS"
             }
         } else {
-            updateKeyAccent(binding.keyShift, true)
             binding.labelShift.text = "ABC"
         }
     }
@@ -97,9 +97,27 @@ class KeyLabelRenderer(
         this.accentColor = color
         binding.suggestionBar.setAccentColor(color)
         updateShiftState(lastShiftState, isNumMode)
-        // Accent-filled keys carry white content
-        ImageViewCompat.setImageTintList(binding.labelDelIcon, ColorStateList.valueOf(Color.WHITE))
+        // Backspace is permanently accent-filled; pick readable content color for the chosen accent
+        ImageViewCompat.setImageTintList(binding.labelDelIcon, ColorStateList.valueOf(contentColorOnAccent()))
+        // Enter's corner dot is a plain indicator on the key surface, not accent-filled - use the raw accent
+        ImageViewCompat.setImageTintList(binding.enterDot, ColorStateList.valueOf(color))
         updateKeyBackgrounds()
+    }
+
+    private val defaultTextColor: Int by lazy { ContextCompat.getColor(keyboardView.context, R.color.text_primary) }
+
+    /**
+     * WCAG relative-luminance check so backspace/active-SHIFT content stays readable
+     * regardless of which accent color the user picks (light accents like yellow or
+     * teal fail with hardcoded white content).
+     */
+    private fun contentColorOnAccent(): Int {
+        val r = Color.red(accentColor) / 255.0
+        val g = Color.green(accentColor) / 255.0
+        val b = Color.blue(accentColor) / 255.0
+        fun lin(v: Double) = if (v <= 0.03928) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
+        val luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+        return if (luminance > 0.45) Color.parseColor("#12141A") else Color.WHITE
     }
 
     /**

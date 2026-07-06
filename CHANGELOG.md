@@ -1,4 +1,12 @@
 ## [Unreleased]
+### Changed
+- Renumbered the digit keys into a phone-number-pad shape: `AB`=1, `CD`=2, `EF`=3, `IJ`=4, `KL`=5, `MN`=6, `QR`=7, `ST`=8, `UV`=9, `SPACE`=0 - columns 2-4 of rows 1-3 now read as a 3x3 pad with 0 centered below on the space bar, matching a real dial pad. `.,!?`, `GH`, and `OP` sit outside the pad and now show `@`, `*`, `#` respectively instead of digits.
+- Enter's corner hint is now a plain accent-colored dot instead of an emoji, matching the app's other small circular status indicators (long-press still opens the emoji picker).
+- Backspace's icon and active-SHIFT's label now pick white or near-black content color based on the chosen accent's WCAG relative luminance, instead of hard-coded white - fixes unreadable content against light accents (e.g. yellow, teal).
+- Toolbar Settings/Edit icons are now always the muted hint color instead of always accent-tinted; only the `xt9` toggle (an actual toggle, not a one-shot action) reflects the accent color.
+- `EmojiPickerView`'s top bar and emoji grid now use the shared `keyboard_background` color instead of hard-coded `#111111`/`#2B2B2B`, so the emoji panel matches the rest of the keyboard's palette.
+- `EmojiSearchKey` (the emoji-search QWERTY) and the Symbols page's symbol cells now use the same 16dp radius / `key_surface` fill / hairline border as the main grid, instead of a flatter, differently-rounded style.
+
 ### Added
 - New 5-column × 2-letters-per-key layout defined in `KeyboardLayout.kt` (single source of truth for labels, hints, multi-tap characters, and engine key codes).
 - Key-preview popup: an accent-filled rounded square appears above the touched letter key.

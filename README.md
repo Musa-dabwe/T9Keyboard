@@ -108,7 +108,7 @@ The application **does not use Room database**. All persistence is handled via `
 ## 5. Input & Prediction Flow
 
 ### 5.1. Logical Flow (XT9 Mode)
-1.  **Key Press**: User taps a key (e.g., '2' for AB) in `KeyboardView`. The 5-column, 2-letters-per-key grid is defined in `KeyboardLayout.kt`.
+1.  **Key Press**: User taps a key (e.g., '1' for AB) in `KeyboardView`. The 5-column, 2-letters-per-key grid is defined in `KeyboardLayout.kt`.
 2.  **Event Routing**: `KeyboardView` triggers `onMultiTapListener`.
 3.  **State Update**: `T9InputMethodService` appends the digit to `xt9DigitSequence`.
 4.  **Prediction**: `updateXt9Suggestions()` is called:

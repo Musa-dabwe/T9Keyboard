@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import com.musa.t9keyboard.databinding.SymbolsViewBinding
 import com.musa.t9keyboard.utils.FontUtils
@@ -112,14 +113,17 @@ class SymbolsView @JvmOverloads constructor(
 
     private fun createKeyRipple(isIcon: Boolean = false): RippleDrawable {
         val pressedColor = (accentColor and 0x00FFFFFF) or (0x44 shl 24)
+        val radius = resources.getDimension(R.dimen.key_corner_radius)
+        // Match the main grid's key language: key_surface fill + hairline border, same radius
         val content = if (isIcon) null else GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = dpToPx(12).toFloat()
-            setColor(Color.BLACK)
+            cornerRadius = radius
+            setColor(ContextCompat.getColor(context, R.color.key_surface))
+            setStroke(dpToPx(1), ContextCompat.getColor(context, R.color.key_border))
         }
         val mask = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = dpToPx(12).toFloat()
+            cornerRadius = radius
             setColor(Color.WHITE)
         }
         return RippleDrawable(ColorStateList.valueOf(pressedColor), content, mask)

@@ -19,6 +19,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.emoji2.widget.EmojiTextView
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.PaintCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.emoji2.text.EmojiCompat
@@ -90,7 +91,7 @@ class EmojiPickerView @JvmOverloads constructor(
 
     init {
         orientation = VERTICAL
-        setBackgroundColor(Color.parseColor("#1A1A1A"))
+        setBackgroundColor(ContextCompat.getColor(context, R.color.keyboard_background))
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(304))
         setupViews()
     }
@@ -169,7 +170,7 @@ class EmojiPickerView @JvmOverloads constructor(
             setOnTouchListener(SwipeDownListener(context) { onSwipeDownListener?.invoke() })
             orientation = HORIZONTAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
-            setBackgroundColor(Color.parseColor("#111111"))
+            setBackgroundColor(ContextCompat.getColor(context, R.color.keyboard_background))
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
@@ -200,7 +201,7 @@ class EmojiPickerView @JvmOverloads constructor(
             emojiRecycler = RecyclerView(context).apply {
                 layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
                 overScrollMode = View.OVER_SCROLL_NEVER
-                setBackgroundColor(Color.parseColor("#2B2B2B"))
+                setBackgroundColor(ContextCompat.getColor(context, R.color.keyboard_background))
             }
 
             cachedEmojiSize = preferences.emojiSize.toFloat()
