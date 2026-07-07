@@ -1,4 +1,29 @@
 ## [Unreleased]
+### Added
+- Number pad: space key now reads `SPACE [0]` so the long-press zero is discoverable without the corner hint.
+- Number pad: comma key shows a `-` corner hint; long-pressing it types a hyphen.
+- Number pad: swiping down on the suggestion bar dismisses the pad back to the letters keyboard, making it behave like a separate panel (same gesture as the text-editing panel).
+- Panel switches (letters ⇄ symbols/emoji/text-editing/number pad) animate with a short fade + upward slide.
+- Dynamic key-preview popup transitions: pop-in with a slight overshoot on press, quick pulse when moving between keys, brief linger and fade-out on release.
+- `AospDictionary.getSequenceForWord()`: the dictionary now exposes its word → key-combination mapping.
+- `tools/normalize_dict.py`: normalizes the dictionary assets to lowercase (case duplicates merged).
+
+### Changed
+- Dictionary overhauled into a hashmap combination dictionary: every word is stored lowercase and mapped to the key sequence that types it, with a reverse sequence → words hashmap for O(1) exact T9 lookups (a sorted prefix index remains only for longer-word predictions). Stored capitalization is gone entirely.
+- `en_us_words.txt` and `en_us_bigrams.txt` assets normalized to lowercase; 8,947 case-duplicate words (`As`/`as`, `On`/`on`, …) and 401 duplicate bigram pairs merged. The words asset remains the dictionary's load source; `tools/convert_dict.py` was updated to regenerate both assets in the new format.
+- Capitalization now always follows the shift state. The only exemption is the pronoun `i` (plus its contractions `i'll`, `i'm`, …), which is always capitalized in XT9 mode; with XT9 off, multi-tap types a literal small `i`. Contact names keep their stored case as user data.
+- Multi-tap suggestions follow the case of the composed text (which itself comes from the shift state).
+- XT9 next-word suggestions are passed through the shift-state rule before display.
+- Learned words are now always stored lowercase (one-time migration merges previously capitalized entries; contact names excepted).
+
+### Removed
+- Number pad: redundant long-press events on `@`, `1`-`9`, `*`, `#`, and the full-stop key (they duplicated the tap character).
+- `ProperNounRegistry` and `res/raw/proper_nouns.txt`: stored-case preservation contradicted shift-state capitalization and could block the shift key from working on registered words.
+- The multi-tap auto-conversion of a committed `i` to `I`.
+
+### Fixed
+- Words such as `as`, `on`, `of` no longer get spuriously capitalized: the old dictionary carried capitalized duplicates (`As` 176, `On` 168, …) and 21,761 capitalized bigram continuations that surfaced through suggestions and next-word predictions regardless of shift state.
+
 ### Changed
 - Renumbered the digit keys into a phone-number-pad shape: `AB`=1, `CD`=2, `EF`=3, `IJ`=4, `KL`=5, `MN`=6, `QR`=7, `ST`=8, `UV`=9, `SPACE`=0 - columns 2-4 of rows 1-3 now read as a 3x3 pad with 0 centered below on the space bar, matching a real dial pad. `.,!?`, `GH`, and `OP` sit outside the pad and now show `@`, `*`, `#` respectively instead of digits.
 - Enter's corner hint is now a plain accent-colored dot instead of an emoji, matching the app's other small circular status indicators (long-press still opens the emoji picker).

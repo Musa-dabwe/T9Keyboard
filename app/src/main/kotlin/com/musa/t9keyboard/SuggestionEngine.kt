@@ -154,12 +154,23 @@ class SuggestionEngine(
                     }.thenByDescending { it.frequency }
             )
 
-        val anchored = if (exactMatches.isNotEmpty()) exactMatches[0].word else composing
+        // Dictionary words are stored lowercase; the composing text already carries the
+        // case the shift state produced, so suggestions follow the composing case.
+        val anchored = if (exactMatches.isNotEmpty()) matchComposingCase(exactMatches[0].word, composing) else composing
         val others = (exactMatches.drop(if (exactMatches.isNotEmpty()) 1 else 0) + longerMatches)
-            .map { it.word }
+            .map { matchComposingCase(it.word, composing) }
             .take(20)
 
         return Pair(others, anchored)
+    }
+
+    private fun matchComposingCase(word: String, composing: String): String {
+        val letters = composing.filter { it.isLetter() }
+        return when {
+            letters.length > 1 && letters.all { it.isUpperCase() } -> word.uppercase()
+            letters.firstOrNull()?.isUpperCase() == true -> word.replaceFirstChar { it.titlecase() }
+            else -> word
+        }
     }
 
     private fun processXt9Suggestions(

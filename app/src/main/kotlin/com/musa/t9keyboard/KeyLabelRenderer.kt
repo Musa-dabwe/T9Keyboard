@@ -66,7 +66,12 @@ class KeyLabelRenderer(
             if (isNumMode) {
                 primary.text = def.numLabel ?: def.label
                 primary.textSize = 22f
-                secondary.visibility = View.GONE
+                if (def.numHint != null) {
+                    secondary.text = def.numHint
+                    secondary.visibility = View.VISIBLE
+                } else {
+                    secondary.visibility = View.GONE
+                }
             } else {
                 primary.text = def.label
                 primary.textSize = 18f
@@ -74,6 +79,8 @@ class KeyLabelRenderer(
                 secondary.visibility = View.VISIBLE
             }
         }
+        // Number mode hides the corner "0" hint, so surface the long-press digit in the label
+        binding.labelSpace.text = if (isNumMode) "SPACE [0]" else "SPACE"
         binding.secondaryLabelSpace.visibility = if (isNumMode) View.GONE else View.VISIBLE
         updateShiftState(lastShiftState, isNumMode)
     }

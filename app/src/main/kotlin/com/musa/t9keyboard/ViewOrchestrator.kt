@@ -77,6 +77,7 @@ class ViewOrchestrator(
             return
         }
 
+        val isPanelSwitch = c.childCount > 0
         c.removeAllViews()
 
         // Ensure height is applied before adding
@@ -95,9 +96,32 @@ class ViewOrchestrator(
         }
 
         c.addView(view)
+        animatePanelIn(view, isPanelSwitch)
         if (view is SymbolsView) {
             view.resetScroll()
         }
+    }
+
+    /**
+     * Short fade + upward slide when switching panels. The initial add (and adds
+     * while the window is hidden) render immediately so the keyboard never pops
+     * in late after the IME window appears.
+     */
+    private fun animatePanelIn(view: View, isPanelSwitch: Boolean) {
+        view.animate().cancel()
+        if (!isPanelSwitch || !isWindowVisible) {
+            view.alpha = 1f
+            view.translationY = 0f
+            return
+        }
+        view.alpha = 0f
+        view.translationY = dpToPx(14).toFloat()
+        view.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(140L)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
     }
 
     private fun dpToPx(dp: Int): Int =

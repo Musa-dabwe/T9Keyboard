@@ -14,16 +14,30 @@ enum class WordCategory {
     LEARNED     // User-learned words not in base dictionary
 }
 
+/**
+ * Hashmap-based combination dictionary.
+ *
+ * Every dictionary word is stored lowercase and mapped to the sequence of keys
+ * that types it ([wordToEntry] / [getSequenceForWord]); the reverse hashmap
+ * [sequenceToWords] answers exact T9 lookups in O(1). Capitalization is never
+ * stored - it is applied at typing time from the shift state.
+ *
+ * [prefixIndex] is a sorted view over the same entries used only for
+ * longer-word predictions (prefix matches on a partial key sequence).
+ */
 object AospDictionary {
-    data class WordEntry(val stripped: String, val frequency: Int, val display: String) {
-        val word: String get() = if (display.isNotEmpty()) display else stripped
-    }
+    data class WordEntry(
+        val word: String,       // canonical lowercase form, apostrophes kept ("i'll")
+        val stripped: String,   // a-z only, used for exact-letter constraint matching
+        val sequence: String,   // key combination that types this word
+        val frequency: Int
+    )
 
-    private val t9Map = TreeMap<String, MutableList<WordEntry>>()
-    private val exactT9Map = HashMap<String, MutableList<WordEntry>>()
-    private val wordToDigits = HashMap<String, String>()
-    private val wordMap = mutableMapOf<String, MutableList<WordEntry>>()
-    private val allWordEntries = mutableListOf<WordEntry>()
+    private val wordToEntry = HashMap<String, WordEntry>()
+    private val sequenceToWords = HashMap<String, MutableList<WordEntry>>()
+    private val prefixIndex = TreeMap<String, MutableList<WordEntry>>()
+    private val entriesByFrequency = mutableListOf<WordEntry>()
+    private var isLoaded = false
 
     data class WordSuggestion(
         val word: String,
@@ -32,13 +46,10 @@ object AospDictionary {
     )
 
     suspend fun loadFromAssets(context: Context) = withContext(Dispatchers.IO) {
-        synchronized(this@AospDictionary) {
-            t9Map.clear()
-            exactT9Map.clear()
-            wordToDigits.clear()
-            wordMap.clear()
-            allWordEntries.clear()
-        }
+        val newWordToEntry = HashMap<String, WordEntry>()
+        val newSequenceToWords = HashMap<String, MutableList<WordEntry>>()
+        val newPrefixIndex = TreeMap<String, MutableList<WordEntry>>()
+        val newEntriesByFrequency = mutableListOf<WordEntry>()
 
         val reader = try {
             BufferedReader(InputStreamReader(context.assets.open("en_us_words.txt")))
@@ -53,26 +64,18 @@ object AospDictionary {
                 try {
                     val parts = line.split("\t")
                     if (parts.size >= 2) {
-                        val word = parts[0]
-                        // Robust frequency parsing as per instructions
-                        val freqStr = parts[1].split(" ")[0]
-                        val freq = freqStr.toInt()
+                        // The asset is normalized to lowercase, but never trust stored case
+                        val word = parts[0].lowercase()
+                        val freq = parts[1].split(" ")[0].toInt()
+                        val stripped = word.filter { it in 'a'..'z' }
+                        val sequence = T9Utils.getT9Sequence(word)
 
-                        // Per instructions, display is the same as word
-                        val display = word
-                        val stripped = word.lowercase().filter { it in 'a'..'z' }
-                        val entry = WordEntry(stripped, freq, display)
-
-                        synchronized(this@AospDictionary) {
-                            wordMap.getOrPut(stripped) { mutableListOf() }.add(entry)
-                            allWordEntries.add(entry)
-
-                            val digits = getT9Sequence(word)
-                            if (digits.isNotEmpty()) {
-                                t9Map.getOrPut(digits) { mutableListOf() }.add(entry)
-                                exactT9Map.getOrPut(digits) { mutableListOf() }.add(entry)
-                                wordToDigits[word.lowercase()] = digits
-                            }
+                        if (sequence.isNotEmpty() && !newWordToEntry.containsKey(word)) {
+                            val entry = WordEntry(word, stripped, sequence, freq)
+                            newWordToEntry[word] = entry
+                            newSequenceToWords.getOrPut(sequence) { mutableListOf() }.add(entry)
+                            newPrefixIndex.getOrPut(sequence) { mutableListOf() }.add(entry)
+                            newEntriesByFrequency.add(entry)
                         }
                     }
                 } catch (e: Exception) {
@@ -81,131 +84,109 @@ object AospDictionary {
                 line = r.readLine()
             }
         }
+
+        // The asset is sorted by frequency desc; keep that order for containing-matches
+        synchronized(this@AospDictionary) {
+            wordToEntry.clear()
+            wordToEntry.putAll(newWordToEntry)
+            sequenceToWords.clear()
+            sequenceToWords.putAll(newSequenceToWords)
+            prefixIndex.clear()
+            prefixIndex.putAll(newPrefixIndex)
+            entriesByFrequency.clear()
+            entriesByFrequency.addAll(newEntriesByFrequency)
+            isLoaded = true
+        }
     }
 
-    private fun getT9Sequence(word: String): String = T9Utils.getT9Sequence(word)
+    /** The key combination that types [word], or null if it's not in the dictionary. */
+    @Synchronized
+    fun getSequenceForWord(word: String): String? =
+        wordToEntry[word.lowercase().trim()]?.sequence
 
     @Synchronized
-    fun getWordFrequency(word: String): Int {
-        if (t9Map.isEmpty()) return 0
-        val lower = word.lowercase().trim()
-        val stripped = lower.filter { it in 'a'..'z' }
-        return wordMap[stripped]?.find { it.word.lowercase() == lower }?.frequency ?: 0
-    }
+    fun getWordFrequency(word: String): Int =
+        wordToEntry[word.lowercase().trim()]?.frequency ?: 0
 
     @Synchronized
-    fun contains(word: String): Boolean {
-        if (t9Map.isEmpty()) return false
-        val lower = word.lowercase().trim()
-        val stripped = lower.filter { it in 'a'..'z' }
-        return wordMap[stripped]?.any { it.word.lowercase() == lower } ?: false
-    }
+    fun contains(word: String): Boolean =
+        wordToEntry.containsKey(word.lowercase().trim())
 
     @Synchronized
     fun containsWord(word: String): Boolean = contains(word)
 
-    private fun categorizeWord(word: String): WordCategory {
-        val stripped = word.lowercase().filter { it in 'a'..'z' }
-        return if (stripped.length == 1) {
-            WordCategory.PROTECTED
-        } else {
-            WordCategory.BASE
-        }
-    }
+    private fun categorizeWord(entry: WordEntry): WordCategory =
+        if (entry.stripped.length == 1) WordCategory.PROTECTED else WordCategory.BASE
 
+    private fun toSuggestion(entry: WordEntry): WordSuggestion =
+        WordSuggestion(entry.word, entry.frequency, categorizeWord(entry))
 
     @Synchronized
     fun getSuggestionsForSequence(t9sequence: String): List<WordSuggestion> {
-        if (exactT9Map.isEmpty()) return emptyList()
-        val entries = exactT9Map[t9sequence] ?: emptyList<WordEntry>()
-        val results = entries.map {
-            WordSuggestion(it.word, it.frequency, categorizeWord(it.word))
-        }.toMutableList()
-
-        return results.sortedByDescending { it.frequency }
-            .distinctBy { it.word.lowercase() }
+        if (!isLoaded) return emptyList()
+        val entries = sequenceToWords[t9sequence] ?: return emptyList()
+        return entries.map { toSuggestion(it) }.sortedByDescending { it.frequency }
     }
 
     @Synchronized
     fun getWordsStartingWith(prefix: String): List<WordSuggestion> {
-        if (t9Map.isEmpty()) return emptyList()
+        if (!isLoaded) return emptyList()
         if (prefix.length > 12) return emptyList()
-        val potentialMatches = t9Map.subMap(prefix, prefix + "\uFFFF")
+        val potentialMatches = prefixIndex.subMap(prefix, prefix + "\uFFFF")
         return potentialMatches.values
-            .flatMap { entries ->
-                entries.map {
-                    WordSuggestion(it.word, it.frequency, categorizeWord(it.word))
-                }
-            }
+            .flatMap { entries -> entries.map { toSuggestion(it) } }
             .sortedByDescending { it.frequency }
-            .distinctBy { it.word.lowercase() }
     }
 
     @Synchronized
     fun getWordsContaining(literal: String): List<WordSuggestion> {
-        if (t9Map.isEmpty()) return emptyList()
+        if (!isLoaded) return emptyList()
         if (literal.isEmpty()) return emptyList()
         val lowerLiteral = literal.lowercase()
-        return allWordEntries
+        return entriesByFrequency
             .asSequence()
-            .filter { it.word.lowercase().contains(lowerLiteral) }
+            .filter { it.word.contains(lowerLiteral) }
             .take(30)
-            .map {
-                WordSuggestion(it.word, it.frequency, categorizeWord(it.word))
-            }
+            .map { toSuggestion(it) }
             .sortedByDescending { it.frequency }
-            .distinctBy { it.word.lowercase() }
             .toList()
     }
 
     @Synchronized
     fun getSuggestions(constraints: List<String>): List<WordSuggestion> {
-        if (exactT9Map.isEmpty()) return emptyList()
+        if (!isLoaded) return emptyList()
         if (constraints.isEmpty()) return emptyList()
 
         val digitSequence = constraints.map {
             if (it.length == 1 && T9Utils.isKeyCode(it[0])) it else T9Utils.getDigitForChar(it[0])
         }.joinToString("").trim()
 
-        // Optimization: if sequence is long, don't do prefix searching to avoid iterating keys
-        if (digitSequence.length > 12) {
-             val results = mutableListOf<WordSuggestion>()
-             exactT9Map[digitSequence]?.forEach { entry ->
-                 var matches = true
-                 for (i in constraints.indices) {
-                     val constraint = constraints[i]
-                     if (constraint.length == 1 && !T9Utils.isKeyCode(constraint[0])) {
-                         if (entry.stripped.length <= i || entry.stripped[i] != constraint[0]) {
-                             matches = false
-                             break
-                         }
-                     }
-                 }
-                 if (matches) {
-                     results.add(WordSuggestion(entry.word, entry.frequency, categorizeWord(entry.word)))
-                 }
-             }
-             return results
-        }
-
-        val potentialMatches = t9Map.subMap(digitSequence, digitSequence + "\uFFFF")
-        val results = mutableListOf<WordSuggestion>()
-
-        for (entries in potentialMatches.values) {
-            for (entry in entries) {
-                var matches = true
-                val word = entry.stripped
-                for (i in constraints.indices) {
-                    val constraint = constraints[i]
-                    if (constraint.length == 1 && !T9Utils.isKeyCode(constraint[0])) {
-                        if (word.length <= i || word[i] != constraint[0]) {
-                            matches = false
-                            break
-                        }
+        fun matchesConstraints(entry: WordEntry): Boolean {
+            for (i in constraints.indices) {
+                val constraint = constraints[i]
+                if (constraint.length == 1 && !T9Utils.isKeyCode(constraint[0])) {
+                    if (entry.stripped.length <= i || entry.stripped[i] != constraint[0]) {
+                        return false
                     }
                 }
-                if (matches) {
-                    results.add(WordSuggestion(entry.word, entry.frequency, categorizeWord(entry.word)))
+            }
+            return true
+        }
+
+        // Long sequences: exact hashmap hit only, skip prefix iteration
+        if (digitSequence.length > 12) {
+            return sequenceToWords[digitSequence]
+                ?.filter { matchesConstraints(it) }
+                ?.map { toSuggestion(it) }
+                ?: emptyList()
+        }
+
+        val potentialMatches = prefixIndex.subMap(digitSequence, digitSequence + "\uFFFF")
+        val results = mutableListOf<WordSuggestion>()
+        for (entries in potentialMatches.values) {
+            for (entry in entries) {
+                if (matchesConstraints(entry)) {
+                    results.add(toSuggestion(entry))
                 }
             }
         }

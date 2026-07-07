@@ -26,6 +26,10 @@ enum class KeyType {
  * @param numLabel  Label shown in number mode (null keeps the primary label)
  * @param longPressChar  Character committed on long-press (the corner hint symbol), if any
  * @param longPressOpensNumPage  WX long-press ("123" hint) toggles the number page
+ * @param numHint  Muted corner hint shown in number mode (only the comma key's "-")
+ * @param numLongPressChar  Character committed on long-press while in number mode.
+ *                          All other keys have no long-press in number mode - their
+ *                          long-press char would just duplicate the tap character.
  */
 data class KeyDef(
     val label: String,
@@ -36,7 +40,9 @@ data class KeyDef(
     val code: Char = ' ',
     val numLabel: String? = null,
     val longPressChar: Char? = null,
-    val longPressOpensNumPage: Boolean = false
+    val longPressOpensNumPage: Boolean = false,
+    val numHint: String? = null,
+    val numLongPressChar: Char? = null
 )
 
 /**
@@ -77,7 +83,7 @@ object KeyboardLayout {
             KeyDef("SHIFT", null, emptyList(), KeyType.SHIFT)
         ),
         listOf(
-            KeyDef("WX", "123", listOf('w', 'x'), KeyType.LETTER, code = '+', numLabel = ",", longPressOpensNumPage = true),
+            KeyDef("WX", "123", listOf('w', 'x'), KeyType.LETTER, code = '+', numLabel = ",", longPressOpensNumPage = true, numHint = "-", numLongPressChar = '-'),
             KeyDef("SPACE", "0", emptyList(), KeyType.SPACE, colSpan = 2, numLabel = "0", longPressChar = '0'),
             KeyDef("YZ", "/", listOf('y', 'z'), KeyType.LETTER, code = '/', numLabel = ".", longPressChar = '/'),
             KeyDef("", null, emptyList(), KeyType.ENTER)

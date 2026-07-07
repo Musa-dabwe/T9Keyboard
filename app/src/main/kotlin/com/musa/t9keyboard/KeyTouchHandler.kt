@@ -18,6 +18,10 @@ class KeyTouchHandler(
     private val onAction: (KeyboardView.KeyboardAction) -> Unit,
     private val onFeedback: () -> Unit
 ) {
+    companion object {
+        private const val PREVIEW_SCALE_FROM = 0.7f
+    }
+
     private val handler = Handler(Looper.getMainLooper())
     private val commitRunnable = Runnable { commitCurrentTap() }
     private var isWaitingToCommit = false
@@ -65,9 +69,35 @@ class KeyTouchHandler(
         }
     }
 
+    // Gboard-style popup transitions: pop in with a slight overshoot on press,
+    // pulse when hopping between keys, linger briefly then fade out on release.
+    private val dismissPreviewRunnable = Runnable {
+        try {
+            if (!previewPopup.isShowing) return@Runnable
+            previewText.animate().cancel()
+            previewText.animate()
+                .alpha(0f)
+                .scaleX(PREVIEW_SCALE_FROM)
+                .scaleY(PREVIEW_SCALE_FROM)
+                .setDuration(80L)
+                .withEndAction {
+                    try {
+                        if (previewPopup.isShowing) previewPopup.dismiss()
+                    } catch (e: Exception) {
+                        // Ignore
+                    }
+                }
+                .start()
+        } catch (e: Exception) {
+            // Preview is cosmetic; never let it break input
+        }
+    }
+
     private fun showPreview(keyView: View, label: String) {
         if (label.isEmpty() || label.length > 5) return
         try {
+            handler.removeCallbacks(dismissPreviewRunnable)
+            previewText.animate().cancel()
             previewText.text = label
             previewText.background = GradientDrawable().apply {
                 setColor(accentColor)
@@ -78,11 +108,24 @@ class KeyTouchHandler(
             val size = dpToPx(56)
             val x = location[0] + keyView.width / 2 - size / 2
             val y = location[1] - size - dpToPx(8)
-            if (previewPopup.isShowing) {
+            val wasShowing = previewPopup.isShowing
+            if (wasShowing) {
                 previewPopup.update(x, y, size, size)
             } else {
                 previewPopup.showAtLocation(keyboardView, Gravity.NO_GRAVITY, x, y)
             }
+            // Full pop for a fresh press, quick pulse when moving to another key
+            val fromScale = if (wasShowing) 0.9f else PREVIEW_SCALE_FROM
+            previewText.scaleX = fromScale
+            previewText.scaleY = fromScale
+            previewText.alpha = if (wasShowing) 1f else 0f
+            previewText.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(if (wasShowing) 70L else 110L)
+                .setInterpolator(android.view.animation.OvershootInterpolator(1.2f))
+                .start()
         } catch (e: Exception) {
             // Preview is cosmetic; never let it break input
         }
@@ -90,7 +133,10 @@ class KeyTouchHandler(
 
     private fun hidePreview() {
         try {
-            if (previewPopup.isShowing) previewPopup.dismiss()
+            if (!previewPopup.isShowing) return
+            // Small linger so fast typing reads as one continuous popup
+            handler.removeCallbacks(dismissPreviewRunnable)
+            handler.postDelayed(dismissPreviewRunnable, 50L)
         } catch (e: Exception) {
             // Ignore
         }
@@ -129,15 +175,32 @@ class KeyTouchHandler(
             false
         }
         view.setOnClickListener { handleLetterKey(view, def, isNumMode, isXt9Mode) }
-        view.setOnLongClickListener {
-            onFeedback()
-            hidePreview()
-            when {
-                def.longPressOpensNumPage -> onAction(KeyboardView.KeyboardAction.NUM)
-                def.longPressChar != null -> onMultiTap(def.longPressChar, 0, true)
-                else -> return@setOnLongClickListener false
+        if (isNumMode) {
+            // In number mode a long-press would just repeat the tap character, so only
+            // the comma key keeps one (it commits the "-" shown as its corner hint).
+            val numLongPress = def.numLongPressChar
+            if (numLongPress != null) {
+                view.setOnLongClickListener {
+                    onFeedback()
+                    hidePreview()
+                    onMultiTap(numLongPress, 0, true)
+                    true
+                }
+            } else {
+                view.setOnLongClickListener(null)
+                view.isLongClickable = false
             }
-            true
+        } else {
+            view.setOnLongClickListener {
+                onFeedback()
+                hidePreview()
+                when {
+                    def.longPressOpensNumPage -> onAction(KeyboardView.KeyboardAction.NUM)
+                    def.longPressChar != null -> onMultiTap(def.longPressChar, 0, true)
+                    else -> return@setOnLongClickListener false
+                }
+                true
+            }
         }
     }
 

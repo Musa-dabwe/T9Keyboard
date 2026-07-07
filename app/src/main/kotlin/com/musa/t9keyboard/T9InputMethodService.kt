@@ -116,7 +116,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         serviceScope.launch {
             AospDictionary.loadFromAssets(this@T9InputMethodService)
             AospBigrams.loadFromAssets(this@T9InputMethodService)
-            ProperNounRegistry.load(this@T9InputMethodService)
         }
         LearnedDictionary.load(this)
 
@@ -126,8 +125,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         suggestionEngine = SuggestionEngine(serviceScope, { contactSuggestionsEnabled && contactPermissionGranted }) { suggestions, anchored ->
             try {
                 if (xt9Enabled && editorState.xt9DigitSequence.isEmpty()) {
-                    // Next-word suggestions only — show in bar, do not set composing text
-                    orchestrator.keyboardView?.setSuggestions(suggestions, null)
+                    // Next-word suggestions only — show in bar, do not set composing text.
+                    // Shift state decides their case (and "i" is always "I" in XT9 mode).
+                    orchestrator.keyboardView?.setSuggestions(suggestions.map { applyShiftState(it) }, null)
                     return@SuggestionEngine
                 }
 
@@ -227,6 +227,8 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 onMultiTapListener = { c, tc, f -> onMultiTap(c, tc, f) }
                 onActionClickListener = { a -> onActionClick(a) }
                 onFeedbackRequested = { this@T9InputMethodService.onFeedbackRequested() }
+                // Swipe down on the number pad's suggestion bar dismisses it like a panel
+                onNumPadSwipeDown = { onActionClick(KeyboardView.KeyboardAction.NUM) }
                 setOnSuggestionClickListener { s -> onSuggestionClick(s) }
                 setOnToolbarActionClickListener { a -> onToolbarActionClick(a) }
                 pasteBubble = findViewById(R.id.paste_bubble)
@@ -304,8 +306,8 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         val digit = T9Utils.getDigitForChar(char)
         val isPunctuation = (digit == KeyboardLayout.punctuationCode)
 
-        // Digits and long-press symbols (@ * # /) commit directly, bypassing composition
-        if (char.isDigit() || char == '@' || char == '*' || char == '#' || char == '/') {
+        // Digits and long-press symbols (@ * # / -) commit directly, bypassing composition
+        if (char.isDigit() || char == '@' || char == '*' || char == '#' || char == '/' || char == '-') {
             commitTextWithFinalization(char.toString())
             editorState.lastDigit = ' '
             return
@@ -817,12 +819,10 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         val currentPackage = currentPackageName
         val shouldLearn = !isInputSensitive && !preferences.isAppBlacklisted(currentPackage)
 
-        var committedWord: String? = null
         if (xt9Enabled && editorState.xt9DigitSequence.isNotEmpty()) {
             val wordToCommit = if (editorState.currentXt9Predictions.isNotEmpty()) editorState.currentXt9Predictions[0] else editorState.xt9RawSequence.toString()
             val finalWord = applyShiftState(wordToCommit)
             if (moveCursorToEnd) icManager.commitText(finalWord, 1) else icManager.finishComposingText()
-            committedWord = finalWord
             if (shouldLearn) {
                 try {
                     LearnedDictionary.learnWord(wordToCommit, editorState.lastCommittedWord)
@@ -838,7 +838,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             val word = editorState.composingText.toString()
             if (moveCursorToEnd) icManager.setComposingText(word, 1)
             icManager.finishComposingText()
-            committedWord = word
             if (shouldLearn) {
                 try {
                     LearnedDictionary.learnWord(word, editorState.lastCommittedWord)
@@ -852,11 +851,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         }
         shiftManager.consumeShift()
         orchestrator.keyboardView?.updateShiftState(shiftManager.currentState)
-        if (committedWord == "i" && moveCursorToEnd) {
-            icManager.deleteSurroundingText(1, 0)
-            icManager.commitText("I", 1)
-            editorState.lastCommittedWord = "I"
-        }
         orchestrator.keyboardView?.setSuggestions(emptyList())
         editorState.lastDigit = ' '
     }
@@ -926,24 +920,27 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         }
     }
 
+    /**
+     * Capitalization always follows the shift state. The only exemption is the
+     * pronoun "i" (and its contractions "i'll", "i'm", ...), which is always
+     * capitalized in XT9 mode - this method is only used on the XT9 path, so
+     * multi-tap still types a literal small "i".
+     * Contact names keep their stored case: they are user data, not dictionary words.
+     */
     private fun applyShiftState(text: String): String {
-        // Pronoun "I" is ALWAYS uppercase
-        if (text.lowercase() == "i") {
-            return "I"
+        val lower = text.lowercase()
+        if (lower == "i" || lower.startsWith("i'")) {
+            return lower.replaceFirstChar { 'I' }
         }
 
-        // Proper nouns preserve their stored case
-        if (ProperNounRegistry.contains(text) || ContactsDictionary.containsName(text)) {
-            return text // Already stored with correct capitalization
+        if (ContactsDictionary.containsName(text)) {
+            return text
         }
 
-        // Apply shift state for all other words
         return when (shiftManager.currentState) {
-            ShiftState.ONE_SHOT -> text.replaceFirstChar {
-                if (it.isLowerCase()) it.titlecase() else it.toString()
-            }
+            ShiftState.ONE_SHOT -> lower.replaceFirstChar { it.titlecase() }
             ShiftState.CAPS_LOCK -> text.uppercase()
-            else -> text.lowercase() // Ensure lowercase in normal state
+            else -> lower
         }
     }
 

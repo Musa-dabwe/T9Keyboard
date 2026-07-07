@@ -30,6 +30,20 @@ class SuggestionBar @JvmOverloads constructor(
 
     var onSuggestionClickListener: ((String) -> Unit)? = null
     var onToolbarActionClickListener: ((ToolbarAction) -> Unit)? = null
+    var onSwipeDownListener: (() -> Unit)? = null
+
+    /** When true (number pad), a downward fling anywhere on the bar dismisses the panel. */
+    var swipeDownEnabled: Boolean = false
+
+    private val swipeDownDetector = SwipeDownListener(context) { onSwipeDownListener?.invoke() }
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        // Observe the full event stream (even over child suggestion chips) without
+        // stealing it, so taps keep working while flings dismiss the number pad.
+        if (swipeDownEnabled) swipeDownDetector.onTouch(this, ev)
+        val handled = super.dispatchTouchEvent(ev)
+        return handled || swipeDownEnabled
+    }
 
     private var accentColor: Int = Color.parseColor("#BB86FC")
     private var suggestionFontSize: Float = 13f
