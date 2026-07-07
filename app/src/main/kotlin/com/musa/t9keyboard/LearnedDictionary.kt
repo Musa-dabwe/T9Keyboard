@@ -133,9 +133,10 @@ object LearnedDictionary {
     @Synchronized
     fun learnWord(word: String, previousWord: String? = null) {
         try {
-        // Determine storage key: preserve case for proper nouns, lowercase otherwise
-        val storageKey = if (ProperNounRegistry.contains(word) || ContactsDictionary.containsName(word)) {
-            word.trim()  // Preserve original case
+        // Capitalization always comes from the shift state at typing time, so learned
+        // words are stored lowercase. Contact names are user data and keep their case.
+        val storageKey = if (ContactsDictionary.containsName(word)) {
+            word.trim()
         } else {
             word.lowercase().trim()
         }
@@ -329,13 +330,14 @@ object LearnedDictionary {
     }
 
     /**
-     * One-time migration: Downcase all learned words that are not proper nouns.
+     * One-time migration: downcase all learned words (capitalization now comes
+     * exclusively from the shift state; only contact names keep their case).
      * Merges frequencies if both capitalized and lowercase versions exist.
-     * Called once on app upgrade to Phase 1b.
+     * v2 also folds words the retired ProperNounRegistry used to preserve.
      */
     @Synchronized
     private fun migrateCapitalization(context: Context) {
-        val migrationKey = "capitalization_migration_v1_complete"
+        val migrationKey = "capitalization_migration_v2_complete"
         if (prefs.getBoolean(migrationKey, false)) {
             return // Already migrated
         }
@@ -346,7 +348,7 @@ object LearnedDictionary {
         // Group words by their lowercase form
         allKeys.forEach { key ->
             val originalWord = key.substring(5)
-            if (!ProperNounRegistry.contains(originalWord) && !ContactsDictionary.containsName(originalWord)) {
+            if (!ContactsDictionary.containsName(originalWord)) {
                 val lowercaseForm = originalWord.lowercase()
                 if (lowercaseForm != originalWord) {
                     wordsToMigrate.getOrPut(lowercaseForm) { mutableListOf() }.add(originalWord)

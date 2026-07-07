@@ -17,6 +17,8 @@ class KeyboardView @JvmOverloads constructor(
     var onActionClickListener: ((KeyboardAction) -> Unit)? = null
     var onMultiTapListener: ((Char, Int, Boolean) -> Unit)? = null
     var onFeedbackRequested: (() -> Unit)? = null
+    /** Fired when the user swipes down on the suggestion bar while the number pad is open. */
+    var onNumPadSwipeDown: (() -> Unit)? = null
 
     private var isNumMode = false
     private var lastShiftState: ShiftState = ShiftState.OFF
@@ -38,11 +40,13 @@ class KeyboardView @JvmOverloads constructor(
         labelRenderer.applyUbuntuFont()
         touchHandler.setupKeys(isNumMode, isXt9Mode)
         labelRenderer.updateKeyLabels(isNumMode, lastShiftState)
+        binding.suggestionBar.onSwipeDownListener = { onNumPadSwipeDown?.invoke() }
     }
 
     fun resetState() {
         touchHandler.resetState()
         isNumMode = false
+        binding.suggestionBar.swipeDownEnabled = false
         labelRenderer.updateKeyAccent(binding.keyShift, false)
         labelRenderer.updateKeyLabels(isNumMode, lastShiftState)
         touchHandler.setupKeys(isNumMode, isXt9Mode)
@@ -71,6 +75,7 @@ class KeyboardView @JvmOverloads constructor(
 
     fun toggleNumMode() {
         isNumMode = !isNumMode
+        binding.suggestionBar.swipeDownEnabled = isNumMode
         labelRenderer.updateKeyLabels(isNumMode, lastShiftState)
         labelRenderer.updateKeyAccent(binding.keyShift, isNumMode)
         touchHandler.setupKeys(isNumMode, isXt9Mode)
