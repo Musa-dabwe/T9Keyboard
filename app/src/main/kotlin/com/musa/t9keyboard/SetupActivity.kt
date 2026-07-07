@@ -33,10 +33,11 @@ class SetupActivity : AppCompatActivity() {
         preferences = PreferencesManager(this)
 
         // Theme initialization moved from MainActivity
-        val mode = when (preferences.theme) {
-            0 -> AppCompatDelegate.MODE_NIGHT_NO
-            1 -> AppCompatDelegate.MODE_NIGHT_YES
-            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        val themeId = preferences.keyboardThemeId
+        val mode = when {
+            themeId == KeyboardThemes.SYSTEM_ID -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            KeyboardThemes.byId(themeId)?.isDark == true -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> AppCompatDelegate.MODE_NIGHT_NO
         }
         AppCompatDelegate.setDefaultNightMode(mode)
 

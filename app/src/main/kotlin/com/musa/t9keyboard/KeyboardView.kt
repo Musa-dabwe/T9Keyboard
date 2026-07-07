@@ -68,6 +68,13 @@ class KeyboardView @JvmOverloads constructor(
         touchHandler.setAccentColor(color)
     }
 
+    fun setTheme(theme: KeyboardTheme) {
+        setBackgroundColor(theme.background)
+        binding.root.setBackgroundColor(theme.background)
+        labelRenderer.setTheme(theme, isNumMode, lastShiftState)
+        binding.suggestionBar.setTheme(theme)
+    }
+
     fun updateShiftState(state: ShiftState) {
         lastShiftState = state
         labelRenderer.updateShiftState(state, isNumMode)

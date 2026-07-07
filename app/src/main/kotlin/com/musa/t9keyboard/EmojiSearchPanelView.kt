@@ -23,6 +23,7 @@ class EmojiSearchPanelView @JvmOverloads constructor(
 
     var listener: Listener? = null
     private var accentColorInternal: Int = Color.parseColor("#E91E63")
+    private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
 
     private lateinit var queryText: TextView
     private lateinit var underline: View
@@ -35,7 +36,7 @@ class EmojiSearchPanelView @JvmOverloads constructor(
 
     init {
         orientation = VERTICAL
-        setBackgroundColor(Color.parseColor("#292929"))
+        setBackgroundColor(theme.background)
         isFocusable = true
         isFocusableInTouchMode = true
         inflate(context, R.layout.emoji_search_panel, this)
@@ -52,6 +53,38 @@ class EmojiSearchPanelView @JvmOverloads constructor(
         if (::deleteBtn.isInitialized) {
             ImageViewCompat.setImageTintList(deleteBtn, ColorStateList.valueOf(color))
         }
+    }
+
+    fun setTheme(theme: KeyboardTheme) {
+        this.theme = theme
+        setBackgroundColor(theme.background)
+        findViewById<View>(R.id.emoji_search_top_bar)?.setBackgroundColor(theme.suggestionBackground)
+        if (::queryText.isInitialized) {
+            queryText.setTextColor(theme.keyText)
+            queryText.setHintTextColor(theme.keyHint)
+        }
+        for (char in 'a'..'z') {
+            val id = resources.getIdentifier("key_$char", "id", context.packageName)
+            if (id == 0) continue
+            findViewById<TextView>(id)?.apply {
+                setTextColor(theme.keyText)
+                background = createKeyBackground()
+            }
+        }
+        if (::deleteBtn.isInitialized) {
+            deleteBtn.background = createKeyBackground()
+        }
+    }
+
+    private fun createKeyBackground(): android.graphics.drawable.Drawable {
+        val density = resources.displayMetrics.density
+        val content = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 6 * density
+            setColor(theme.keySurface)
+            setStroke((1 * density + 0.5f).toInt(), theme.keyBorder)
+        }
+        val pressed = ColorStateList.valueOf(KeyboardThemes.withAlpha(accentColorInternal, 0x66))
+        return android.graphics.drawable.RippleDrawable(pressed, content, null)
     }
 
     fun resetQuery() {

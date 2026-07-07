@@ -99,6 +99,7 @@ class KeyTouchHandler(
             handler.removeCallbacks(dismissPreviewRunnable)
             previewText.animate().cancel()
             previewText.text = label
+            previewText.setTextColor(KeyboardThemes.readableOn(accentColor))
             previewText.background = GradientDrawable().apply {
                 setColor(accentColor)
                 cornerRadius = dpToPx(16).toFloat()

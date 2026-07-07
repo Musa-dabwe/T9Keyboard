@@ -54,6 +54,8 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        preferences = PreferencesManager(this)
+        applyTheme(preferences.keyboardThemeId)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         @Suppress("DEPRECATION")
         window.statusBarColor = Color.TRANSPARENT
@@ -69,8 +71,6 @@ class SettingsActivity : AppCompatActivity() {
 
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        preferences = PreferencesManager(this)
 
         if (!preferences.setupComplete && !ImeUtils.isFullyConfigured(this)) {
             startActivity(Intent(this, SetupActivity::class.java))
@@ -192,9 +192,9 @@ class SettingsActivity : AppCompatActivity() {
 
         updateThemeText()
         binding.spinnerTheme.setOnClickListener {
-            dialogHelper.showThemeDialog { which ->
-                preferences.theme = which
-                applyTheme(which)
+            dialogHelper.showThemeDialog { themeId ->
+                preferences.keyboardThemeId = themeId
+                applyTheme(themeId)
                 updateThemeText()
             }
         }
@@ -239,11 +239,10 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateThemeText() {
-        binding.txtSelectedTheme.text = when (preferences.theme) {
-            0 -> "Light"
-            1 -> "Dark"
-            else -> "System Default"
-        }
+        val themeId = preferences.keyboardThemeId
+        binding.txtSelectedTheme.text =
+            if (themeId == KeyboardThemes.SYSTEM_ID) KeyboardThemes.SYSTEM_DISPLAY_NAME
+            else KeyboardThemes.byId(themeId)?.displayName ?: KeyboardThemes.SYSTEM_DISPLAY_NAME
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -262,11 +261,12 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyTheme(themeValue: Int) {
-        val mode = when (themeValue) {
-            0 -> AppCompatDelegate.MODE_NIGHT_NO
-            1 -> AppCompatDelegate.MODE_NIGHT_YES
-            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+    /** Keeps the settings screen's day/night mode in sync with the chosen keyboard theme. */
+    private fun applyTheme(themeId: String) {
+        val mode = when {
+            themeId == KeyboardThemes.SYSTEM_ID -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            KeyboardThemes.byId(themeId)?.isDark == true -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> AppCompatDelegate.MODE_NIGHT_NO
         }
         AppCompatDelegate.setDefaultNightMode(mode)
     }

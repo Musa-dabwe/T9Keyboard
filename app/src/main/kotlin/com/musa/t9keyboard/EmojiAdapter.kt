@@ -15,6 +15,7 @@ class EmojiAdapter(
     private val items: List<EmojiPickerView.ListItem>,
     private val emojiSize: Float,
     private val rippleProvider: () -> android.graphics.drawable.Drawable?,
+    private val themeProvider: () -> KeyboardTheme,
     private val onEmojiClick: (String) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -38,7 +39,7 @@ class EmojiAdapter(
                         dpToPx(32)
                     )
                     textSize = 11f
-                    setTextColor(Color.parseColor("#888888"))
+                    setTextColor(themeProvider().keyHint)
                     typeface = FontUtils.getUbuntu(context)
                     setPadding(dpToPx(12), dpToPx(12), dpToPx(12), 0)
                     gravity = Gravity.CENTER_VERTICAL
@@ -54,7 +55,7 @@ class EmojiAdapter(
                         dpToPx(40)
                     )
                     textSize = 14f
-                    setTextColor(Color.GRAY)
+                    setTextColor(themeProvider().keyHint)
                     typeface = FontUtils.getUbuntu(context)
                     setPadding(dpToPx(16), 0, 0, 0)
                     gravity = Gravity.START or Gravity.CENTER_VERTICAL
@@ -85,18 +86,20 @@ class EmojiAdapter(
         when (holder) {
             is HeaderVH -> {
                 holder.tv.text = (item as EmojiPickerView.ListItem.Header).name
+                holder.tv.setTextColor(themeProvider().keyHint)
             }
             is EmojiVH -> {
                 val tv = holder.tv
                 if (item is EmojiPickerView.ListItem.EmptyState) {
                     tv.text = item.message
+                    tv.setTextColor(themeProvider().keyHint)
                     tv.background = null
                     tv.setOnClickListener(null)
                 } else if (item is EmojiPickerView.ListItem.Emoji) {
                     val code = item.code
                     tv.text = code
                     tv.textSize = emojiSize
-                    tv.setTextColor(Color.WHITE)
+                    tv.setTextColor(themeProvider().keyText)
                     tv.background = rippleProvider()?.constantState?.newDrawable()?.mutate()
                     tv.setOnClickListener { onEmojiClick(code) }
                 }

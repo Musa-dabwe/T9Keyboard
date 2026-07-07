@@ -200,14 +200,55 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
             kv.setFontSize(preferences.suggestionFontSize.toFloat())
             kv.setDeletionSpeed(preferences.deletionSpeed)
             kv.isXt9Mode = xt9Enabled
-            val accentColor = ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
-            kv.setAccentColor(accentColor)
-            sv.setAccentColor(accentColor)
             sv.setDeletionSpeed(preferences.deletionSpeed)
-            epv.setAccentColor(accentColor)
             epv.setDeletionSpeed(preferences.deletionSpeed)
-            tev.setAccentColor(accentColor)
             tev.setDeletionSpeed(preferences.deletionSpeed)
+            applyThemeToViews()
+        }
+    }
+
+    private fun currentKeyboardTheme(): KeyboardTheme =
+        preferences.resolveKeyboardTheme(KeyboardThemes.isSystemDark(resources.configuration))
+
+    /**
+     * Pushes the resolved theme palette and accent color to every keyboard
+     * surface. Theme goes first so accent-derived visuals compose on top of
+     * the right palette.
+     */
+    private fun applyThemeToViews() {
+        if (!orchestrator.isViewReady) return
+        val theme = currentKeyboardTheme()
+        val accentColor = ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
+        orchestrator.keyboardView?.apply {
+            setTheme(theme)
+            setAccentColor(accentColor)
+        }
+        orchestrator.symbolsView?.apply {
+            setTheme(theme)
+            setAccentColor(accentColor)
+        }
+        orchestrator.emojiPickerView?.apply {
+            setTheme(theme)
+            setAccentColor(accentColor)
+        }
+        orchestrator.textEditingView?.apply {
+            setTheme(theme)
+            setAccentColor(accentColor)
+        }
+        orchestrator.emojiSearchPanelView?.apply {
+            setTheme(theme)
+            setAccentColor(accentColor)
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // System Default follows the phone's dark-mode setting: re-resolve and
+        // restyle live when it flips while the keyboard exists.
+        try {
+            applyThemeToViews()
+        } catch (e: Exception) {
+            CrashLogger.log("onConfigurationChanged", e, this)
         }
     }
 
@@ -681,6 +722,7 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         orchestrator.emojiSearchPanelView?.let {
             val colorRes = accentColorResIds[preferences.accentColorIndex]
             val color = ContextCompat.getColor(this, colorRes)
+            it.setTheme(currentKeyboardTheme())
             it.setAccentColor(color)
             it.resetQuery()
             orchestrator.showView(it)

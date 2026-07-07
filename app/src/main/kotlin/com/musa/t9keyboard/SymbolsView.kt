@@ -34,6 +34,7 @@ class SymbolsView @JvmOverloads constructor(
     private val repeatInterval: Long
         get() = maxOf(30L, 200L - (deletionSpeed * 1.5).toLong())
     private var accentColor: Int = Color.parseColor("#00BFA5")
+    private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
 
     private val symbols = listOf(
         ".", ",", "!", "?", ":", ";", "'", "\"",
@@ -65,7 +66,7 @@ class SymbolsView @JvmOverloads constructor(
             val tv = TextView(context).apply {
                 text = symbol
                 textSize = 18f
-                setTextColor(Color.WHITE)
+                setTextColor(theme.keyText)
                 typeface = ubuntu
                 gravity = Gravity.CENTER
                 isClickable = true
@@ -118,8 +119,8 @@ class SymbolsView @JvmOverloads constructor(
         val content = if (isIcon) null else GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = radius
-            setColor(ContextCompat.getColor(context, R.color.key_surface))
-            setStroke(dpToPx(1), ContextCompat.getColor(context, R.color.key_border))
+            setColor(theme.keySurface)
+            setStroke(dpToPx(1), theme.keyBorder)
         }
         val mask = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
@@ -139,7 +140,16 @@ class SymbolsView @JvmOverloads constructor(
         for (i in 0 until binding.symbolGrid.childCount) {
             val child = binding.symbolGrid.getChildAt(i)
             child.background = createKeyRipple(isIcon = false)
+            (child as? TextView)?.setTextColor(theme.keyText)
         }
+    }
+
+    fun setTheme(theme: KeyboardTheme) {
+        this.theme = theme
+        setBackgroundColor(theme.background)
+        binding.root.setBackgroundColor(theme.background)
+        binding.topBar.setBackgroundColor(theme.background)
+        setAccentColor(accentColor)
     }
 
     fun resetScroll() {
