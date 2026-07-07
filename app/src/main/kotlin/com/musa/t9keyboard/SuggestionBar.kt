@@ -46,6 +46,7 @@ class SuggestionBar @JvmOverloads constructor(
     }
 
     private var accentColor: Int = Color.parseColor("#BB86FC")
+    private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
     private var suggestionFontSize: Float = 13f
     private var isXt9Mode: Boolean = false
     private val ubuntuTypeface = FontUtils.getUbuntu(context)
@@ -75,16 +76,19 @@ class SuggestionBar @JvmOverloads constructor(
 
         applyRipple(binding.toolbarSettings)
         applyRipple(binding.toolbarEdit)
+        applyToolbarTints()
+    }
 
+    private fun applyToolbarTints() {
         // Settings/Edit are plain navigation actions, not toggles - stay muted regardless
         // of the user's accent color (only xt9, an actual toggle, uses the accent when on).
-        val muted = ColorStateList.valueOf(Color.parseColor("#8C90A0"))
+        val muted = ColorStateList.valueOf(theme.keyHint)
         ImageViewCompat.setImageTintList(binding.toolbarSettings, muted)
         ImageViewCompat.setImageTintList(binding.toolbarEdit, muted)
     }
 
     private fun applyRipple(view: View) {
-        val rippleColor = ColorStateList.valueOf((Color.WHITE and 0x00FFFFFF) or (0x33 shl 24))
+        val rippleColor = ColorStateList.valueOf(KeyboardThemes.withAlpha(theme.suggestionText, 0x33))
         val ripple = RippleDrawable(rippleColor, null, GradientDrawable().apply {
             shape = GradientDrawable.OVAL
             setColor(Color.WHITE)
@@ -116,6 +120,7 @@ class SuggestionBar @JvmOverloads constructor(
             binding.anchoredSuggestion.visibility = View.VISIBLE
             binding.anchoredSuggestion.text = anchoredWord
             binding.anchoredSuggestion.setBackgroundColor(accentColor)
+            binding.anchoredSuggestion.setTextColor(KeyboardThemes.readableOn(accentColor))
             binding.anchoredSuggestion.setOnClickListener { onSuggestionClickListener?.invoke(anchoredWord) }
             binding.anchoredSuggestion.paintFlags = binding.anchoredSuggestion.paintFlags and android.graphics.Paint.UNDERLINE_TEXT_FLAG.inv()
         } else {
@@ -130,6 +135,7 @@ class SuggestionBar @JvmOverloads constructor(
         binding.anchoredSuggestion.text = correctedWord
         val alphaAccent = (accentColor and 0x00FFFFFF) or (0xB3 shl 24) // ~70% opacity
         binding.anchoredSuggestion.setBackgroundColor(alphaAccent)
+        binding.anchoredSuggestion.setTextColor(KeyboardThemes.readableOn(accentColor))
         binding.anchoredSuggestion.paintFlags = binding.anchoredSuggestion.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
         binding.anchoredSuggestion.setOnClickListener { onSuggestionClickListener?.invoke(correctedWord) }
 
@@ -146,7 +152,7 @@ class SuggestionBar @JvmOverloads constructor(
     }
 
     private fun updateXt9ButtonVisuals() {
-        binding.toolbarXt9.setTextColor(if (isXt9Mode) accentColor else Color.WHITE)
+        binding.toolbarXt9.setTextColor(if (isXt9Mode) accentColor else theme.suggestionText)
         // Optionally add a subtle background when active
         if (isXt9Mode) {
              val bg = GradientDrawable().apply {
@@ -164,7 +170,19 @@ class SuggestionBar @JvmOverloads constructor(
         updateXt9ButtonVisuals()
         if (binding.anchoredSuggestion.visibility == View.VISIBLE) {
             binding.anchoredSuggestion.setBackgroundColor(color)
+            binding.anchoredSuggestion.setTextColor(KeyboardThemes.readableOn(color))
         }
+    }
+
+    fun setTheme(theme: KeyboardTheme) {
+        this.theme = theme
+        setBackgroundColor(theme.suggestionBackground)
+        binding.root.setBackgroundColor(theme.suggestionBackground)
+        applyToolbarTints()
+        applyRipple(binding.toolbarSettings)
+        applyRipple(binding.toolbarEdit)
+        updateXt9ButtonVisuals()
+        suggestionAdapter.notifyDataSetChanged()
     }
 
     fun setFontSize(sizeSp: Float) {
@@ -194,7 +212,7 @@ class SuggestionBar @JvmOverloads constructor(
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val tv = TextView(context).apply {
                 textSize = suggestionFontSize
-                setTextColor(Color.WHITE)
+                setTextColor(theme.suggestionText)
                 typeface = ubuntuTypeface
                 gravity = Gravity.CENTER
                 setPadding(dpToPx(12), 0, dpToPx(12), 0)
@@ -215,6 +233,7 @@ class SuggestionBar @JvmOverloads constructor(
             val suggestion = items[position]
             (holder.itemView as TextView).apply {
                 text = suggestion
+                setTextColor(theme.suggestionText)
                 setOnClickListener { onSuggestionClickListener?.invoke(suggestion) }
             }
         }

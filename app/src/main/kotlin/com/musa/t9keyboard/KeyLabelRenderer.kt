@@ -1,12 +1,10 @@
 package com.musa.t9keyboard
 
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.view.View
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import com.musa.t9keyboard.databinding.KeyboardViewBinding
 import com.musa.t9keyboard.utils.FontUtils
@@ -15,7 +13,8 @@ class KeyLabelRenderer(
     private val keyboardView: KeyboardView,
     private val binding: KeyboardViewBinding
 ) {
-    private var accentColor: Int = ContextCompat.getColor(keyboardView.context, R.color.shift_active)
+    private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
+    private var accentColor: Int = androidx.core.content.ContextCompat.getColor(keyboardView.context, R.color.shift_active)
 
     // Primary label / hint label pairs for keys with letter output, in KeyboardLayout row order
     private val letterLabels: List<Pair<TextView, TextView>> = listOf(
@@ -88,7 +87,7 @@ class KeyLabelRenderer(
     fun updateShiftState(state: ShiftState, isNumMode: Boolean) {
         val isActive = isNumMode || state != ShiftState.OFF
         updateKeyAccent(binding.keyShift, isActive)
-        binding.labelShift.setTextColor(if (isActive) contentColorOnAccent() else defaultTextColor)
+        binding.labelShift.setTextColor(if (isActive) contentColorOnAccent() else theme.keyText)
         if (!isNumMode) {
             binding.labelShift.text = when (state) {
                 ShiftState.OFF -> "SHIFT"
@@ -100,55 +99,58 @@ class KeyLabelRenderer(
         }
     }
 
+    fun setTheme(theme: KeyboardTheme, isNumMode: Boolean, lastShiftState: ShiftState) {
+        this.theme = theme
+        applyThemeColors(isNumMode, lastShiftState)
+    }
+
     fun setAccentColor(color: Int, isNumMode: Boolean, lastShiftState: ShiftState) {
         this.accentColor = color
         binding.suggestionBar.setAccentColor(color)
+        applyThemeColors(isNumMode, lastShiftState)
+    }
+
+    private fun applyThemeColors(isNumMode: Boolean, lastShiftState: ShiftState) {
+        // Key labels and corner hints
+        letterLabels.forEach { (primary, secondary) ->
+            primary.setTextColor(theme.keyText)
+            secondary.setTextColor(theme.keyHint)
+        }
+        binding.labelSym.setTextColor(theme.keyText)
+        binding.labelSpace.setTextColor(theme.keyText)
+        binding.secondaryLabelSpace.setTextColor(theme.keyHint)
+        ImageViewCompat.setImageTintList(binding.labelEnterIcon, ColorStateList.valueOf(theme.keyText))
+
         updateShiftState(lastShiftState, isNumMode)
         // Backspace is permanently accent-filled; pick readable content color for the chosen accent
         ImageViewCompat.setImageTintList(binding.labelDelIcon, ColorStateList.valueOf(contentColorOnAccent()))
         // Enter's corner dot is a plain indicator on the key surface, not accent-filled - use the raw accent
-        ImageViewCompat.setImageTintList(binding.enterDot, ColorStateList.valueOf(color))
+        ImageViewCompat.setImageTintList(binding.enterDot, ColorStateList.valueOf(accentColor))
         updateKeyBackgrounds()
     }
 
-    private val defaultTextColor: Int by lazy { ContextCompat.getColor(keyboardView.context, R.color.text_primary) }
+    private fun contentColorOnAccent(): Int = KeyboardThemes.readableOn(accentColor)
 
     /**
-     * WCAG relative-luminance check so backspace/active-SHIFT content stays readable
-     * regardless of which accent color the user picks (light accents like yellow or
-     * teal fail with hardcoded white content).
-     */
-    private fun contentColorOnAccent(): Int {
-        val r = Color.red(accentColor) / 255.0
-        val g = Color.green(accentColor) / 255.0
-        val b = Color.blue(accentColor) / 255.0
-        fun lin(v: Double) = if (v <= 0.03928) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
-        val luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
-        return if (luminance > 0.45) Color.parseColor("#12141A") else Color.WHITE
-    }
-
-    /**
-     * Flat tonal key surfaces per the design: #0D0D0D fill with a 5% white
-     * hairline, #2979FF flash while pressed, accent fill when activated
-     * (backspace, active shift). Built in code so the activated fill tracks
-     * the user-selected accent color.
+     * Flat tonal key surfaces: theme key fill with a hairline border, accent
+     * flash while pressed, accent fill when activated (backspace, active
+     * shift). Built in code so both the theme palette and the user-selected
+     * accent color apply at runtime.
      */
     private fun updateKeyBackgrounds() {
-        val context = keyboardView.context
         val radius = keyboardView.resources.getDimension(R.dimen.key_corner_radius)
         val strokeWidth = (1 * keyboardView.resources.displayMetrics.density + 0.5f).toInt()
-        val surfaceColor = ContextCompat.getColor(context, R.color.key_surface)
-        val borderColor = ContextCompat.getColor(context, R.color.key_border)
-        val pressedColor = ContextCompat.getColor(context, R.color.key_pressed)
 
         allKeys.forEach { key ->
             val normal = GradientDrawable().apply {
-                setColor(surfaceColor)
-                setStroke(strokeWidth, borderColor)
+                setColor(theme.keySurface)
+                setStroke(strokeWidth, theme.keyBorder)
                 cornerRadius = radius
             }
+            // Pressed flash follows the accent so it matches the app theme
+            // instead of the old hardcoded blue.
             val pressed = GradientDrawable().apply {
-                setColor(pressedColor)
+                setColor(accentColor)
                 cornerRadius = radius
             }
             val activated = GradientDrawable().apply {

@@ -49,6 +49,7 @@ class EmojiPickerView @JvmOverloads constructor(
     private var deletionSpeed: Int = 100
     private var emojiRecycler: RecyclerView? = null
     private var accentColor = Color.parseColor("#00BFA5")
+    private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
     private var currentRipple: android.graphics.drawable.Drawable? = null
     private var emojiAdapter: EmojiAdapter? = null
     private val preferences = PreferencesManager(context)
@@ -91,7 +92,7 @@ class EmojiPickerView @JvmOverloads constructor(
 
     init {
         orientation = VERTICAL
-        setBackgroundColor(ContextCompat.getColor(context, R.color.keyboard_background))
+        setBackgroundColor(theme.background)
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(304))
         setupViews()
     }
@@ -170,7 +171,7 @@ class EmojiPickerView @JvmOverloads constructor(
             setOnTouchListener(SwipeDownListener(context) { onSwipeDownListener?.invoke() })
             orientation = HORIZONTAL
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(48))
-            setBackgroundColor(ContextCompat.getColor(context, R.color.keyboard_background))
+            setBackgroundColor(theme.background)
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dpToPx(8), 0, dpToPx(8), 0)
         }
@@ -201,7 +202,7 @@ class EmojiPickerView @JvmOverloads constructor(
             emojiRecycler = RecyclerView(context).apply {
                 layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f)
                 overScrollMode = View.OVER_SCROLL_NEVER
-                setBackgroundColor(ContextCompat.getColor(context, R.color.keyboard_background))
+                setBackgroundColor(theme.background)
             }
 
             cachedEmojiSize = preferences.emojiSize.toFloat()
@@ -214,7 +215,7 @@ class EmojiPickerView @JvmOverloads constructor(
                 }
             }
             emojiRecycler?.layoutManager = glm
-            emojiAdapter = EmojiAdapter(context, flatList, cachedEmojiSize, { currentRipple }) { emoji ->
+            emojiAdapter = EmojiAdapter(context, flatList, cachedEmojiSize, { currentRipple }, { theme }) { emoji ->
                 onEmojiClickListener?.invoke(emoji)
                 addToRecent(emoji)
             }
@@ -225,11 +226,14 @@ class EmojiPickerView @JvmOverloads constructor(
     }
 
     private fun setupSearchKeyboard(keyboard: View) {
+        (keyboard as? ViewGroup)?.setBackgroundColor(theme.background)
         val alphabet = "QWERTYUIOPASDFGHJKLZXCVBNM"
         for (char in alphabet) {
             val id = resources.getIdentifier("key_${char.lowercaseChar()}", "id", context.packageName)
             keyboard.findViewById<TextView>(id)?.apply {
                 typeface = FontUtils.getUbuntu(context)
+                setTextColor(theme.keyText)
+                background = createSearchKeyBackground()
                 setOnClickListener {
                     onFeedbackRequested?.invoke()
                     searchQuery.append(char.lowercaseChar())
@@ -240,11 +244,22 @@ class EmojiPickerView @JvmOverloads constructor(
         }
 
         keyboard.findViewById<ImageView>(R.id.key_backspace)?.apply {
+            background = createSearchKeyBackground()
             setOnClickListener {
                 onFeedbackRequested?.invoke()
                 deleteSearchChar()
             }
         }
+    }
+
+    private fun createSearchKeyBackground(): android.graphics.drawable.Drawable {
+        val content = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = dpToPx(6).toFloat()
+            setColor(theme.keySurface)
+            setStroke(dpToPx(1), theme.keyBorder)
+        }
+        val pressed = ColorStateList.valueOf(KeyboardThemes.withAlpha(accentColor, 0x66))
+        return android.graphics.drawable.RippleDrawable(pressed, content, null)
     }
 
     private fun setupNormalTopBar(topBar: LinearLayout) {
@@ -281,8 +296,8 @@ class EmojiPickerView @JvmOverloads constructor(
         searchTextView = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
             hint = "Search emoji..."
-            setHintTextColor(Color.parseColor("#888888"))
-            setTextColor(Color.WHITE)
+            setHintTextColor(theme.keyHint)
+            setTextColor(theme.keyText)
             textSize = 16f
             typeface = FontUtils.getUbuntu(context)
             gravity = Gravity.CENTER_VERTICAL
@@ -359,7 +374,7 @@ class EmojiPickerView @JvmOverloads constructor(
         val hint = TextView(context).apply {
             text = "Type to search emoji"
             textSize = 14f
-            setTextColor(0x99FFFFFF.toInt())
+            setTextColor(theme.keyHint)
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dpToPx(16), 0, 0, 0)
             typeface = FontUtils.getUbuntu(context)
@@ -431,6 +446,14 @@ class EmojiPickerView @JvmOverloads constructor(
 
     fun setDeletionSpeed(speed: Int) {
         this.deletionSpeed = speed
+    }
+
+    fun setTheme(theme: KeyboardTheme) {
+        if (this.theme == theme) return
+        this.theme = theme
+        setBackgroundColor(theme.background)
+        // Rebuild the current layout (grid or search) so every child picks up the palette
+        setupViews()
     }
 
     fun setAccentColor(color: Int) {

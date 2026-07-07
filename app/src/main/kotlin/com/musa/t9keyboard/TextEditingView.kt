@@ -55,16 +55,19 @@ class TextEditingView @JvmOverloads constructor(
 
     private var isSelectionMode = false
     private var accentColor = Color.parseColor("#00BFA5")
+    private var theme: KeyboardTheme = KeyboardThemes.DEFAULT
+    private var hasSelection = false
     private val keyHandler: EditKeyHandler
     private lateinit var selectKey: TextView
     private lateinit var abcKey: TextView
     private lateinit var copyKey: TextView
     private lateinit var cutKey: TextView
-    private var allKeys = mutableListOf<TextView>()
+    private lateinit var topBar: TextView
+    private var allKeys = mutableListOf<Pair<TextView, KeyConfig>>()
 
     init {
         orientation = VERTICAL
-        setBackgroundColor(Color.parseColor("#1A1A1A"))
+        setBackgroundColor(theme.background)
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(304))
         keyHandler = EditKeyHandler(this, { onAction?.invoke(it) }, { onFeedbackRequested?.invoke() })
         setupUI()
@@ -72,10 +75,10 @@ class TextEditingView @JvmOverloads constructor(
 
     private fun setupUI() {
         val ubuntu = FontUtils.getUbuntu(context)
-        val topBar = TextView(context).apply {
+        topBar = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dpToPx(36))
             text = "TEXT EDITING"
-            setTextColor(Color.parseColor("#888888"))
+            setTextColor(theme.keyHint)
             textSize = 13f
             typeface = ubuntu
             gravity = Gravity.CENTER
@@ -140,7 +143,8 @@ class TextEditingView @JvmOverloads constructor(
         val action: EditAction? = null,
         val longAction: EditAction? = null,
         val repeatInterval: Long? = null,
-        val textColor: Int = Color.WHITE,
+        /** Fixed color override (e.g. the red delete key); null follows the theme's key text color. */
+        val textColor: Int? = null,
         val iconResId: Int? = null,
         val onClick: (() -> Unit)? = null,
         val weight: Float = 1f
@@ -159,28 +163,33 @@ class TextEditingView @JvmOverloads constructor(
             layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, config.weight).apply {
                 setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3))
             }
-            if (config.iconResId != null) {
-                androidx.appcompat.content.res.AppCompatResources.getDrawable(context, config.iconResId)?.let {
-                    it.setTint(config.textColor)
-                    it.setBounds(0, 0, dpToPx(24), dpToPx(24))
-                    val spannable = SpannableString(" ")
-                    spannable.setSpan(android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    text = spannable
-                }
-            } else {
-                text = config.label
-            }
-            setTextColor(config.textColor)
             textSize = config.textSize
             typeface = FontUtils.getUbuntu(context)
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
         }
-        allKeys.add(key)
+        allKeys.add(key to config)
+        applyKeyContent(key, config)
         updateKeyBackground(key)
         keyHandler.setupTouchListener(key, config.action, config.longAction, config.repeatInterval, config.onClick)
         return key
+    }
+
+    private fun applyKeyContent(key: TextView, config: KeyConfig) {
+        val contentColor = config.textColor ?: theme.keyText
+        if (config.iconResId != null) {
+            androidx.appcompat.content.res.AppCompatResources.getDrawable(context, config.iconResId)?.let {
+                it.setTint(contentColor)
+                it.setBounds(0, 0, dpToPx(24), dpToPx(24))
+                val spannable = SpannableString(" ")
+                spannable.setSpan(android.text.style.ImageSpan(it, android.text.style.ImageSpan.ALIGN_BOTTOM), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                key.text = spannable
+            }
+        } else {
+            key.text = config.label
+        }
+        key.setTextColor(contentColor)
     }
 
     private fun updateKeyBackground(key: TextView) {
@@ -193,7 +202,7 @@ class TextEditingView @JvmOverloads constructor(
         val pressedColor = (accentColor and 0x00FFFFFF) or (0x66 shl 24)
         val pressedColorList = android.content.res.ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf()),
-            intArrayOf(pressedColor, Color.parseColor("#2D2D2D"))
+            intArrayOf(pressedColor, theme.keySurface)
         )
         key.background = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
@@ -209,7 +218,8 @@ class TextEditingView @JvmOverloads constructor(
     }
 
     fun updateSelectionState(hasSelection: Boolean) {
-        val color = if (hasSelection) Color.WHITE else Color.parseColor("#666666")
+        this.hasSelection = hasSelection
+        val color = if (hasSelection) theme.keyText else theme.keyHint
         copyKey.setTextColor(color)
         cutKey.setTextColor(color)
     }
@@ -217,13 +227,29 @@ class TextEditingView @JvmOverloads constructor(
     fun setAccentColor(color: Int) {
         this.accentColor = color
         updateSelectKeyVisuals()
-        allKeys.forEach { updateKeyBackground(it) }
+        allKeys.forEach { (key, _) -> updateKeyBackground(key) }
+    }
+
+    fun setTheme(theme: KeyboardTheme) {
+        this.theme = theme
+        setBackgroundColor(theme.background)
+        topBar.setTextColor(theme.keyHint)
+        allKeys.forEach { (key, config) ->
+            applyKeyContent(key, config)
+            updateKeyBackground(key)
+        }
+        updateSelectKeyVisuals()
+        updateSelectionState(hasSelection)
     }
 
     fun setDeletionSpeed(speed: Int) = keyHandler.setDeletionSpeed(speed)
 
     private fun updateSelectKeyVisuals() {
         selectKey.background = SelectKeyDrawable(isSelectionMode)
+        selectKey.setTextColor(if (isSelectionMode) KeyboardThemes.readableOn(accentColor) else theme.keyText)
+        if (::abcKey.isInitialized) {
+            abcKey.setTextColor(KeyboardThemes.readableOn(accentColor))
+        }
         val ubuntu = FontUtils.getUbuntu(context)
         if (isSelectionMode) {
             val content = SpannableString("Select")
@@ -239,7 +265,7 @@ class TextEditingView @JvmOverloads constructor(
     private inner class SelectKeyDrawable(val isSelected: Boolean) : Drawable() {
         private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
         override fun draw(canvas: Canvas) {
-            paint.color = if (isSelected) accentColor else Color.parseColor("#2D2D2D")
+            paint.color = if (isSelected) accentColor else theme.keySurface
             canvas.drawRoundRect(RectF(bounds), dpToPx(4).toFloat(), dpToPx(4).toFloat(), paint)
         }
         override fun setAlpha(alpha: Int) { paint.alpha = alpha }

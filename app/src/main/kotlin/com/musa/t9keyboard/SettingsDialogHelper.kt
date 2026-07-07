@@ -42,12 +42,14 @@ class SettingsDialogHelper(private val context: Context, private val preferences
             .show()
     }
 
-    fun showThemeDialog(onThemeSelected: (Int) -> Unit) {
-        val options = arrayOf("Light", "Dark", "System Default")
+    fun showThemeDialog(onThemeSelected: (String) -> Unit) {
+        val themeIds = listOf(KeyboardThemes.SYSTEM_ID) + KeyboardThemes.ALL.map { it.id }
+        val options = (listOf(KeyboardThemes.SYSTEM_DISPLAY_NAME) + KeyboardThemes.ALL.map { it.displayName }).toTypedArray()
+        val checked = themeIds.indexOf(preferences.keyboardThemeId).coerceAtLeast(0)
         AlertDialog.Builder(context)
             .setTitle("Select Theme")
-            .setSingleChoiceItems(options, preferences.theme) { dialog, which ->
-                onThemeSelected(which)
+            .setSingleChoiceItems(options, checked) { dialog, which ->
+                onThemeSelected(themeIds[which])
                 dialog.dismiss()
             }
             .show()
