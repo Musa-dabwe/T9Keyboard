@@ -1,11 +1,11 @@
-# T9 Keyboard Architecture
+# PoetBoard (T9 Keyboard) Architecture
 
 This document provides a comprehensive overview of the `com.musa.t9keyboard` architecture, documenting its components, data schema, and core logic flows.
 
 ---
 
 ## 1. Project Overview
-T9 Keyboard is a modern Android Input Method Editor (IME) that implements both traditional multi-tap and predictive XT9-style input. It utilizes a custom View-based architecture (avoiding the deprecated `KeyboardView` API) and prioritizes efficiency and user customization through a card-based Settings UI.
+PoetBoard (formerly T9 Keyboard) is a modern Android Input Method Editor (IME) that implements both traditional multi-tap and predictive XT9-style input. It utilizes a custom View-based architecture (avoiding the deprecated `KeyboardView` API) and prioritizes efficiency and user customization through a pastel HTML settings UI hosted in a WebView.
 
 ---
 
@@ -15,8 +15,8 @@ As defined in `AndroidManifest.xml`:
 | Component | Type | Responsibility |
 | :--- | :--- | :--- |
 | `.T9InputMethodService` | `Service` | The core IME engine. Handles lifecycle, input events, and view management. |
-| `.MainActivity` | `Activity` | Launch activity. Redirects to `SettingsActivity` and ensures theme consistency. |
-| `.SettingsActivity` | `Activity` | The user interface for configuring keyboard preferences. |
+| `.MainActivity` | `Activity` | Launch activity. Routes to the setup or settings screen in `WebViewActivity`. |
+| `.WebViewActivity` | `Activity` | Hosts the HTML settings UI (setup, settings, privacy, logs, about) from `assets/` behind a `@JavascriptInterface` bridge. |
 
 ---
 
@@ -35,7 +35,7 @@ As defined in `AndroidManifest.xml`:
 | Class | Responsibility | Direct Dependencies |
 | :--- | :--- | :--- |
 | `KeyboardView` | The main T9 layout. Handles multi-tap timing, long-presses, and routes clicks to the service. Contains the `SuggestionBar`. | `KeyboardViewBinding`, `SuggestionBar`, `FontUtils` |
-| `SuggestionBar` | Displays predicted candidates and toolbar actions (Settings, Edit, XT9 toggle). Uses a `RecyclerView` for suggestions. | `SuggestionBarBinding`, `FontUtils`, `RecyclerView` |
+| `SuggestionBar` | Displays predicted candidates and toolbar actions (Settings, Edit, XT9 toggle, AI fix). Uses a `RecyclerView` for suggestions. | `SuggestionBarBinding`, `FontUtils`, `RecyclerView` |
 | `SymbolsView` | Grid-based layout for special characters and symbols. | `SymbolsViewBinding`, `FontUtils` |
 | `EmojiPickerView` | Categorized emoji selector using `androidx.emoji2`. Manages recent emojis. | `PreferencesManager`, `EmojiData`, `FontUtils`, `EmojiCompat` |
 | `TextEditingView` | Dedicated panel for cursor navigation (DPAD), selection, and clipboard operations (Cut/Copy/Paste). | `FontUtils` |

@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Redesigned Settings Colors (Night) -->
-    <color name="settings_background">#121212</color>
-    <color name="settings_card_background">#1E1E1E</color>
-    <color name="settings_text_primary">#FFFFFF</color>
-    <color name="settings_text_secondary">#B0B0B0</color>
-</resources>

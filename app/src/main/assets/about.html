@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About PoetBoard</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<div class="about">
+  <h1>PoetBoard</h1>
+  <p><strong>A modern, open-source keyboard for Android</strong> — with predictive typing,
+    a huge emoji picker, six soft pastel themes and a one-tap AI fix button.</p>
+
+  <h2>Overview</h2>
+  <p>PoetBoard is an Android Input Method Editor (IME) built on a custom View-based
+    architecture (no deprecated <code>KeyboardView</code>). It ships with a
+    <strong>250,000-word</strong> AOSP English dictionary, learns as you type, and keeps
+    everything private and on-device.</p>
+
+  <h2>AI fix (WordWise)</h2>
+  <p>The <strong>✦fix</strong> button in the suggestion bar types the <code>?fix</code>
+    trigger — a shortcut for the <strong>WordWise</strong> AI-powered, system-wide grammar
+    assistant, which rewrites the text you just typed. PoetBoard itself sends nothing
+    anywhere; it only types the trigger.</p>
+
+  <h2>How predictive text works</h2>
+  <ul>
+    <li>You type on the T9 keys.</li>
+    <li>Candidates are gathered from your <strong>learned dictionary</strong>, the
+      <strong>AOSP dictionary</strong>, and (optionally) your contacts.</li>
+    <li>They are ranked by <code>AOSP freq + learned freq × recency + bigram boost</code>.</li>
+    <li>The best word is shown inline — tap <strong>space</strong> or a suggestion to
+      commit and it's learned.</li>
+  </ul>
+
+  <h2>Features</h2>
+  <ul>
+    <li>Predictive text &amp; auto-capitalization</li>
+    <li>Symbols panel, categorized emoji picker with <strong>search</strong>, and a
+      text-editing panel</li>
+    <li><strong>Six pastel themes</strong> — Soft Peach, Blush Rose, Lavender Mist,
+      Sky Blue, Mint &amp; Sky, Butter Cream</li>
+    <li>Adjustable haptics, key sounds, delete speed and font sizes</li>
+    <li><strong>AI fix</strong> shortcut for the WordWise grammar assistant</li>
+  </ul>
+
+  <h2>Security &amp; Privacy</h2>
+  <div class="tbl">
+    <table>
+      <tr><th>Area</th><th>Protection</th></tr>
+      <tr><td>Key at rest</td><td><code>learned_words</code> &amp; <code>t9_prefs</code>
+        encrypted with <strong>SafeBox</strong> (ChaCha20-Poly1305), hardware-backed
+        keystore</td></tr>
+      <tr><td>Backups</td><td>Encrypted stores excluded from cloud backup &amp; device
+        transfer</td></tr>
+      <tr><td>Sensitive fields</td><td>Password, numeric, phone &amp; hinted fields skip
+        learning and suggestions</td></tr>
+      <tr><td>Crash logs</td><td>Sanitized, no typed content, capped at 200 lines</td></tr>
+      <tr><td>Retention</td><td>Learned words hard-expire after <strong>180 days</strong></td></tr>
+    </table>
+  </div>
+  <blockquote><p>You can also blacklist specific apps under
+    <strong>Settings → Privacy</strong> so words typed there are never learned.</p></blockquote>
+
+  <h2>License</h2>
+  <p><strong>MIT License</strong> — Copyright © 2026 Fackson Mutetesha.
+    Provided "AS IS", without warranty of any kind.</p>
+
+  <h2>Developer</h2>
+  <p>Built by <strong>Fackson Mutetesha</strong>.<br>
+    GitHub: <a href="https://github.com/Musa-dabwe">@Musa-dabwe</a> ·
+    Package <code>com.musa.t9keyboard</code> · Version <span id="version">—</span></p>
+</div>
+
+<script>
+applyTheme(currentThemeId());
+renderHeader('about', 'Open-source · MIT');
+document.getElementById('version').textContent = hasBridge ? Android.getVersion() : 'dev';
+</script>
+</body>
+</html>

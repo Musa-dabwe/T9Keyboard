@@ -1,39 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="keyboard_background">#1A1A1A</color>
-    <color name="key_background">#0D0D0D</color>
-    <color name="key_surface">#0D0D0D</color>
-    <color name="key_border">#0DFFFFFF</color>
-    <color name="key_pressed">#2979FF</color>
-    <color name="key_text_color">#E1E2ED</color>
-    <color name="text_primary">#E1E2ED</color>
-    <color name="hint_color">#8C90A0</color>
-    <color name="shift_active">#558DFF</color>
-    <color name="suggestion_background">#1D1F27</color>
-    <color name="suggestion_text_color">#E1E2ED</color>
-    <color name="dimmed_white">#8C90A0</color>
-    <color name="symbol_ripple">#3D3D3D</color>
-    <color name="abc_button_background">#1A1A1A</color>
-    <color name="delete_key_color">#FFFFFF</color>
+    <!-- Static defaults follow the Soft Peach pastel palette; every keyboard
+         surface is re-tinted at runtime from the selected KeyboardTheme. -->
+    <color name="keyboard_background">#FBE0CF</color>
+    <color name="key_background">#FFFAF5</color>
+    <color name="key_surface">#FFFAF5</color>
+    <color name="key_border">#F0D8C6</color>
+    <color name="key_pressed">#E0763F</color>
+    <color name="key_text_color">#3D2F28</color>
+    <color name="text_primary">#3D2F28</color>
+    <color name="hint_color">#C19A83</color>
+    <color name="shift_active">#E0763F</color>
+    <color name="suggestion_background">#FBE0CF</color>
+    <color name="suggestion_text_color">#3D2F28</color>
+    <color name="dimmed_white">#C19A83</color>
+    <color name="symbol_ripple">#F7D9C2</color>
+    <color name="abc_button_background">#FBE0CF</color>
+    <color name="delete_key_color">#5A463C</color>
 
-    <!-- Redesigned Settings Colors -->
-    <color name="settings_background">#F5F5F5</color>
-    <color name="settings_card_background">#FFFFFF</color>
-    <color name="settings_text_primary">#000000</color>
-    <color name="settings_text_secondary">#757575</color>
-
-    <!-- Accent Colors -->
-    <color name="accent_blue">#558DFF</color>
-    <color name="accent_teal">#00BFA5</color>
-    <color name="accent_green">#4CAF50</color>
-    <color name="accent_yellow">#FFC107</color>
-    <color name="accent_magenta">#E91E63</color>
-    <color name="accent_red">#F44336</color>
-    <color name="accent_orange">#FF9800</color>
-    <color name="accent_purple">#B39DDB</color>
-
-    <!-- Setup Screen Colors -->
-    <color name="setup_background">#FF24292E</color>
-    <color name="setup_accent">#FFF44436</color>
-    <color name="setup_success">#FF21C100</color>
+    <!-- Pastel accents (theme accentSolid values) -->
+    <color name="accent_blue">#4A8FD6</color>
+    <color name="accent_teal">#3F9E78</color>
+    <color name="accent_green">#6FC79E</color>
+    <color name="accent_yellow">#CF9F2F</color>
+    <color name="accent_magenta">#E06489</color>
+    <color name="accent_red">#D9607A</color>
+    <color name="accent_orange">#E0763F</color>
+    <color name="accent_purple">#7B6EC4</color>
 </resources>

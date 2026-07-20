@@ -55,7 +55,7 @@ class SuggestionBar @JvmOverloads constructor(
     private var revertRunnable: Runnable? = null
 
     enum class ToolbarAction {
-        SETTINGS, EDIT, TOGGLE_XT9
+        SETTINGS, EDIT, TOGGLE_XT9, AI_FIX
     }
 
     init {
@@ -73,9 +73,11 @@ class SuggestionBar @JvmOverloads constructor(
         binding.toolbarSettings.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.SETTINGS) }
         binding.toolbarEdit.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.EDIT) }
         binding.toolbarXt9.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.TOGGLE_XT9) }
+        binding.toolbarAiFix.setOnClickListener { onToolbarActionClickListener?.invoke(ToolbarAction.AI_FIX) }
 
         applyRipple(binding.toolbarSettings)
         applyRipple(binding.toolbarEdit)
+        applyRipple(binding.toolbarAiFix)
         applyToolbarTints()
     }
 
@@ -99,6 +101,7 @@ class SuggestionBar @JvmOverloads constructor(
     private fun applyUbuntuFont() {
         val ubuntu = FontUtils.getUbuntu(context)
         binding.toolbarXt9.typeface = ubuntu
+        binding.toolbarAiFix.typeface = ubuntu
         binding.anchoredSuggestion.typeface = ubuntu
     }
 
@@ -168,6 +171,8 @@ class SuggestionBar @JvmOverloads constructor(
     fun setAccentColor(color: Int) {
         this.accentColor = color
         updateXt9ButtonVisuals()
+        // AI fix stays accent-tinted so it reads as an action, not a toggle
+        binding.toolbarAiFix.setTextColor(color)
         if (binding.anchoredSuggestion.visibility == View.VISIBLE) {
             binding.anchoredSuggestion.setBackgroundColor(color)
             binding.anchoredSuggestion.setTextColor(KeyboardThemes.readableOn(color))
@@ -181,6 +186,8 @@ class SuggestionBar @JvmOverloads constructor(
         applyToolbarTints()
         applyRipple(binding.toolbarSettings)
         applyRipple(binding.toolbarEdit)
+        applyRipple(binding.toolbarAiFix)
+        binding.toolbarAiFix.setTextColor(accentColor)
         updateXt9ButtonVisuals()
         suggestionAdapter.notifyDataSetChanged()
     }

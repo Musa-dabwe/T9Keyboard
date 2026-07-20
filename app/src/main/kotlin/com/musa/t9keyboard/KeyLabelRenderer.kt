@@ -45,10 +45,8 @@ class KeyLabelRenderer(
         binding.keyWx, binding.keySpace, binding.keyYz, binding.keyEnter
     )
 
-    init {
-        // Backspace is permanently accent-filled per the design
-        binding.keyDel.isActivated = true
-    }
+    // Special keys idle on the theme's soft accent fill (design's "sp" keys)
+    private val specialKeys: Set<View> = setOf(binding.keyShift, binding.keySym, binding.keyDel)
 
     fun applyUbuntuFont() {
         val ubuntu = FontUtils.getUbuntu(keyboardView.context)
@@ -122,8 +120,8 @@ class KeyLabelRenderer(
         ImageViewCompat.setImageTintList(binding.labelEnterIcon, ColorStateList.valueOf(theme.keyText))
 
         updateShiftState(lastShiftState, isNumMode)
-        // Backspace is permanently accent-filled; pick readable content color for the chosen accent
-        ImageViewCompat.setImageTintList(binding.labelDelIcon, ColorStateList.valueOf(contentColorOnAccent()))
+        // Backspace sits on the soft special-key fill, so its icon uses the key text color
+        ImageViewCompat.setImageTintList(binding.labelDelIcon, ColorStateList.valueOf(theme.keyText))
         // Enter's corner dot is a plain indicator on the key surface, not accent-filled - use the raw accent
         ImageViewCompat.setImageTintList(binding.enterDot, ColorStateList.valueOf(accentColor))
         updateKeyBackgrounds()
@@ -132,10 +130,10 @@ class KeyLabelRenderer(
     private fun contentColorOnAccent(): Int = KeyboardThemes.readableOn(accentColor)
 
     /**
-     * Flat tonal key surfaces: theme key fill with a hairline border, accent
-     * flash while pressed, accent fill when activated (backspace, active
-     * shift). Built in code so both the theme palette and the user-selected
-     * accent color apply at runtime.
+     * Flat tonal key surfaces: theme key fill with a hairline border (soft
+     * accent fill for special keys), solid accent flash while pressed and
+     * solid accent fill when activated (active shift / num mode). Built in
+     * code so the theme palette applies at runtime.
      */
     private fun updateKeyBackgrounds() {
         val radius = keyboardView.resources.getDimension(R.dimen.key_corner_radius)
@@ -143,18 +141,16 @@ class KeyLabelRenderer(
 
         allKeys.forEach { key ->
             val normal = GradientDrawable().apply {
-                setColor(theme.keySurface)
+                setColor(if (key in specialKeys) theme.kaccent else theme.keySurface)
                 setStroke(strokeWidth, theme.keyBorder)
                 cornerRadius = radius
             }
-            // Pressed flash follows the accent so it matches the app theme
-            // instead of the old hardcoded blue.
             val pressed = GradientDrawable().apply {
-                setColor(accentColor)
+                setColor(theme.kpress)
                 cornerRadius = radius
             }
             val activated = GradientDrawable().apply {
-                setColor(accentColor)
+                setColor(theme.kpress)
                 cornerRadius = radius
             }
             key.background = StateListDrawable().apply {

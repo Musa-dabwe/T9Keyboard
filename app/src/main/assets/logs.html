@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PoetBoard Logs</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<div class="log-head">
+  <div class="page-title" style="margin:0">Debug Logs</div>
+  <span class="log-clear" id="btn-clear">Clear Log</span>
+</div>
+
+<div class="log-box" id="log-box"></div>
+
+<p class="footnote" style="margin-top:14px">Logs are sanitized — no typed content is ever
+  recorded. Capped at 200 lines with rotation.</p>
+
+<script>
+applyTheme(currentThemeId());
+renderHeader('logs', 'Sanitized crash log');
+
+function renderLogs() {
+  const box = document.getElementById('log-box');
+  box.textContent = hasBridge ? Android.getLogs() : 'No logs found.';
+}
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (hasBridge) Android.clearLogs();
+  renderLogs();
+});
+
+renderLogs();
+</script>
+</body>
+</html>
