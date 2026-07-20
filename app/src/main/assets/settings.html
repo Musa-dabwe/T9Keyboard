@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PoetBoard Settings</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<button class="btn btn-primary" id="btn-default">
+  <span class="ic">⌨</span>
+  <span class="grow">
+    <span class="t1">Set as default keyboard</span>
+    <span class="t2">Enable &amp; activate in system settings</span>
+  </span>
+  <span style="font-size:20px;opacity:.8">›</span>
+</button>
+
+<div class="lab">Prediction</div>
+<div class="card" id="card-prediction"></div>
+
+<div class="lab">Feedback &amp; Sound</div>
+<div class="card" id="card-feedback"></div>
+
+<div class="lab">Layout &amp; Sizing</div>
+<div class="card" id="card-layout"></div>
+
+<div class="lab">Emoji</div>
+<div class="card" id="card-emoji"></div>
+
+<div class="lab">Integrations</div>
+<div class="card" id="card-integrations"></div>
+
+<div class="lab">Theme</div>
+<div class="swatches" id="swatches"></div>
+
+<div class="lab">Privacy</div>
+<div class="card">
+  <div class="row" id="row-blacklist" style="cursor:pointer">
+    <div class="grow">
+      <div class="row-title">App Blacklist</div>
+      <div class="row-sub">Stop learning words from chosen apps</div>
+    </div>
+    <span class="chev">›</span>
+  </div>
+</div>
+
+<button class="btn btn-outline" id="btn-clear-dict">🗑 Clear learned dictionary</button>
+<p class="footnote">Deletes all custom words and predictions learned by the keyboard.</p>
+
+<script>
+applyTheme(currentThemeId());
+renderHeader('settings', 'Settings · pastel themes');
+
+const settings = hasBridge ? JSON.parse(Android.getSettings()) : {
+  xt9Enabled: true, hapticEnabled: true, hapticDuration: 30, soundEnabled: true,
+  soundVolume: 50, deletionSpeed: 60, multiTapTimeout: 300, keyFontSize: 18,
+  suggestionFontSize: 13, emojiSize: 32, contactsEnabled: false,
+};
+
+document.getElementById('btn-default').addEventListener('click', () => {
+  if (hasBridge) Android.openImeSettings();
+});
+document.getElementById('row-blacklist').addEventListener('click', () => {
+  location.href = 'privacy.html';
+});
+
+// --- Prediction ---
+const prediction = document.getElementById('card-prediction');
+prediction.appendChild(toggleRow('Predictive text', 'Suggest & complete words as you type',
+  settings.xt9Enabled, on => saveSetting('xt9Enabled', on)));
+
+// --- Feedback & sound ---
+const feedback = document.getElementById('card-feedback');
+feedback.appendChild(toggleRow('Haptic feedback', 'Vibrate on key press',
+  settings.hapticEnabled, on => saveSetting('hapticEnabled', on)));
+feedback.appendChild(sliderRow('Haptic intensity', '0–50 ms', 0, 50,
+  settings.hapticDuration, '', v => saveSetting('hapticDuration', v)));
+feedback.appendChild(toggleRow('Key press sound', 'Play a sound when typing',
+  settings.soundEnabled, on => saveSetting('soundEnabled', on)));
+feedback.appendChild(sliderRow('Sound volume', '0–100', 0, 100,
+  settings.soundVolume, '', v => saveSetting('soundVolume', v)));
+feedback.appendChild(sliderRow('Delete speed', 'Repeat rate of backspace', 0, 100,
+  settings.deletionSpeed, '', v => saveSetting('deletionSpeed', v)));
+
+// --- Layout & sizing ---
+const layout = document.getElementById('card-layout');
+layout.appendChild(sliderRow('Key label size', 'Primary letters (sp)', 0, 40,
+  settings.keyFontSize, '', v => saveSetting('keyFontSize', v)));
+layout.appendChild(sliderRow('Suggestion font size', 'Suggestion bar (sp)', 0, 30,
+  settings.suggestionFontSize, '', v => saveSetting('suggestionFontSize', v)));
+layout.appendChild(sliderRow('Multi-tap timeout', 'Cycle window per key (ms)', 0, 800,
+  settings.multiTapTimeout, '', v => saveSetting('multiTapTimeout', v)));
+
+// --- Emoji ---
+document.getElementById('card-emoji').appendChild(
+  sliderRow('Emoji size', 'Picker cell size (sp)', 16, 40,
+    settings.emojiSize, '', v => saveSetting('emojiSize', v)));
+
+// --- Integrations (contacts needs a runtime permission round-trip) ---
+let contactsToggle;
+document.getElementById('card-integrations').appendChild(
+  toggleRow('Contact suggestions', 'Suggest contact names while typing',
+    settings.contactsEnabled, (on, tog) => {
+      contactsToggle = tog;
+      saveSetting('contactsEnabled', on);
+    }));
+window.onContactsPermissionResult = granted => {
+  if (contactsToggle) contactsToggle.classList.toggle('on', granted);
+};
+
+// --- Theme swatches ---
+function renderSwatches() {
+  const grid = document.getElementById('swatches');
+  grid.innerHTML = '';
+  const active = currentThemeId();
+  for (const [id, theme] of Object.entries(THEMES)) {
+    const cell = document.createElement('div');
+    cell.className = 'swatch' + (id === active ? ' active' : '');
+    cell.innerHTML =
+      '<span class="dot" style="background:' + theme.swatch + '"></span>' +
+      '<span class="name">' + theme.name + '</span>' +
+      (id === active ? '<span class="check">✓</span>' : '');
+    cell.addEventListener('click', () => {
+      if (hasBridge) Android.setThemeId(id);
+      applyTheme(id);
+      renderSwatches();
+    });
+    grid.appendChild(cell);
+  }
+}
+renderSwatches();
+
+// --- Clear dictionary (two-tap confirm; WebView has no JS dialogs) ---
+const clearBtn = document.getElementById('btn-clear-dict');
+let armed = false;
+clearBtn.addEventListener('click', () => {
+  if (!armed) {
+    armed = true;
+    clearBtn.textContent = 'Tap again to confirm';
+    setTimeout(() => { armed = false; clearBtn.textContent = '🗑 Clear learned dictionary'; }, 3000);
+    return;
+  }
+  armed = false;
+  if (hasBridge) Android.clearDictionary();
+  clearBtn.textContent = '✓ Dictionary cleared';
+  setTimeout(() => { clearBtn.textContent = '🗑 Clear learned dictionary'; }, 2000);
+});
+</script>
+</body>
+</html>

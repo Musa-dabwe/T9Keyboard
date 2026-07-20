@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PoetBoard Privacy</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<div class="page-title">App Blacklist</div>
+<p class="page-desc">Blacklisted apps won't have their typed words learned.
+  Word learning is silently skipped for those input sessions.</p>
+
+<div class="card" id="app-list">
+  <div class="row"><div class="grow row-sub">Loading apps…</div></div>
+</div>
+
+<script>
+applyTheme(currentThemeId());
+renderHeader('privacy', 'Privacy · word learning');
+
+const TILE_COLORS = ['#7ab89a', '#5fb0d0', '#e08573', '#d98bb0', '#b6a1e0', '#e6b95e', '#8a9bb5'];
+
+function tileColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return TILE_COLORS[h % TILE_COLORS.length];
+}
+
+function renderApps() {
+  const list = document.getElementById('app-list');
+  const apps = hasBridge ? JSON.parse(Android.getBlacklist()) : [
+    { packageName: 'demo.messages', appName: 'Messages', blacklisted: true },
+    { packageName: 'demo.notes', appName: 'Notes', blacklisted: false },
+  ];
+  list.innerHTML = '';
+  if (apps.length === 0) {
+    list.innerHTML = '<div class="row"><div class="grow row-sub">No apps found.</div></div>';
+    return;
+  }
+  for (const app of apps) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const tile = document.createElement('span');
+    tile.className = 'app-tile';
+    tile.style.background = tileColor(app.appName);
+    tile.textContent = (app.appName[0] || '?').toUpperCase();
+    const name = document.createElement('span');
+    name.className = 'grow row-title';
+    name.textContent = app.appName;
+    row.appendChild(tile);
+    row.appendChild(name);
+    row.appendChild(makeToggle(app.blacklisted, on => {
+      if (hasBridge) Android.setBlacklisted(app.packageName, on);
+    }));
+    list.appendChild(row);
+  }
+}
+
+renderApps();
+</script>
+</body>
+</html>

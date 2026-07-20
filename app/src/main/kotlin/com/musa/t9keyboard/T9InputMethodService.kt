@@ -50,12 +50,6 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private val accentColorResIds = listOf(
-        R.color.accent_blue, R.color.accent_teal, R.color.accent_green,
-        R.color.accent_yellow, R.color.accent_magenta, R.color.accent_red,
-        R.color.accent_orange, R.color.accent_purple
-    )
-
     override fun onDestroy() {
         pasteManager.unregister()
         super.onDestroy()
@@ -208,17 +202,18 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     }
 
     private fun currentKeyboardTheme(): KeyboardTheme =
-        preferences.resolveKeyboardTheme(KeyboardThemes.isSystemDark(resources.configuration))
+        preferences.resolveKeyboardTheme()
 
     /**
      * Pushes the resolved theme palette and accent color to every keyboard
      * surface. Theme goes first so accent-derived visuals compose on top of
-     * the right palette.
+     * the right palette. The accent is the theme's solid accent, so every
+     * panel restyles with the chosen pastel.
      */
     private fun applyThemeToViews() {
         if (!orchestrator.isViewReady) return
         val theme = currentKeyboardTheme()
-        val accentColor = ContextCompat.getColor(this, accentColorResIds[preferences.accentColorIndex])
+        val accentColor = theme.accentSolid
         orchestrator.keyboardView?.apply {
             setTheme(theme)
             setAccentColor(accentColor)
@@ -438,8 +433,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
                 }
                 KeyboardView.KeyboardAction.SHOW_TEXT_EDITING -> showTextEditingPanel()
                 KeyboardView.KeyboardAction.SETTINGS -> {
-                    val intent = android.content.Intent(this, SettingsActivity::class.java).apply {
+                    val intent = android.content.Intent(this, WebViewActivity::class.java).apply {
                         addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        putExtra(WebViewActivity.EXTRA_SCREEN, "settings")
                     }
                     startActivity(intent)
                 }
@@ -461,13 +457,17 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
         }
         when (action) {
             SuggestionBar.ToolbarAction.SETTINGS -> {
-                val intent = android.content.Intent(this, SettingsActivity::class.java).apply {
+                val intent = android.content.Intent(this, WebViewActivity::class.java).apply {
                     addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(WebViewActivity.EXTRA_SCREEN, "settings")
                 }
                 startActivity(intent)
             }
             SuggestionBar.ToolbarAction.EDIT -> showTextEditingPanel()
             SuggestionBar.ToolbarAction.TOGGLE_XT9 -> toggleXt9()
+            // WordWise's system-wide grammar assistant watches for the "?fix"
+            // trigger, so the button just types it after the current word.
+            SuggestionBar.ToolbarAction.AI_FIX -> commitTextWithFinalization("?fix")
         }
     }
 
@@ -720,10 +720,9 @@ class T9InputMethodService : InputMethodService(), MainKeyActionListener, EditAc
     private fun onEmojiSearchTriggered() {
         isEmojiSearchActive = true
         orchestrator.emojiSearchPanelView?.let {
-            val colorRes = accentColorResIds[preferences.accentColorIndex]
-            val color = ContextCompat.getColor(this, colorRes)
-            it.setTheme(currentKeyboardTheme())
-            it.setAccentColor(color)
+            val theme = currentKeyboardTheme()
+            it.setTheme(theme)
+            it.setAccentColor(theme.accentSolid)
             it.resetQuery()
             orchestrator.showView(it)
         }

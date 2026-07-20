@@ -36,10 +36,13 @@ class PreferencesManager(context: Context) {
         const val KEY_MULTI_TAP_TIMEOUT = "multi_tap_timeout"
         const val KEY_KEY_FONT_SIZE = "key_font_size"
         const val KEY_SUGGESTION_FONT_SIZE = "suggestion_font_size"
-        const val KEY_THEME = "theme" // legacy int pref (0 light, 1 dark, 2 system), kept for migration
         const val KEY_KEYBOARD_THEME = "keyboard_theme"
-        const val KEY_KEYBOARD_THEME_FAMILY = "keyboard_theme_family"
-        const val KEY_ACCENT_COLOR = "accent_color"
+
+        /** Retired theme ids (GitHub/VS Code/Claude families + system-follow) → pastel default. */
+        private val LEGACY_THEME_IDS = setOf(
+            "github_dark", "github_light", "vscode_dark", "vscode_light",
+            "claude_dark", "claude_light", "system"
+        )
         const val KEY_XT9_ENABLED = "xt9_enabled"
         const val KEY_DELETION_SPEED = "deletion_speed"
         const val KEY_CONTACT_SUGGESTIONS_ENABLED = "contact_suggestions_enabled"
@@ -71,33 +74,15 @@ class PreferencesManager(context: Context) {
 
     var keyboardThemeId: String
         get() {
-            prefs.getString(KEY_KEYBOARD_THEME, null)?.let { return it }
-            // Migrate the legacy Light/Dark/System int pref into the new theme system
-            return when (prefs.getInt(KEY_THEME, 2)) {
-                0 -> KeyboardThemes.VSCODE_LIGHT.id
-                1 -> KeyboardThemes.VSCODE_DARK.id
-                else -> KeyboardThemes.SYSTEM_ID
-            }
+            val stored = prefs.getString(KEY_KEYBOARD_THEME, null) ?: return KeyboardThemes.DEFAULT.id
+            if (stored in LEGACY_THEME_IDS) return KeyboardThemes.DEFAULT.id
+            return stored
         }
-        set(value) {
-            val editor = prefs.edit().putString(KEY_KEYBOARD_THEME, value)
-            // Remember the family of the last explicit pick so System Default
-            // knows which light/dark pair to toggle between.
-            KeyboardThemes.byId(value)?.let { editor.putString(KEY_KEYBOARD_THEME_FAMILY, it.family) }
-            editor.apply()
-        }
+        set(value) = prefs.edit().putString(KEY_KEYBOARD_THEME, value).apply()
 
-    var keyboardThemeFamily: String
-        get() = prefs.getString(KEY_KEYBOARD_THEME_FAMILY, null) ?: KeyboardThemes.DEFAULT.family
-        set(value) = prefs.edit().putString(KEY_KEYBOARD_THEME_FAMILY, value).apply()
-
-    /** Resolves the stored selection to a concrete palette for the given system dark-mode state. */
-    fun resolveKeyboardTheme(isSystemDark: Boolean): KeyboardTheme =
-        KeyboardThemes.resolve(keyboardThemeId, keyboardThemeFamily, isSystemDark)
-
-    var accentColorIndex: Int
-        get() = prefs.getInt(KEY_ACCENT_COLOR, 7) // Default to Purple (matching design)
-        set(value) = prefs.edit().putInt(KEY_ACCENT_COLOR, value).apply()
+    /** Resolves the stored selection to a concrete palette. */
+    fun resolveKeyboardTheme(): KeyboardTheme =
+        KeyboardThemes.byId(keyboardThemeId) ?: KeyboardThemes.DEFAULT
 
     var hapticEnabled: Boolean
         get() = prefs.getBoolean(KEY_HAPTIC_ENABLED, true)

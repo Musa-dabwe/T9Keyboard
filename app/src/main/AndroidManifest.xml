@@ -26,7 +26,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".SetupActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,24 +35,10 @@
         </activity>
 
         <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".SettingsActivity"
+            android:name=".WebViewActivity"
             android:label="@string/settings_name"
-            android:exported="true" />
-
-        <activity
-            android:name=".DebugLogsActivity"
-            android:label="Debug Logs"
             android:exported="false" />
 
-        <activity
-            android:name=".AppBlacklistActivity"
-            android:label="App Blacklist"
-            android:exported="false" />
-        
         <service
             android:name=".T9InputMethodService"
             android:label="@string/ime_name"
@@ -67,5 +53,5 @@
         </service>
 
     </application>
-    
+
 </manifest>

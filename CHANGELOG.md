@@ -1,5 +1,18 @@
 ## [Unreleased]
 ### Added
+- **AI fix button**: a `✦fix` chip in the suggestion bar types the `?fix` trigger for the WordWise AI-powered system-wide grammar assistant (finalizing the current word first).
+- `WebViewActivity`: single WebView host for the new HTML settings UI (`assets/setup.html`, `settings.html`, `privacy.html`, `logs.html`, `about.html` + shared `styles.css`/`app.js`), bridged over a `@JavascriptInterface` (theme, preferences, IME status, app blacklist, logs, contacts permission).
+
+### Changed
+- **Renamed the keyboard to PoetBoard** (launcher label, IME label, settings label). Package id stays `com.musa.t9keyboard`.
+- Theme system replaced with **six pastel themes** — Soft Peach, Blush Rose, Lavender Mist, Sky Blue (default), Mint & Sky, Butter Cream. The GitHub/VS Code/Claude families, system-follow mode and the separate accent-color picker are gone; stored legacy theme ids migrate to Sky Blue and the accent now comes from the theme's solid accent.
+- Special keys (shift, sym, backspace) idle on the theme's soft accent fill; pressed/activated keys use the theme's solid accent. Backspace is no longer permanently accent-filled.
+- Setup, Settings, Privacy (app blacklist) and Debug Logs are now pastel HTML pages inside `WebViewActivity`; `MainActivity` is the launcher and routes to setup or settings based on IME configuration state.
+
+### Removed
+- `SettingsActivity`, `SetupActivity`, `DebugLogsActivity`, `AppBlacklistActivity`, `SettingsDialogHelper` and their layouts, replaced by the WebView UI.
+
+### Added
 - Number pad: space key now reads `SPACE [0]` so the long-press zero is discoverable without the corner hint.
 - Number pad: comma key shows a `-` corner hint; long-pressing it types a hyphen.
 - Number pad: swiping down on the suggestion bar dismisses the pad back to the letters keyboard, making it behave like a separate panel (same gesture as the text-editing panel).

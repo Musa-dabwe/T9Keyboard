@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">T9 Keyboard</string>
-    <string name="ime_name">T9 Keyboard</string>
-    <string name="settings_name">T9 Keyboard Settings</string>
+    <string name="app_name">PoetBoard</string>
+    <string name="ime_name">PoetBoard</string>
+    <string name="settings_name">PoetBoard Settings</string>
 
 </resources>

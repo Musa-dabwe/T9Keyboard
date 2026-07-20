@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome to PoetBoard</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<div class="setup-hero">
+  <div class="setup-logo">PB</div>
+  <div class="setup-title">Welcome to PoetBoard</div>
+  <div class="setup-desc">A modern open-source Android keyboard with predictive typing,
+    a 250,000-word dictionary, a huge emoji picker, pastel themes and a one-tap
+    AI fix button for the WordWise grammar assistant.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px;margin-top:26px">
+  <button class="btn btn-step" id="step1">
+    <span class="num" id="step1-icon">1</span>
+    <span class="grow">Step 1 · Activate keyboard</span>
+  </button>
+  <button class="btn btn-step" id="step2">
+    <span class="num" id="step2-icon">2</span>
+    <span class="grow">Step 2 · Set as default</span>
+  </button>
+</div>
+
+<div class="status-bar">
+  <span class="status-dot" id="status-dot"></span>
+  <span class="status-text" id="status-text">Complete both steps to finish setup</span>
+</div>
+
+<div class="footnote" style="margin-top:26px">
+  by Fackson Mutetesha · <a href="https://github.com/Musa-dabwe">@Musa-dabwe</a><br>
+  © 2026 · com.musa.t9keyboard
+</div>
+
+<script>
+applyTheme(currentThemeId());
+renderHeader('setup', 'First-run setup');
+
+const step1 = document.getElementById('step1');
+const step2 = document.getElementById('step2');
+
+step1.addEventListener('click', () => { if (hasBridge) Android.openImeSettings(); });
+step2.addEventListener('click', () => { if (hasBridge) Android.showImePicker(); });
+
+let finished = false;
+
+function refresh() {
+  if (!hasBridge || finished) return;
+  const enabled = Android.isImeEnabled();
+  const isDefault = Android.isImeDefault();
+
+  step1.classList.toggle('done', enabled);
+  document.getElementById('step1-icon').textContent = enabled ? '✓' : '1';
+  step2.classList.toggle('done', isDefault);
+  document.getElementById('step2-icon').textContent = isDefault ? '✓' : '2';
+
+  if (enabled && isDefault) {
+    finished = true;
+    document.getElementById('status-dot').classList.add('ok');
+    document.getElementById('status-text').textContent = 'All set — PoetBoard is ready!';
+    Android.markSetupComplete();
+    setTimeout(() => { location.href = 'settings.html'; }, 900);
+  }
+}
+
+refresh();
+setInterval(refresh, 600);
+window.onAppResume = refresh;
+</script>
+</body>
+</html>
